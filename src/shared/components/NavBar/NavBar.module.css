@@ -1,0 +1,205 @@
+.header {
+  width: 100%;
+  position: relative;
+  z-index: 20;
+}
+
+.innerSticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 10px 0 14px;
+}
+
+.topRow {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  position: relative;
+}
+
+.logoWrap {
+  flex: 0 0 160px;
+  padding-top: 6px;
+}
+.logoLink {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.logoPlaceholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 30px;
+  border-radius: 6px;
+  background: #f3f4f6;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Search */
+.searchWrap {
+  flex: 1 1 auto;
+  display: none;
+}
+@media (min-width: 1000px) {
+  .searchWrap {
+    display: block;
+  }
+}
+
+.searchForm {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  padding: 0 12px;
+  gap: 8px;
+}
+.searchIcon {
+  font-size: 14px;
+  opacity: 0.7;
+}
+.searchInput {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 14px;
+}
+
+/* Keywords */
+.keywordRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6b7280;
+}
+.keywordNavBtn {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.keywordList {
+  display: flex;
+  gap: 14px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.keywordList a {
+  color: #6b7280;
+  text-decoration: none;
+}
+.keywordList a:hover {
+  color: #111827;
+}
+
+/* Right actions */
+.actionWrap {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  padding-top: 6px;
+}
+
+.actionBtn,
+.actionLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #111827;
+  font-size: 14px;
+  text-decoration: none;
+  position: relative;
+  padding: 0;
+}
+
+.badge {
+  position: absolute;
+  top: -3px;
+  right: 56px;
+  width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  background: #22c55e;
+  color: white;
+  font-weight: 700;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Recent aside */
+.recentAside {
+  display: none;
+}
+@media (min-width: 1280px) {
+  .recentAside {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 120px;
+    right: -110px;
+    width: 98px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    border-radius: 10px;
+    padding: 8px;
+    gap: 8px;
+  }
+}
+.recentTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+}
+.recentList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.recentItem {
+}
+.recentThumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+.thumbPlaceholder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #f3f4f6, #e5e7eb, #f3f4f6);
+}
