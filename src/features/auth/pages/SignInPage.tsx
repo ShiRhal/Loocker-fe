@@ -11,7 +11,6 @@ declare global {
 
 const GOOGLE_SCRIPT = "https://accounts.google.com/gsi/client";
 
-// ✅ env: REACT_APP_GOOGLE_CLIENT_ID=...
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID?.trim();
 
 export default function SignInPage() {
@@ -58,7 +57,7 @@ export default function SignInPage() {
       return;
     }
 
-    // ✅ 팝업/원탭 대신: 클릭 시 credential 콜백 받는 방식
+    //클릭 시 credential 콜백 받는 방식
     window.google.accounts.id.initialize({
       client_id: GOOGLE_CLIENT_ID,
       callback: async (resp: { credential?: string }) => {
@@ -66,7 +65,7 @@ export default function SignInPage() {
           const idToken = resp?.credential;
           if (!idToken) throw new Error("id_token(credential)이 없습니다.");
 
-          // ✅ B방식: FE는 저장 X, BE로 전달 → BE가 세션쿠키 발급
+          // FE는 저장 X, BE로 전달 → BE가 세션쿠키 발급
           await loginWithGoogleIdToken(idToken);
 
           // keepLogin은 지금은 UI만 (나중에 BE 세션 만료정책과 연결)
@@ -107,7 +106,6 @@ export default function SignInPage() {
 
         {err && <div className={styles.error}>{err}</div>}
 
-        {/* ✅ 네이버 대신 구글 */}
         <button className={styles.btnGoogle} onClick={onGoogleClick}>
           <span className={styles.icon}>G</span>
           <span className={styles.btnText}>구글로 시작하기</span>
