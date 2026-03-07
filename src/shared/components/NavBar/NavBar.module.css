@@ -2,6 +2,7 @@
   width: 100%;
   position: relative;
   z-index: 20;
+  margin-top: clamp(12px, 1.5vw, 10px);
 }
 
 .innerSticky {
@@ -10,49 +11,50 @@
   z-index: 20;
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
-  padding: 10px 0 14px;
+  padding: clamp(8px, 1vw, 10px) 0 clamp(10px, 1.2vw, 14px);
 }
 
 .topRow {
-  max-width: 1000px;
+  max-width: min(1000px, 92vw);
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 0 clamp(12px, 1.5vw, 16px);
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: clamp(12px, 1.6vw, 16px);
   position: relative;
 }
 
 .logoWrap {
-  flex: 0 0 160px;
-  padding-top: 6px;
+  flex: 0 0 clamp(120px, 14vw, 160px);
+  padding-top: clamp(4px, 0.6vw, 6px);
 }
+
 .logoLink {
   display: inline-flex;
   align-items: center;
-  height: 30px;
+  height: clamp(24px, 3vw, 30px);
   border: 0;
   background: transparent;
   cursor: pointer;
   padding: 0;
 }
-.logoPlaceholder {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 120px;
-  height: 30px;
-  border-radius: 6px;
-  background: #f3f4f6;
-  font-weight: 700;
-  color: #111827;
+
+.logoImage {
+  height: clamp(72px, 8vw, 120px);
+  object-fit: contain;
+  display: block;
 }
 
+.OptionText {
+  font-size: 14px;
+}
 /* Search */
 .searchWrap {
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  min-width: 0;
   display: none;
 }
+
 @media (min-width: 1000px) {
   .searchWrap {
     display: block;
@@ -62,54 +64,75 @@
 .searchForm {
   display: flex;
   align-items: center;
-  height: 44px;
-  border-radius: 10px;
+  height: clamp(40px, 4.2vw, 44px);
+  border-radius: clamp(8px, 1vw, 10px);
   background: #f3f4f6;
-  padding: 0 12px;
-  gap: 8px;
+  padding: 0 clamp(10px, 1.2vw, 12px);
+  gap: clamp(6px, 0.8vw, 8px);
 }
-.searchIcon {
-  font-size: 14px;
-  opacity: 0.7;
-}
+
 .searchInput {
   border: none;
   outline: none;
   background: transparent;
   width: 100%;
-  font-size: 14px;
+  font-size: clamp(10px, 1.15vw, 13px);
 }
 
 /* Keywords */
 .keywordRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  font-size: 12px;
+  gap: clamp(6px, 0.8vw, 12px);
+  margin-top: clamp(8px, 1vw, 10px);
+  font-size: clamp(12px, 1vw, 15px);
   color: #6b7280;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
 }
+
 .keywordNavBtn {
-  width: 20px;
-  height: 20px;
+  width: clamp(20px, 1.8vw, 24px);
+  height: clamp(20px, 1.8vw, 24px);
   border: 1px solid #e5e7eb;
   background: #fff;
   border-radius: 6px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
 }
+
 .keywordList {
   display: flex;
-  gap: 14px;
+  gap: clamp(12px, 1.2vw, 16px);
   list-style: none;
   padding: 0;
   margin: 0;
   overflow: hidden;
   white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
 }
+
+.keywordRank {
+  font-weight: 700;
+}
+
+.keywordList li {
+  flex: 0 0 auto;
+}
+
 .keywordList a {
   color: #6b7280;
   text-decoration: none;
 }
+
 .keywordList a:hover {
   color: #111827;
 }
@@ -119,76 +142,129 @@
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: clamp(10px, 1.2vw, 12px);
   position: relative;
-  padding-top: 6px;
+  padding-top: clamp(4px, 0.6vw, 6px);
+  flex-shrink: 0;
+}
+
+.searchIcon {
+  width: clamp(16px, 1.5vw, 18px);
+  height: clamp(16px, 1.5vw, 18px);
+  object-fit: contain;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.chatIcon,
+.saleIcon,
+.userIcon {
+  width: clamp(20px, 1.8vw, 28px);
+  height: clamp(20px, 1.8vw, 28px);
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.leftIcon,
+.rightIcon {
+  width: clamp(10px, 1vw, 12px);
+  height: clamp(14px, 1.2vw, 16px);
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .actionBtn,
 .actionLink {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: clamp(4px, 0.7vw, 6px);
   border: none;
   background: transparent;
   cursor: pointer;
   color: #111827;
-  font-size: 14px;
+  font-size: clamp(14px, 1.15vw, 18px);
   text-decoration: none;
   position: relative;
   padding: 0;
+  white-space: nowrap;
 }
 
 .badge {
   position: absolute;
-  top: -3px;
-  right: 56px;
-  width: 15px;
-  height: 15px;
+  top: clamp(-4px, -0.3vw, -2px);
+  right: clamp(45px, 7vw, 50px);
+  width: clamp(14px, 1.2vw, 16px);
+  height: clamp(14px, 1.2vw, 16px);
   border-radius: 999px;
   background: #22c55e;
   color: white;
   font-weight: 700;
-  font-size: 11px;
+  font-size: clamp(10px, 0.8vw, 11px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
 /* Recent aside */
+/* Recent aside */
 .recentAside {
   display: none;
 }
+
 @media (min-width: 1280px) {
   .recentAside {
     display: flex;
     flex-direction: column;
     position: absolute;
-    top: 120px;
-    right: -110px;
-    width: 98px;
+    top: clamp(110px, 19vw, 20px);
+    right: clamp(-120px, -8vw, -110px);
+    width: clamp(90px, 8vw, 98px);
+    min-height: 306px;
     border: 1px solid #d1d5db;
     background: #fff;
     border-radius: 10px;
-    padding: 8px;
-    gap: 8px;
+    padding: clamp(6px, 0.8vw, 8px);
+    gap: clamp(6px, 0.8vw, 8px);
   }
 }
+
 .recentTitle {
-  font-size: 12px;
+  font-size: clamp(12px, 1vw, 15px);
   font-weight: 700;
   text-align: center;
   margin: 0;
+  flex-shrink: 0;
 }
+
 .recentList {
   list-style: none;
   padding: 0;
   margin: 0;
-  display: grid;
-  gap: 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
+
+.recentEmptyItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 100%;
+}
+
+.recentEmptyText {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #374151;
+  word-break: keep-all;
+}
+
 .recentItem {
 }
+
 .recentThumb {
   display: block;
   width: 100%;
@@ -197,6 +273,7 @@
   overflow: hidden;
   background: #f3f4f6;
 }
+
 .thumbPlaceholder {
   display: block;
   width: 100%;

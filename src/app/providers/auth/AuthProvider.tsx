@@ -25,7 +25,7 @@ export default function AuthProvider({ children }: Props) {
 
   const refreshMe = async () => {
     try {
-      const data = await authApi.me(); // ✅ 쿠키 기반 세션 확인
+      const data = await authApi.me();
       setMe(data);
     } catch {
       setMe(null);
@@ -33,13 +33,20 @@ export default function AuthProvider({ children }: Props) {
   };
 
   const loginWithGoogleIdToken = async (idToken: string) => {
-    // ✅ FE는 id_token 저장하지 않음. 그냥 1회 전달만.
-    await authApi.loginGoogle({ idToken });
+    const res = await authApi.loginGoogle({ idToken });
+
+    if (res?.resultCode !== "SUCCESS" || !res?.accessToken) {
+      throw new Error(res?.resultMessage || "로그인 실패");
+    }
+
+    localStorage.setItem("accessToken", res.accessToken);
+
     await refreshMe();
   };
 
   const logout = async () => {
     try {
+      localStorage.removeItem("accessToken");
       await authApi.logout();
     } finally {
       setMe(null);
@@ -52,7 +59,6 @@ export default function AuthProvider({ children }: Props) {
       await refreshMe();
       setLoading(false);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const value = useMemo<AuthState>(
