@@ -86,12 +86,13 @@ export default function NavBar({ showRecent = true }: NavBarProps) {
   };
 
   const goIfAuthedOrSignin = (to: string) => {
-    if (me) {
-      nav(to);
-      return;
-    }
-    const redirect = encodeURIComponent(loc.pathname + loc.search);
-    nav(`/signin?redirect=${redirect}`);
+    // if (me) {
+    //   nav(to);
+    //   return;
+    // }
+    // const redirect = encodeURIComponent(loc.pathname + loc.search);
+    // nav(`/signin?redirect=${redirect}`);
+    nav(to);
   };
 
   return (
