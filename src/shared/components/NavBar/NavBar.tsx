@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../app/providers/auth/useAuth";
 import styles from "./NavBar.module.css";
-import loockerLogo from "../../../assects/images/Loocker.png";
-import chatIcon from "../../../assects/icons/chat.svg";
-import saleIcon from "../../../assects/icons/sale.svg";
-import searchIcon from "../../../assects/icons/search.svg";
-import userIcon from "../../../assects/icons/user.svg";
-import leftIcon from "../../../assects/icons/left.svg";
-import rightIcon from "../../../assects/icons/right.svg";
+import loockerLogo from "../../../assets/images/Loocker.png";
+import chatIcon from "../../../assets/icons/chat.svg";
+import saleIcon from "../../../assets/icons/sale.svg";
+import searchIcon from "../../../assets/icons/search.svg";
+import userIcon from "../../../assets/icons/user.svg";
+import leftIcon from "../../../assets/icons/left.svg";
+import rightIcon from "../../../assets/icons/right.svg";
 import "../../styles/global.css";
 
 type NavBarProps = {

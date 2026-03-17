@@ -1,5 +1,5 @@
 const API_BASE =
-  process.env.REACT_APP_API_BASE_URL?.trim() || "http://localhost:8080";
+  import.meta.env.VITE_API_BASE_URL?.trim() || "http://localhost:8080";
 
 type ApiOptions = RequestInit & { json?: any };
 

@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../app/providers/auth/useAuth";
 import styles from "./SignInPage.module.css";
-import logoImg from "../../../assects/images/Loocker.png";
+import logoImg from "../../../assets/images/Loocker.png";
 import "../../../shared/styles/global.css";
-import GoogleIcon from "../../../assects/icons/Google.svg";
-import KakaoIcon from "../../../assects/icons/Kakao.svg";
-import UserIcon from "../../../assects/icons/user.svg";
+import GoogleIcon from "../../../assets/icons/Google.svg";
+import KakaoIcon from "../../../assets/icons/Kakao.svg";
+import UserIcon from "../../../assets/icons/user.svg";
 
 declare global {
   interface Window {
@@ -16,7 +16,7 @@ declare global {
 
 const GOOGLE_SCRIPT = "https://accounts.google.com/gsi/client";
 
-const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID?.trim();
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
 
 export default function SignInPage() {
   const nav = useNavigate();
@@ -50,7 +50,7 @@ export default function SignInPage() {
     setErr(null);
 
     if (!GOOGLE_CLIENT_ID) {
-      setErr("REACT_APP_GOOGLE_CLIENT_ID가 설정되지 않았습니다.");
+      setErr("VITE_GOOGLE_CLIENT_ID가 설정되지 않았습니다.");
       return;
     }
 
