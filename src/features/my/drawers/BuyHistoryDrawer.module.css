@@ -1,0 +1,98 @@
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;  
+}
+
+.searchSection {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 8px 12px;
+  background-color: #fafafa;
+}
+
+.submitSearch {
+  background: none;
+  border: none;
+  color: #8c8c8c;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+}
+
+.search input {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 14px;
+  width: 100%;
+  outline: none;
+}
+
+.search input::placeholder {
+  color: #bfbfbf;
+}
+
+.filterButton {
+  padding: 8px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.filterButton:hover {
+  background-color: #fafafa;
+}
+
+.filterText {
+  font-size: 13px;
+  font-weight: 500;
+  color: #262626;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #8c8c8c;
+}
+
+.emptyState svg {
+  color: #bfbfbf;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 14px;
+  color: #8c8c8c;
+}

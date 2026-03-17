@@ -1,44 +1,181 @@
 import React from 'react';
 import { Drawer } from 'antd';
+import SellHistoryDrawer from '../drawers/SellHistoryDrawer';
+import BuyHistoryDrawer from '../drawers/BuyHistoryDrawer';
+import FavoritesDrawer from '../drawers/FavoritesDrawer';
+import TradeStatusDrawer from '../drawers/TradeStatusDrawer';
+import AccountManagementDrawer from '../drawers/AccountManagementDrawer';
+import AddressManagementDrawer from '../drawers/AddressManagementDrawer';
+import WithdrawDrawer from '../drawers/WithdrawDrawer';
+import ReviewsDrawer from '../drawers/ReviewsDrawer';
+
+interface MenuConfig {
+  [section: string]: {
+    [key: string]: string;
+  };
+}
 
 interface MyPageDrawerProps {
   type: string | null;
   open: boolean;
   onClose: () => void;
+  menuConfig: MenuConfig;
 }
 
-const MyPageDrawer: React.FC<MyPageDrawerProps> = ({ type, open, onClose }) => {
+// type에 따라 다른 drawer를 렌더링하는 통합 컴포넌트입니다.
+const MyPageDrawer: React.FC<MyPageDrawerProps> = ({ type, open, onClose, menuConfig }) => {
   const getTitle = (type: string) => {
-    switch (type) {
-      case 'sell': return '판매 내역';
-      case 'buy': return '구매 내역';
-      case 'delivery-request': return '택배 신청';
-      case 'delivery-history': return '택배 내역';
-      case 'favorites': return '찜한 상품';
-      case 'payment-settlement': return '안심결제 정산내역';
-      case 'account': return '계좌 관리';
-      case 'address': return '배송지 관리';
-      case 'reviews': return '거래 후기';
-      case 'withdraw': return '탈퇴하기';
-      default: return '내역';
+    for (const section of Object.values(menuConfig)) {
+      if (section[type]) {
+        return section[type];
+      }
     }
+    return '내역';
   };
 
-  const getSrc = (type: string) => {
-    switch (type) {
-      case 'sell': return 'https://webview.joongna.com/order-history/list/sell';
-      case 'buy': return 'https://webview.joongna.com/order-history/list/buy';
-      case 'delivery-request': return 'https://webview.joongna.com/delivery/request';
-      case 'delivery-history': return 'https://webview.joongna.com/delivery/history';
-      case 'favorites': return 'https://webview.joongna.com/favorites';
-      case 'payment-settlement': return 'https://webview.joongna.com/payment/settlement';
-      case 'account': return 'https://webview.joongna.com/account/manage';
-      case 'address': return 'https://webview.joongna.com/address/manage';
-      case 'reviews': return 'https://webview.joongna.com/reviews';
-      case 'withdraw': return 'https://webview.joongna.com/withdraw';
-      default: return '';
-    }
-  };
+  if (type === 'sell') {
+    return (
+      <Drawer
+        placement="right"
+        onClose={onClose}
+        closable={false}
+        open={open}
+        width={600}
+        styles={{ 
+          body: { padding: 0 }, 
+          header: { display: 'none' } 
+        }}            
+      >
+        <SellHistoryDrawer onClose={onClose} />
+      </Drawer>
+    );
+  }
+
+  if (type === 'buy') {
+    return (
+      <Drawer
+        placement="right"
+        onClose={onClose}
+        closable={false}
+        open={open}
+        width={600}
+        styles={{ 
+          body: { padding: 0 }, 
+          header: { display: 'none' } 
+        }}            
+      >
+        <BuyHistoryDrawer onClose={onClose} />
+      </Drawer>
+    );
+  }
+
+  if (type === 'favorites') {
+    return (
+      <Drawer
+        title={getTitle(type)}
+        placement="right"
+        onClose={onClose}
+        closable={false}
+        open={open}
+        width={600}
+        styles={{ 
+          body: { padding: 0 }, 
+          header: { display: 'none' } 
+        }}            
+      >
+        <FavoritesDrawer onClose={onClose} />
+      </Drawer>
+    );
+  }
+  if (type === 'trade-status') {
+    return (
+      <Drawer
+        placement="right"
+        onClose={onClose}
+        closable={false}
+        open={open}
+        width={600}
+        styles={{ 
+          body: { padding: 0 }, 
+          header: { display: 'none' } 
+        }}            
+      >
+        <TradeStatusDrawer onClose={onClose} />
+      </Drawer>
+    );
+  }
+  if (type === 'account') {
+    return (
+      <Drawer
+        placement="right"
+        onClose={onClose}
+        closable={false}
+        open={open}
+        width={600}
+        styles={{
+          body: { padding: 0 },
+          header: { display: 'none' },
+        }}
+      >
+        <AccountManagementDrawer onClose={onClose} />
+      </Drawer>
+    );
+  }
+
+  if (type === 'address') {
+    return (
+      <Drawer
+        placement="right"
+        onClose={onClose}
+        closable={false}
+        open={open}
+        width={600}
+        styles={{ 
+          body: { padding: 0 }, 
+          header: { display: 'none' } 
+        }}        
+      >
+        <AddressManagementDrawer onClose={onClose} />
+      </Drawer>
+    );
+  }
+
+  if (type === 'withdraw') {
+    return (
+      <Drawer
+        title={getTitle(type)}
+        placement="right"
+        onClose={onClose}
+        closable={false}
+        open={open}
+        width={600}
+        styles={{ 
+          body: { padding: 0 }, 
+          header: { display: 'none' } 
+        }}            
+      >
+        <WithdrawDrawer onClose={onClose} />
+      </Drawer>
+    );
+  }
+
+  if (type === 'reviews') {
+    return (
+      <Drawer
+        placement="right"
+        onClose={onClose}
+        closable={false}
+        open={open}
+        width={600}
+        styles={{
+          body: { padding: 0 },
+          header: { display: 'none' },
+        }}
+      >
+        <ReviewsDrawer onClose={onClose} />
+      </Drawer>
+    );
+  }
 
   return (
     <Drawer
@@ -48,13 +185,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({ type, open, onClose }) => {
       open={open}
       width={600}
     >
-      {type && (
-        <iframe
-          className="w-full h-full"
-          src={getSrc(type)}
-          allow="geolocation; clipboard-read; clipboard-write"
-        />
-      )}
+      {"대충 임시 텍스트"}
     </Drawer>
   );
 };

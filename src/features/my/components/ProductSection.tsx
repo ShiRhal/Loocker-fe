@@ -17,7 +17,7 @@ const mockProducts: Product[] = [
     price: 1200000,
     status: '판매중',
     date: '2024-03-10',
-    image: 'https://img2.joongna.com/images/item/202403/10/1710051234567.jpg'
+    image: ''
   },
   {
     id: 2,
@@ -25,7 +25,7 @@ const mockProducts: Product[] = [
     price: 900000,
     status: '예약중',
     date: '2024-03-08',
-    image: 'https://img2.joongna.com/images/item/202403/08/1710051234568.jpg'
+    image: ''
   },
   {
     id: 3,
@@ -33,7 +33,7 @@ const mockProducts: Product[] = [
     price: 2500000,
     status: '판매완료',
     date: '2024-03-05',
-    image: 'https://img2.joongna.com/images/item/202403/05/1710051234569.jpg'
+    image: ''
   }
 ];
 

@@ -1,0 +1,195 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+}
+
+/* 자체 헤더 스타일 */
+.header {
+  display: flex;
+  width: 100%;
+  padding: 16px 20px;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+  position: relative;
+  background-color: #fff;
+  z-index: 10;
+}
+
+.backButton {
+  position: absolute;
+  left: 20px;
+  background: none;
+  border: none;
+  color: #111827;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.title {
+  flex: 1;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* 빈 상태 (Empty State) 스타일 */
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+}
+
+.emptyIcon {
+  margin-bottom: 24px;
+}
+
+.emptyText {
+  font-size: 16px;
+  color: #111827;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.emptySubText {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.addButton {
+  padding: 12px 24px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.addButton:hover {
+  background-color: #f9fafb;
+}
+
+/* 폼 (Form) 스타일 */
+.form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 20px;
+}
+
+.inputGroup {
+  margin-bottom: 16px;
+}
+
+.input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 15px;
+  color: #111827;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
+
+.input:focus {
+  border-color: #111827;
+}
+
+.searchAddressBtn {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background-color: #f9fafb;
+  font-size: 15px;
+  color: #9ca3af;
+  text-align: left;
+  cursor: pointer;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.searchAddressBtnActive {
+  color: #111827;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-top: 8px;
+  width: fit-content;
+}
+
+.checkboxInput {
+  display: none;
+}
+
+.checkboxIcon {
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.checkboxText {
+  font-size: 15px;
+  color: #111827;
+}
+
+.footer {
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+  background-color: #fff;
+  margin-top: auto;
+}
+
+.submitButton {
+  width: 100%;
+  height: 52px;
+  background-color: #111827;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submitButtonDisabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}

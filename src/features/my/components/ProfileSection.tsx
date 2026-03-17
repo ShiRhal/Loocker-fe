@@ -35,9 +35,6 @@ const ProfileSection: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className={styles.profileDescription}>
-        <p className={styles.profileDescriptionText}>앱에서 가게 소개 작성하고 신뢰도를 높여 보세요.</p>
-      </div>
       <div className={styles.trustScore}>
         <div className={styles.trustScoreContainer}>
           <div className={styles.trustScoreHeader}>
