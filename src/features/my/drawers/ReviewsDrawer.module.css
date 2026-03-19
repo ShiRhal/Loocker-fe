@@ -1,0 +1,45 @@
+.innerMain {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.section {
+  padding: 20px;
+  background-color: #fff;
+}
+
+.sectionHeader {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 16px;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 0;
+  gap: 12px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.emptyIcon {
+  display: block;
+}
+
+.emptyText {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.divider {
+  height: 6px;
+  background-color: #f3f4f6;
+}
+

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "../../layout/AppLayout";
 import HomePage from "../../features/home/pages/HomePage";
 import SignInPage from "../../features/auth/pages/SignInPage";
+import MyPage from "../../features/my/pages/MyPage";
 
 export default function AppRouter() {
   return (
@@ -10,6 +11,7 @@ export default function AppRouter() {
         {/* ✅ NavBar 필요한 페이지들 */}
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/mypage" element={<MyPage />} />
         </Route>
 
         {/* ✅ NavBar 없는 페이지 */}
