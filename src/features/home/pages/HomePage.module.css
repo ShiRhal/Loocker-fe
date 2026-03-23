@@ -1,15 +1,26 @@
+/*
+  홈 화면 전체 레이아웃 스타일입니다.
+  현재 단계에서는 좌측 본문 영역과 우측 최근본상품 박스의
+  2열 구조를 먼저 만드는 것이 목적입니다.
+*/
+
 .page {
+  /* 본문과 최근본상품 박스를 좌우 2열로 배치 */
   display: grid;
   grid-template-columns: minmax(0, 1fr) 110px;
   gap: 32px;
+
+  /* 두 영역의 시작점을 위쪽으로 맞춤 */
   align-items: start;
 }
 
 .content {
+  /* 그리드 내부에서 본문이 넘치지 않도록 최소 폭 처리 */
   min-width: 0;
 }
 
 .placeholder {
+  /* 현재는 실제 본문 대신 임시 영역만 넣어둔 상태 */
   min-height: 1200px;
   border-radius: 12px;
   background: #fafafa;
@@ -17,6 +28,7 @@
 
 @media (max-width: 1200px) {
   .page {
+    /* 화면이 좁아지면 우측 박스를 아래로 내리고 1열 구조로 변경 */
     grid-template-columns: 1fr;
   }
 }
