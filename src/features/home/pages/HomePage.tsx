@@ -1,3 +1,16 @@
+import RecentViewedSidebar from "../components/RecentViewedSidebar";
+import styles from "./HomePage.module.css";
+
 export default function HomePage() {
-  return <div style={{ minHeight: 400 }}>{/* 지금은 흰 화면 유지 */}</div>;
+  return (
+    <div className={styles.page}>
+      <section className={styles.content}>
+        <div className={styles.placeholder}>
+          Home content area
+        </div>
+      </section>
+
+      <RecentViewedSidebar items={[]} />
+    </div>
+  );
 }

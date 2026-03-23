@@ -1,0 +1,22 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px;
+  gap: 32px;
+  align-items: start;
+}
+
+.content {
+  min-width: 0;
+}
+
+.placeholder {
+  min-height: 1200px;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+@media (max-width: 1200px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+}
