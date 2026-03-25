@@ -1,0 +1,28 @@
+/*
+  상품 카드 그리드 스타일입니다.
+  데스크톱 기준 한 줄에 5개의 카드가 보이도록 구성합니다.
+*/
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 26px 18px;
+}
+
+@media (max-width: 1200px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

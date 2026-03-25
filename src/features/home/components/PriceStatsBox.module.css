@@ -1,0 +1,76 @@
+/*
+  현재 페이지 기준 가격 통계 영역 스타일입니다.
+  전체 높이와 텍스트 크기를 줄여 더 조밀하게 맞춥니다.
+*/
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon {
+  font-size: 24px;
+  color: #60a5fa;
+  line-height: 1;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #111111;
+}
+
+.section {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  background: #f5f6f7;
+  border-radius: 6px;
+  min-height: 96px;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.item:not(:last-child) {
+  border-right: 1px solid #d9dde3;
+}
+
+.label {
+  margin: 0;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111111;
+}
+
+@media (max-width: 900px) {
+  .section {
+    grid-template-columns: 1fr;
+  }
+
+  .item {
+    min-height: 84px;
+  }
+
+  .item:not(:last-child) {
+    border-right: 0;
+    border-bottom: 1px solid #d9dde3;
+  }
+}
