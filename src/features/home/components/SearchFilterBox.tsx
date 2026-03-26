@@ -59,8 +59,7 @@ export default function SearchFilterBox() {
           <div className={styles.label}>옵션</div>
           <div className={styles.value}>
             <div className={styles.optionRow}>
-              <span className={styles.optionItem}>무료배송</span>
-              <span className={styles.optionItem}>인증셀러 상품</span>
+              <span className={styles.optionItem}>보관함 거래 가능</span>
               <span className={`${styles.optionItem} ${styles.optionItemActive}`}>
                 판매완료 상품 제외
               </span>
