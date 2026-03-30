@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import styles from './AddressManagementDrawer.module.css';
 import MyDrawerLayout from './components/MyDrawerLayout';
+import { myPageApi, type UserInfoAddress } from '../api/userInfoApi';
 
 interface AddressManagementDrawerProps {
   onClose: () => void;
+  userId: number | null;
+  addresses: UserInfoAddress[];
+  onRefreshAddresses: () => Promise<void>;
 }
 
 interface AddressFormData {
@@ -15,8 +19,15 @@ interface AddressFormData {
   isMain: boolean;
 }
 
-const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({ onClose }) => {
+const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({
+  onClose,
+  userId,
+  addresses,
+  onRefreshAddresses,
+}) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<AddressFormData>({
     title: '',
     name: '고호진', // 초기값 세팅
@@ -40,22 +51,81 @@ const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({ onClo
     setFormData((prev) => ({ ...prev, address: '서울 강남구 테헤란로 123' }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('등록할 배송지 정보:', formData);
-    // TODO: 배송지 등록 API 연동 후 목록으로 이동
-    setIsAdding(false);
+    if (userId === null || submitting) return;
+    const mergedAddress = `${formData.address} ${formData.detailAddress}`.trim();
+    if (!mergedAddress) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await myPageApi.createAddress({
+        USER_ID: userId,
+        ADDRESS: mergedAddress,
+      });
+      await onRefreshAddresses();
+      setIsAdding(false);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '배송지 등록에 실패했습니다.';
+      setError(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSetDefault = async (address: UserInfoAddress) => {
+    if (userId === null || submitting || address.IS_DEFAULT) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await myPageApi.updateAddress({
+        USER_ID: userId,
+        ADDRESS_ID: address.ADDRESS_ID,
+        ADDRESS: address.ADDRESS,
+        IS_DEFAULT: true,
+      });
+      await onRefreshAddresses();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '기본 배송지 설정에 실패했습니다.';
+      setError(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteAddress = async (address: UserInfoAddress) => {
+    if (userId === null || submitting) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await myPageApi.deleteAddress({
+        USER_ID: userId,
+        ADDRESS_ID: address.ADDRESS_ID,
+      });
+      await onRefreshAddresses();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '배송지 삭제에 실패했습니다.';
+      setError(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // 폼 유효성 검사 (필수값 입력 확인)
-  const isFormValid = formData.title && formData.name && formData.phone && formData.address && formData.detailAddress;
+  const isFormValid =
+    formData.title &&
+    formData.name &&
+    formData.phone &&
+    formData.address &&
+    formData.detailAddress &&
+    !submitting;
 
   // 배송지 추가 폼 화면
   if (isAdding) {
     return (
       <MyDrawerLayout
         title="배송지 추가"
-        onBack={() => setIsAdding(false)}
+        onBack={submitting ? () => undefined : () => setIsAdding(false)}
         mainClassName={styles.main}
         footer={
           <button
@@ -140,6 +210,7 @@ const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({ onClo
               </svg>
               <span className={styles.checkboxText}>대표 배송지로 설정</span>
             </label>
+            {error ? <p role="alert">{error}</p> : null}
           </form>
       </MyDrawerLayout>
     );
@@ -148,17 +219,52 @@ const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({ onClo
   // 초기 상태 (빈 배송지 목록) 화면
   return (
     <MyDrawerLayout title="배송지 관리" onBack={onClose} mainClassName={styles.main}>
+      {addresses.length > 0 ? (
         <div className={styles.emptyState}>
+          {error ? <p role="alert">{error}</p> : null}
+          {addresses.map((address) => (
+            <div key={address.ADDRESS_ID}>
+              <h3>
+                {address.ADDRESS} {address.IS_DEFAULT ? '(기본)' : ''}
+              </h3>
+              <p>{address.IS_ACTIVE ? '활성' : '비활성'}</p>
+              <p>{address.CREATED_AT || '-'}</p>
+              <button
+                type="button"
+                className={styles.addButton}
+                onClick={() => void handleSetDefault(address)}
+                disabled={submitting || userId === null || address.IS_DEFAULT}
+              >
+                기본 배송지 설정
+              </button>
+              <button
+                type="button"
+                className={styles.addButton}
+                onClick={() => void handleDeleteAddress(address)}
+                disabled={submitting || userId === null}
+              >
+                배송지 삭제
+              </button>
+            </div>
+          ))}
+          <button className={styles.addButton} onClick={() => setIsAdding(true)} disabled={userId === null}>
+            배송지 추가
+          </button>
+        </div>
+      ) : (
+        <div className={styles.emptyState}>
+          {error ? <p role="alert">{error}</p> : null}
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.emptyIcon}>
             <path d="M2.55228 47.2385C1.43253 47.5438 0.40507 46.5164 0.710455 45.3966L5.32307 28.4837L19.4652 42.6258L2.55228 47.2385Z" fill="#DDE1E4" />
             <path fillRule="evenodd" clipRule="evenodd" d="M4.95771e-06 24C7.69579e-06 10.7452 10.7452 -1.37836e-06 24 -8.87953e-07C37.2548 -3.9755e-07 48 10.7452 48 24C48 37.2548 37.2548 48 24 48C10.7452 48 2.21964e-06 37.2548 4.95771e-06 24ZM17 23.9998C17 22.3438 15.656 20.9998 14 20.9998C12.344 20.9998 11 22.3438 11 23.9998C11 25.6558 12.344 26.9998 14 26.9998C15.656 26.9998 17 25.6558 17 23.9998ZM24 20.9998C25.656 20.9998 27 22.3438 27 23.9998C27 25.6558 25.656 26.9998 24 26.9998C22.344 26.9998 21 25.6558 21 23.9998C21 22.3438 22.344 20.9998 24 20.9998ZM37 23.9998C37 22.3438 35.656 20.9998 34 20.9998C32.344 20.9998 31 22.3438 31 23.9998C31 25.6558 32.344 26.9998 34 26.9998C35.656 26.9998 37 25.6558 37 23.9998Z" fill="#DDE1E4" />
           </svg>
           <p className={styles.emptyText}>등록된 배송지 정보가 없습니다.</p>
           <p className={styles.emptySubText}>배송지는 최대 5개까지 등록할 수 있습니다.</p>
-          <button className={styles.addButton} onClick={() => setIsAdding(true)}>
+          <button className={styles.addButton} onClick={() => setIsAdding(true)} disabled={userId === null}>
             배송지 추가
           </button>
         </div>
+      )}
     </MyDrawerLayout>
   );
 };

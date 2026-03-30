@@ -96,3 +96,38 @@
   font-size: 14px;
   color: #8c8c8c;
 }
+
+.listTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.listTable th {
+  text-align: left;
+  padding: 8px 0;
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.listTable td {
+  padding: 10px 0;
+  font-size: 13px;
+  color: #111827;
+  vertical-align: top;
+}
+
+.listRow {
+  cursor: pointer;
+}
+
+.listRow:hover {
+  background-color: #f9fafb;
+}
+
+.titleCell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

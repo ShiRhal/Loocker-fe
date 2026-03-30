@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './WithdrawDrawer.module.css';
 import MyDrawerLayout from './components/MyDrawerLayout';
+import { myPageApi } from '../api/userInfoApi';
 
 interface WithdrawDrawerProps {
   onClose: () => void;
+  userId: number | null;
 }
 
 const reasonsList = [
@@ -14,9 +17,12 @@ const reasonsList = [
   { id: 'ETC', label: '기타' },
 ];
 
-const WithdrawDrawer: React.FC<WithdrawDrawerProps> = ({ onClose }) => {
+const WithdrawDrawer: React.FC<WithdrawDrawerProps> = ({ onClose, userId }) => {
+  const navigate = useNavigate();
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
   const [etcContent, setEtcContent] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleToggleReason = (id: string) => {
     setSelectedReasons((prev) =>
@@ -24,15 +30,26 @@ const WithdrawDrawer: React.FC<WithdrawDrawerProps> = ({ onClose }) => {
     );
   };
 
-  const isFormValid = selectedReasons.length > 0;
+  const isFormValid = selectedReasons.length > 0 && userId !== null && !submitting;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isFormValid) return;
-    console.log('탈퇴 사유:', selectedReasons);
-    if (selectedReasons.includes('ETC')) {
-      console.log('기타 상세 사유:', etcContent);
+    if (userId === null) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await myPageApi.deleteUser({ USER_ID: userId });
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('nickname');
+      onClose();
+      navigate('/signin', { replace: true });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '회원 탈퇴에 실패했습니다.';
+      setError(message);
+    } finally {
+      setSubmitting(false);
     }
-    // TODO: 탈퇴 API 연동
   };
 
   return (
@@ -45,12 +62,13 @@ const WithdrawDrawer: React.FC<WithdrawDrawerProps> = ({ onClose }) => {
           type="button"
           className={`${styles.submitButton} ${isFormValid ? styles.submitButtonActive : styles.submitButtonDisabled}`}
           disabled={!isFormValid}
-          onClick={handleSubmit}
+          onClick={() => void handleSubmit()}
         >
           회원 탈퇴
         </button>
       }
     >
+        {error ? <p role="alert">{error}</p> : null}
         {/* 탈퇴 사유 섹션 */}
         <section className={styles.section}>
           <h2 className={styles.headline}>

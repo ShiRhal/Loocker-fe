@@ -136,16 +136,70 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
   position: relative;
+  padding: 0 20px 20px;
 }
 
-.productList {
-  list-style: none;
-  margin: 0;
-  padding: 20px;
-  flex: 1;
-  overflow-y: auto;
+.listTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.listTable thead th {
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  padding: 12px 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.listRow {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.listRow:hover {
+  background-color: #f9fafb;
+}
+
+.listTable tbody td {
+  padding: 12px 8px;
+  font-size: 14px;
+  color: #111827;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.titleCell {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unlikeButton {
+  border: 1px solid #d1d5db;
+  background-color: #fff;
+  color: #374151;
+  border-radius: 6px;
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.unlikeButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.errorText {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #b91c1c;
 }
 
 .observer {

@@ -7,9 +7,17 @@ type MyDrawerLayoutProps = {
   children: React.ReactNode;
   footer?: React.ReactNode;
   mainClassName?: string;
+  headerAction?: React.ReactNode;
 };
 
-export default function MyDrawerLayout({ title, onBack, children, footer, mainClassName }: MyDrawerLayoutProps) {
+export default function MyDrawerLayout({
+  title,
+  onBack,
+  children,
+  footer,
+  mainClassName,
+  headerAction,
+}: MyDrawerLayoutProps) {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -25,6 +33,7 @@ export default function MyDrawerLayout({ title, onBack, children, footer, mainCl
           </svg>
         </button>
         <h1 className={styles.title}>{title}</h1>
+        {headerAction ? <div className={styles.headerAction}>{headerAction}</div> : null}
       </header>
 
       <main className={mainClassName ? `${styles.main} ${mainClassName}` : styles.main}>{children}</main>

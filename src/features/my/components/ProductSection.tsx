@@ -1,66 +1,33 @@
 import React, { useMemo, useState } from 'react';
 import styles from '../pages/MyPage.module.css';
+import type { UserInfoProduct } from '../api/userInfoApi';
 
-type Product = {
-  id: number;
-  name: string;
-  price: number;
-  status: '판매중' | '예약중' | '판매완료';
-  date: string;
-  image: string;
-};
+interface ProductSectionProps {
+  products: UserInfoProduct[];
+}
 
-const mockProducts: Product[] = [
-  {
-    id: 1,
-    name: '아이폰 14 프로',
-    price: 1200000,
-    status: '판매중',
-    date: '2024-03-10',
-    image: ''
-  },
-  {
-    id: 2,
-    name: '삼성 갤럭시 S23',
-    price: 900000,
-    status: '예약중',
-    date: '2024-03-08',
-    image: ''
-  },
-  {
-    id: 3,
-    name: '맥북 프로 16인치',
-    price: 2500000,
-    status: '판매완료',
-    date: '2024-03-05',
-    image: ''
-  }
-];
+const tabLabels = ['전체'] as const;
 
-const tabLabels = ['전체', '판매중', '예약중', '판매완료'] as const;
-
-const ProductSection: React.FC = () => {
+const ProductSection: React.FC<ProductSectionProps> = ({ products }) => {
   const [selectedTab, setSelectedTab] = useState<string>('전체');
   const [sortOrder, setSortOrder] = useState<'latest' | 'low' | 'high'>('latest');
 
   const filteredProducts = useMemo(() => {
-    if (selectedTab === '전체') return mockProducts;
-    return mockProducts.filter((product) => product.status === selectedTab);
-  }, [selectedTab]);
+    if (selectedTab === '전체') return products;
+    return products;
+  }, [products, selectedTab]);
 
-  const handleSelectProduct = (product: Product) => {
+  const handleSelectProduct = (product: UserInfoProduct) => {
     // TODO: 제품 상세 페이지로 이동하는 등의 동작을 구현하세요.
     console.log('선택된 상품', product);
   };
 
   const sortedProducts = useMemo(() => {
     const sorted = [...filteredProducts];
-    if (sortOrder === 'latest') {
-      sorted.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    } else if (sortOrder === 'low') {
-      sorted.sort((a, b) => a.price - b.price);
-    } else {
-      sorted.sort((a, b) => b.price - a.price);
+    if (sortOrder === 'low') {
+      sorted.sort((a, b) => a.VIEW_COUNT - b.VIEW_COUNT);
+    } else if (sortOrder === 'high') {
+      sorted.sort((a, b) => b.VIEW_COUNT - a.VIEW_COUNT);
     }
     return sorted;
   }, [filteredProducts, sortOrder]);
@@ -123,9 +90,9 @@ const ProductSection: React.FC = () => {
           </thead>
           <tbody className={styles.tableBody}>
             {sortedProducts.length > 0 ? (
-              sortedProducts.map((product) => (
+              sortedProducts.map((product, index) => (
                 <tr
-                  key={product.id}
+                  key={`${product.TITLE}-${index}`}
                   className={styles.tableRow}
                   onClick={() => handleSelectProduct(product)}
                   tabIndex={0}
@@ -134,8 +101,8 @@ const ProductSection: React.FC = () => {
                   <td className={styles.productCell}>
                     <div className={styles.productInfo}>
                       <img
-                        src={product.image}
-                        alt={product.name}
+                        src={product.IMAGE_URL}
+                        alt={product.TITLE}
                         className={styles.productImage}
                         onError={(e) => {
                           const target = e.currentTarget as HTMLImageElement;
@@ -143,24 +110,24 @@ const ProductSection: React.FC = () => {
                             'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22%3E%3Crect width=%2264%22 height=%2264%22 fill=%22%23e5e7eb%22/%3E%3Ctext x=%2232%22 y=%2236%22 font-size=%2212%22 text-anchor=%22middle%22 fill=%22%23787689%22%3E%3F%3C/text%3E%3C/svg%3E';
                         }}
                       />
-                      <span className={styles.productName}>{product.name}</span>
+                      <span className={styles.productName}>{product.TITLE || '-'}</span>
                     </div>
                   </td>
-                  <td className={styles.priceCell}>{product.price.toLocaleString()}원</td>
+                  <td className={styles.priceCell}>-</td>
                   <td className={styles.productCell}>
                     <span
                       className={`${styles.statusBadge} ${
-                        product.status === '판매중'
+                        product.PRODUCT_STATUS_CODE === '판매중'
                           ? styles.statusSelling
-                          : product.status === '예약중'
-                          ? styles.statusReserved
-                          : styles.statusSold
+                          : product.PRODUCT_STATUS_CODE === '예약중'
+                            ? styles.statusReserved
+                            : styles.statusSold
                       }`}
                     >
-                      {product.status}
+                      {product.PRODUCT_STATUS_CODE || '-'}
                     </span>
                   </td>
-                  <td className={styles.dateCell}>{product.date}</td>
+                  <td className={styles.dateCell}>-</td>
                 </tr>
               ))
             ) : (

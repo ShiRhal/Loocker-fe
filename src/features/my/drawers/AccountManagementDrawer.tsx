@@ -1,26 +1,46 @@
 import React, { useEffect, useState } from 'react';
 import styles from './AccountManagementDrawer.module.css';
 import MyDrawerLayout from './components/MyDrawerLayout';
+import { myPageApi, type UserInfoAccount } from '../api/userInfoApi';
 
 interface AccountManagementDrawerProps {
   onClose: () => void;
+  userId: number | null;
+  accounts: UserInfoAccount[];
+  onRefreshAccounts: () => Promise<void>;
 }
 
 const banks = [
-    '국민은행',
-    '우리은행',
-    '신한은행',
-    '하나은행',
-    '농협은행',
-    '기업은행',
-    'SC은행',
-    '씨티은행',
-    '경남은행',
-    '대구은행',
-    '부산은행',
-    '광주은행',
-    '전북은행',
-  ];
+  '국민은행',
+  '우리은행',
+  '신한은행',
+  '하나은행',
+  '농협은행',
+  '기업은행',
+  'SC은행',
+  '씨티은행',
+  '경남은행',
+  '대구은행',
+  '부산은행',
+  '광주은행',
+  '전북은행',
+];
+
+const BANK_LOGO_MAP: Record<string, string> = {
+  국민은행: 'https://img2.joongna.com/bank/kb.png',
+  우리은행: 'https://img2.joongna.com/bank/woori.png',
+  신한은행: 'https://img2.joongna.com/bank/shinhan.png',
+  하나은행: 'https://img2.joongna.com/bank/hana.png',
+  농협은행: 'https://img2.joongna.com/bank/nh.png',
+  기업은행: 'https://img2.joongna.com/bank/ibk.png',
+  SC은행: 'https://img2.joongna.com/bank/sc.png',
+  씨티은행: 'https://img2.joongna.com/bank/citi.png',
+  경남은행: 'https://img2.joongna.com/bank/kn.png',
+  대구은행: 'https://img2.joongna.com/bank/dgb.png',
+  부산은행: 'https://img2.joongna.com/bank/bnk.png',
+  광주은행: 'https://img2.joongna.com/bank/kjbank.png',
+  전북은행: 'https://img2.joongna.com/bank/jb.png',
+};
 
 interface AccountFormData {
   accountHolder: string;
@@ -29,9 +49,17 @@ interface AccountFormData {
   isMainAccount: boolean;
 }
 
-const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ onClose }) => {
+const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({
+  onClose,
+  userId,
+  accounts,
+  onRefreshAccounts,
+}) => {
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [isBankMenuOpen, setIsBankMenuOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<AccountFormData>({
     accountHolder: '고호진', // 뒤로가기 시 복원을 위해 기본값 세팅
     bank: '',
@@ -48,10 +76,12 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ onClo
         isMainAccount: false,
       });
       setIsBankMenuOpen(false);
+      setIsEditMode(false);
     }
   }, [isRegistering]);
 
   const handleRegisterAccount = () => {
+    setError(null);
     setIsRegistering(true);
   };
 
@@ -69,15 +99,70 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ onClo
     setFormData((prev) => ({ ...prev, isMainAccount: e.target.checked }));
   };
 
-  const isFormValid = formData.bank && formData.accountNo.length > 0;
+  const isFormValid = formData.bank && formData.accountNo.length > 0 && !submitting;
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isFormValid) {
-      console.log('계좌 등록:', formData);
-      setIsRegistering(false);
+    if (isFormValid && userId !== null) {
+      setError(null);
+      setSubmitting(true);
+      try {
+        await myPageApi.createAccount({
+          USER_ID: userId,
+          BANK_NAME: formData.bank,
+          ACCOUNT_NUMBER: formData.accountNo,
+        });
+        await onRefreshAccounts();
+        setIsRegistering(false);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : '계좌 등록에 실패했습니다.';
+        setError(message);
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
+
+  const handleSetDefault = async (account: UserInfoAccount) => {
+    if (userId === null || submitting || account.IS_DEFAULT) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await myPageApi.updateAccount({
+        USER_ID: userId,
+        ACCOUNT_ID: account.ACCOUNT_ID,
+        BANK_NAME: account.BANK_NAME,
+        ACCOUNT_NUMBER: account.ACCOUNT_NUMBER,
+        IS_DEFAULT: true,
+      });
+      await onRefreshAccounts();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '대표계좌 설정에 실패했습니다.';
+      setError(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteAccount = async (account: UserInfoAccount) => {
+    if (userId === null || submitting) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await myPageApi.deleteAccount({
+        USER_ID: userId,
+        ACCOUNT_ID: account.ACCOUNT_ID,
+      });
+      await onRefreshAccounts();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '계좌 삭제에 실패했습니다.';
+      setError(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isNoUser = userId === null;
 
   const handleBack = () => {
     if (isRegistering) {
@@ -87,11 +172,20 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ onClo
     onClose();
   };
 
+  const getBankLogo = (bankName: string) => {
+    return BANK_LOGO_MAP[bankName] || '';
+  };
+
+  const maskAccountNumber = (accountNumber: string) => {
+    if (accountNumber.length <= 8) return accountNumber;
+    return `${accountNumber.slice(0, 4)}-${accountNumber.slice(4, 8)}-${accountNumber.slice(8)}`;
+  };
+
   if (isRegistering) { // 계좌 등록
     return (
       <MyDrawerLayout
         title="계좌 등록"
-        onBack={handleBack}
+        onBack={submitting ? () => undefined : handleBack}
         footer={
           <button
             type="submit"
@@ -193,6 +287,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ onClo
           </svg>
           <span>대표계좌로 설정</span>
         </label>
+        {error ? <p className={styles.errorText} role="alert">{error}</p> : null}
 
         <div className={styles.notice}>
           <div>
@@ -206,63 +301,85 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ onClo
     );
     }
 
-  return ( // 계좌 목록
-    <MyDrawerLayout title="계좌 관리" onBack={handleBack} mainClassName={styles.main}>
-      <div role="main" aria-label="본문 영역" className={styles.emptyStateContainer}>
-          <svg
-            width="80"
-            height="80"
-            viewBox="0 0 80 80"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className={styles.emptyIcon}
-            aria-hidden="true"
+  return (
+    <MyDrawerLayout
+      title="계좌 관리"
+      onBack={handleBack}
+      mainClassName={styles.main}
+      headerAction={
+        accounts.length > 0 ? (
+          <button
+            type="button"
+            className={styles.headerEditButton}
+            onClick={() => setIsEditMode((prev) => !prev)}
+            disabled={submitting || isNoUser}
           >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M22.1657 40.2874C22.0982 40.5494 22.0473 40.8186 22.014 41.0937L20.5458 53.2329C20.0987 56.9295 22.9843 60.1851 26.7078 60.1851H52.9049C55.9938 60.1851 58.6126 57.9138 59.0494 54.856L60.7836 42.7168C60.9037 41.8759 60.8501 41.0549 60.6518 40.2874H22.1657Z"
-              fill="url(#paint0_linear_13883_15502)"
-            />
-            <path
-              d="M32.168 60.6604C32.168 62.1366 31.0487 63.3333 29.668 63.3333C28.2873 63.3333 27.168 62.1366 27.168 60.6604C27.168 59.1841 29.668 55 29.668 55C29.668 55 32.168 59.1841 32.168 60.6604Z"
-              fill="#73ACFF"
-            />
-            <circle cx="32.1667" cy="50.0002" r="1.66667" fill="white" />
-            <circle cx="40.4987" cy="50.0002" r="1.66667" fill="white" />
-            <circle cx="48.8346" cy="50.0002" r="1.66667" fill="white" />
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M22.1657 41.5645C22.0982 41.3024 22.0473 41.0332 22.014 40.7581L20.5458 28.6189C20.0987 24.9223 22.9843 21.6667 26.7078 21.6667H52.9049C55.9938 21.6667 58.6126 23.938 59.0494 26.9958L60.7836 39.135C60.9037 39.9759 60.8501 40.7969 60.6518 41.5645H22.1657Z"
-              fill="#E7EBEE"
-            />
-            <rect x="25.6719" y="27.8735" width="13.9655" height="3.10345" rx="1.55172" fill="#CED6DA" />
-            <rect x="25.6719" y="34.0806" width="23.2759" height="3.10345" rx="1.55172" fill="#CED6DA" />
-            <defs>
-              <linearGradient
-                id="paint0_linear_13883_15502"
-                x1="37.569"
-                y1="40.2874"
-                x2="40.6724"
-                y2="67.4425"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop stopColor="#CBD4DA" />
-                <stop offset="1" stopColor="#DDE5E9" />
-              </linearGradient>
-            </defs>
-          </svg>
+            {isEditMode ? '완료' : '편집'}
+          </button>
+        ) : null
+      }
+    >
+      <div role="main" aria-label="본문 영역" className={styles.listContainer}>
+        {error ? <p className={styles.errorText} role="alert">{error}</p> : null}
+        <div className={styles.cardList}>
+          {accounts.map((account) => {
+            const bankLogo = getBankLogo(account.BANK_NAME);
+            return (
+              <div key={account.ACCOUNT_ID} className={styles.accountCard} tabIndex={0}>
+                <div className={styles.accountCardHeader}>
+                  <div className={styles.bankInfo}>
+                    {bankLogo ? (
+                      <img src={bankLogo} alt={account.BANK_NAME} className={styles.bankLogo} />
+                    ) : (
+                      <span className={styles.bankLogoFallback} aria-hidden="true" />
+                    )}
+                    <span className={styles.bankName}>{account.BANK_NAME}</span>
+                  </div>
+                  {account.IS_DEFAULT ? <span className={styles.defaultBadge}>대표계좌</span> : null}
+                </div>
+                <div className={styles.accountDetailRows}>
+                  <div className={styles.accountDetailRow}>
+                    <span className={styles.detailLabel}>예금주</span>
+                    <span className={styles.detailValue}>{formData.accountHolder}</span>
+                  </div>
+                  <div className={styles.accountDetailRow}>
+                    <span className={styles.detailLabel}>계좌번호</span>
+                    <span className={styles.detailValue}>{maskAccountNumber(account.ACCOUNT_NUMBER)}</span>
+                  </div>
+                </div>
+                {isEditMode ? (
+                  <div className={styles.cardActionRow}>
+                    <button
+                      type="button"
+                      className={styles.cardActionButton}
+                      onClick={() => void handleSetDefault(account)}
+                      disabled={submitting || account.IS_DEFAULT || isNoUser}
+                    >
+                      대표로 설정
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.cardActionButtonDanger}
+                      onClick={() => void handleDeleteAccount(account)}
+                      disabled={submitting || isNoUser}
+                    >
+                      삭제
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
 
-          <div className={styles.emptyStateText}>
-            <h3 className={styles.emptyStateTitle}>등록된 계좌가 없습니다.</h3>
-            <p className={styles.emptyStateDescription}>
-              판매금 및 환불금을 빠르게 정산받으시려면 계좌를 등록해 주세요.
-            </p>
-          </div>
-
-          <button className={styles.registerButton} onClick={handleRegisterAccount}>
-            <svg width="12" height="12" fill="none" viewBox="0 0 16 16" aria-hidden="true">
+        <button
+          type="button"
+          className={styles.addAccountButton}
+          onClick={handleRegisterAccount}
+          disabled={isNoUser || submitting}
+        >
+          <span className={styles.addButtonInner}>
+            <svg width="16" height="16" fill="none" viewBox="0 0 16 16" aria-hidden="true">
               <path
                 fill="currentColor"
                 fillRule="evenodd"
@@ -270,8 +387,27 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ onClo
                 clipRule="evenodd"
               />
             </svg>
-            <span>계좌 등록하기</span>
-          </button>
+            <span>계좌 추가</span>
+          </span>
+        </button>
+
+        <div className={styles.noticeBox}>
+          <div className={styles.noticeHeader}>
+            <svg width="16" height="16" viewBox="0 0 49 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <g>
+                <path d="M24.5 0C11.2452 0 0.5 10.7452 0.5 24C0.5 37.2548 11.2452 48 24.5 48C37.7548 48 48.5 37.2548 48.5 24C48.5 10.7452 37.7548 0 24.5 0Z" fill="currentColor" />
+                <path d="M24.6 30.1995C25.6488 30.1995 26.5 31.0507 26.5 32.0995C26.5 33.1483 25.6488 33.9995 24.6 33.9995C23.5512 33.9995 22.7 33.1483 22.7 32.0995C22.7 31.0507 23.5512 30.1995 24.6 30.1995Z" fill="white" />
+                <path d="M24.5 13.7991L24.5 26.5991" stroke="white" strokeWidth="3" strokeMiterlimit="10" strokeLinecap="round" />
+              </g>
+            </svg>
+            <span>정산계좌 안내</span>
+          </div>
+          <ul className={styles.noticeList}>
+            <li>계좌정보는 최대 2개까지 등록 가능합니다.</li>
+            <li>판매대금은 설정하신 대표계좌로 정산됩니다.</li>
+            <li>대표계좌 변경 시, 진행 중 거래는 기존 계좌로 정산되니 참고해 주세요.</li>
+          </ul>
+        </div>
       </div>
     </MyDrawerLayout>
   );

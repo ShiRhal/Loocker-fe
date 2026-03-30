@@ -1,58 +1,125 @@
 import React, { useState } from 'react';
 import styles from './FavoritesDrawer.module.css';
 import MyDrawerLayout from './components/MyDrawerLayout';
+import { myPageApi, type UserInfoProduct } from '../api/userInfoApi';
 
 interface FavoritesDrawerProps {
   onClose: () => void;
+  userId: number | null;
+  wishlist: UserInfoProduct[];
+  onRefreshWishlist: () => Promise<void>;
 }
 
-const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({ onClose }) => {
+const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({
+  onClose,
+  userId,
+  wishlist,
+  onRefreshWishlist,
+}) => {
   const [keyword, setKeyword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const normalizedKeyword = keyword.trim().toLowerCase();
+  const filteredWishlist = wishlist.filter((item) =>
+    item.TITLE.toLowerCase().includes(normalizedKeyword),
+  );
+
+  const handleWishlistRemove = async (item: UserInfoProduct) => {
+    if (userId === null || item.PRODUCT_ID == null || submitting) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await myPageApi.saveWishlist({
+        USER_ID: userId,
+        PRODUCT_ID: item.PRODUCT_ID,
+      });
+      await onRefreshWishlist();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '찜 해제에 실패했습니다.';
+      setError(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <MyDrawerLayout title="찜한 상품" onBack={onClose} mainClassName={styles.content}>
-        <div className={styles.scrollArea}>
-          <div className={styles.searchSection}>
-            <form className={styles.search}>
-              <button type="submit">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M10.0278 19.0556C14.3233 19.0556 17.8056 15.5733 17.8056 11.2778C17.8056 6.98223 14.3233 3.5 10.0278 3.5C5.73223 3.5 2.25 6.98223 2.25 11.2778C2.25 15.5733 5.73223 19.0556 10.0278 19.0556Z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="transparent"
-                  />
-                  <path
-                    d="M21 21.8999L15.5 16.8999"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-              <input
-                id="keyword"
-                type="search"
-                autoComplete="off"
-                className={styles.searchInput}
-                placeholder="상품명을 입력해주세요"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-              />
-            </form>
-          </div>
+      <div className={styles.scrollArea}>
+        <div className={styles.searchSection}>
+          <form className={styles.search}>
+            <button type="submit">
+              <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M10.0278 19.0556C14.3233 19.0556 17.8056 15.5733 17.8056 11.2778C17.8056 6.98223 14.3233 3.5 10.0278 3.5C5.73223 3.5 2.25 6.98223 2.25 11.2778C2.25 15.5733 5.73223 19.0556 10.0278 19.0556Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="transparent"
+                />
+                <path
+                  d="M21 21.8999L15.5 16.8999"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            <input
+              id="keyword"
+              type="search"
+              autoComplete="off"
+              className={styles.searchInput}
+              placeholder="상품명을 입력해주세요"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+          </form>
+        </div>
 
-          <div className={styles.listContainer}>
-            <ul className={styles.productList}></ul>
-            <div id="observer" className={styles.observer} aria-hidden="true"></div>
+        <div className={styles.listContainer}>
+          {error ? <p className={styles.errorText}>{error}</p> : null}
+          {filteredWishlist.length > 0 ? (
+            <table className={styles.listTable}>
+              <thead>
+                <tr>
+                  <th>상품</th>
+                  <th>상태</th>
+                  <th>조회수</th>
+                  <th>찜</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredWishlist.map((item, index) => (
+                  <tr
+                    key={item.PRODUCT_ID ?? `${item.TITLE}-${index}`}
+                    className={styles.listRow}
+                    onClick={() => {
+                      console.log('찜목록 상품 클릭', item);
+                    }}
+                  >
+                    <td className={styles.titleCell}>{item.TITLE || '-'}</td>
+                    <td>{item.PRODUCT_STATUS_CODE || '-'}</td>
+                    <td>{item.VIEW_COUNT ?? 0}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className={styles.unlikeButton}
+                        disabled={submitting || userId === null || item.PRODUCT_ID == null}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleWishlistRemove(item);
+                        }}
+                      >
+                        찜 해제
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
             <div className={styles.emptyState}>
               <svg
                 width="26"
@@ -99,8 +166,10 @@ const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({ onClose }) => {
               </svg>
               <p>찜한 상품이 없습니다.</p>
             </div>
-          </div>
+          )}
+          <div id="observer" className={styles.observer} aria-hidden="true"></div>
         </div>
+      </div>
     </MyDrawerLayout>
   );
 };

@@ -8,6 +8,15 @@ import AccountManagementDrawer from '../drawers/AccountManagementDrawer';
 import AddressManagementDrawer from '../drawers/AddressManagementDrawer';
 import WithdrawDrawer from '../drawers/WithdrawDrawer';
 import ReviewsDrawer from '../drawers/ReviewsDrawer';
+import NicknameChangeDrawer from '../drawers/NicknameChangeDrawer';
+import type {
+  UserInfoAccount,
+  UserInfoAddress,
+  UserInfoProduct,
+  UserInfoBuy,
+  UserInfoReview,
+  UserInfoSale,
+} from '../api/userInfoApi';
 
 interface MenuConfig {
   [section: string]: {
@@ -20,10 +29,39 @@ interface MyPageDrawerProps {
   open: boolean;
   onClose: () => void;
   menuConfig: MenuConfig;
+  wishlist: UserInfoProduct[];
+  accounts: UserInfoAccount[];
+  addresses: UserInfoAddress[];
+  sellList: UserInfoSale[];
+  buyList: UserInfoBuy[];
+  reviewList: UserInfoReview[];
+  userId: number | null;
+  nickname: string;
+  setNickname: (nickname: string) => void;
+  refreshAccounts: () => Promise<void>;
+  refreshAddresses: () => Promise<void>;
+  refreshWishlist: () => Promise<void>;
 }
 
 // type에 따라 다른 drawer를 렌더링하는 통합 컴포넌트입니다.
-const MyPageDrawer: React.FC<MyPageDrawerProps> = ({ type, open, onClose, menuConfig }) => {
+const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
+  type,
+  open,
+  onClose,
+  menuConfig,
+  wishlist,
+  accounts,
+  addresses,
+  sellList,
+  buyList,
+  reviewList,
+  userId,
+  nickname,
+  setNickname,
+  refreshAccounts,
+  refreshAddresses,
+  refreshWishlist,
+}) => {
   const getTitle = (type: string) => {
     for (const section of Object.values(menuConfig)) {
       if (section[type]) {
@@ -46,7 +84,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({ type, open, onClose, menuCo
           header: { display: 'none' } 
         }}            
       >
-        <SellHistoryDrawer onClose={onClose} />
+        <SellHistoryDrawer onClose={onClose} sellList={sellList} />
       </Drawer>
     );
   }
@@ -64,7 +102,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({ type, open, onClose, menuCo
           header: { display: 'none' } 
         }}            
       >
-        <BuyHistoryDrawer onClose={onClose} />
+        <BuyHistoryDrawer onClose={onClose} buyList={buyList} />
       </Drawer>
     );
   }
@@ -83,7 +121,12 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({ type, open, onClose, menuCo
           header: { display: 'none' } 
         }}            
       >
-        <FavoritesDrawer onClose={onClose} />
+        <FavoritesDrawer
+          onClose={onClose}
+          userId={userId}
+          wishlist={wishlist}
+          onRefreshWishlist={refreshWishlist}
+        />
       </Drawer>
     );
   }
@@ -117,7 +160,12 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({ type, open, onClose, menuCo
           header: { display: 'none' },
         }}
       >
-        <AccountManagementDrawer onClose={onClose} />
+        <AccountManagementDrawer
+          onClose={onClose}
+          userId={userId}
+          accounts={accounts}
+          onRefreshAccounts={refreshAccounts}
+        />
       </Drawer>
     );
   }
@@ -135,7 +183,12 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({ type, open, onClose, menuCo
           header: { display: 'none' } 
         }}        
       >
-        <AddressManagementDrawer onClose={onClose} />
+        <AddressManagementDrawer
+          onClose={onClose}
+          userId={userId}
+          addresses={addresses}
+          onRefreshAddresses={refreshAddresses}
+        />
       </Drawer>
     );
   }
@@ -154,7 +207,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({ type, open, onClose, menuCo
           header: { display: 'none' } 
         }}            
       >
-        <WithdrawDrawer onClose={onClose} />
+        <WithdrawDrawer onClose={onClose} userId={userId} />
       </Drawer>
     );
   }
@@ -172,7 +225,30 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({ type, open, onClose, menuCo
           header: { display: 'none' },
         }}
       >
-        <ReviewsDrawer onClose={onClose} />
+        <ReviewsDrawer onClose={onClose} reviewList={reviewList} />
+      </Drawer>
+    );
+  }
+
+  if (type === 'nickname-change' && userId !== null) {
+    return (
+      <Drawer
+        placement="right"
+        onClose={onClose}
+        closable={false}
+        open={open}
+        width={600}
+        styles={{
+          body: { padding: 0 },
+          header: { display: 'none' },
+        }}
+      >
+        <NicknameChangeDrawer
+          onClose={onClose}
+          userId={userId}
+          initialNickname={nickname}
+          setNickname={setNickname}
+        />
       </Drawer>
     );
   }
@@ -185,7 +261,6 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({ type, open, onClose, menuCo
       open={open}
       width={600}
     >
-      {"대충 임시 텍스트"}
     </Drawer>
   );
 };
