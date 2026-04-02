@@ -1,6 +1,15 @@
-/*
-  홈 화면 상품 카드에 사용할 기본 타입 정의입니다.
-*/
+export type SortType = "recommended" | "latest" | "priceAsc" | "priceDesc";
+
+export type SearchFilterValue = {
+  keyword: string;
+  minPrice: string;
+  maxPrice: string;
+  isLocker:boolean;
+  excludeSold: boolean;
+  sort: SortType;
+  mainCategory: string;
+  subCategory: string;
+}
 
 export type ProductItem = {
   id: number;

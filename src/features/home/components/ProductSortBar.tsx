@@ -1,29 +1,57 @@
 import styles from "./ProductSortBar.module.css";
+import type { SortType } from "../types/home.types";
 
-/*
-  상품 목록 정렬바 컴포넌트입니다.
-  현재 단계에서는 선택 상태만 정적으로 표시합니다.
-*/
+type ProductSortBarProps = {
+  value: SortType;
+  onChange: (next: SortType) => void;
+};
 
-export default function ProductSortBar() {
+export default function ProductSortBar({
+  value,
+  onChange,
+}: ProductSortBarProps) {
   return (
     <div className={styles.bar} aria-label="상품 정렬">
-      <button type="button" className={`${styles.sortButton} ${styles.active}`}>
+      <button
+        type="button"
+        className={`${styles.sortButton} ${
+          value === "recommended" ? styles.active : ""
+        }`}
+        onClick={() => onChange("recommended")}
+      >
         추천순
       </button>
       <span className={styles.divider}>|</span>
 
-      <button type="button" className={styles.sortButton}>
+      <button
+        type="button"
+        className={`${styles.sortButton} ${
+          value === "latest" ? styles.active : ""
+        }`}
+        onClick={() => onChange("latest")}
+      >
         최신순
       </button>
       <span className={styles.divider}>|</span>
 
-      <button type="button" className={styles.sortButton}>
+      <button
+        type="button"
+        className={`${styles.sortButton} ${
+          value === "priceAsc" ? styles.active : ""
+        }`}
+        onClick={() => onChange("priceAsc")}
+      >
         낮은가격순
       </button>
       <span className={styles.divider}>|</span>
 
-      <button type="button" className={styles.sortButton}>
+      <button
+        type="button"
+        className={`${styles.sortButton} ${
+          value === "priceDesc" ? styles.active : ""
+        }`}
+        onClick={() => onChange("priceDesc")}
+      >
         높은가격순
       </button>
     </div>
