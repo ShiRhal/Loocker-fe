@@ -98,13 +98,6 @@
 
 .categoryPanelLabel {
   background: #f3f4f6;
-  padding: 0 22px;
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: #111111;
-  border: 0;
 }
 
 .subCategoryList {
@@ -135,11 +128,6 @@
   background: transparent;
   border: 0;
   color: #3182f7;
-}
-
-.emptyText {
-  font-size: 14px;
-  color: #9ca3af;
 }
 
 .breadcrumb {
@@ -289,6 +277,10 @@
   background: transparent;
   padding: 0;
   cursor: pointer;
+}
+
+.selectedItem:hover {
+  color: #3182f7;
 }
 
 .resetButton {

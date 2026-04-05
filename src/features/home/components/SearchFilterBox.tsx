@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "./SearchFilterBox.module.css";
 import type { SearchFilterValue } from "../types/home.types";
 import {
@@ -23,6 +23,19 @@ export default function SearchFilterBox({
 }: SearchFilterBoxProps) {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [selectedMainId, setSelectedMainId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!value.mainCategory) {
+      setSelectedMainId(null);
+      return;
+    }
+
+    const matchedMain = MAIN_CATEGORIES.find(
+      (main) => main.m_category_name === value.mainCategory
+    );
+
+    setSelectedMainId(matchedMain ? matchedMain.m_category_id : null);
+  }, [value.mainCategory]);
 
   const filteredSubCategories = useMemo(() => {
     if (selectedMainId === null) return [];
@@ -67,7 +80,6 @@ export default function SearchFilterBox({
       mainCategory: "",
       subCategory: "",
     };
-    setSelectedMainId(null);
     onImmediateApply(next);
   };
 
@@ -85,6 +97,28 @@ export default function SearchFilterBox({
       isLocker: false,
     };
     onImmediateApply(next);
+  };
+
+  const clearMinPrice = () => {
+    onChange({
+      ...value,
+      minPrice: "",
+    });
+    onImmediateApply({
+      ...value,
+      minPrice: "",
+    });
+  };
+
+  const clearMaxPrice = () => {
+    onChange({
+      ...value,
+      maxPrice: "",
+    });
+    onImmediateApply({
+      ...value,
+      maxPrice: "",
+    });
   };
 
   const handleCategoryOpen = () => {
@@ -114,6 +148,7 @@ export default function SearchFilterBox({
 
   const handleBreadcrumbAll = () => {
     setSelectedMainId(null);
+    setIsCategoryOpen(true);
     onImmediateApply({
       ...value,
       mainCategory: "",
@@ -124,11 +159,12 @@ export default function SearchFilterBox({
   const handleBreadcrumbMain = () => {
     if (!value.mainCategory) return;
 
-    const main = MAIN_CATEGORIES.find(
-      (item) => item.m_category_name === value.mainCategory
+    const matchedMain = MAIN_CATEGORIES.find(
+      (main) => main.m_category_name === value.mainCategory
     );
 
-    setSelectedMainId(main ? main.m_category_id : null);
+    setSelectedMainId(matchedMain ? matchedMain.m_category_id : null);
+    setIsCategoryOpen(true);
 
     onImmediateApply({
       ...value,
@@ -139,11 +175,11 @@ export default function SearchFilterBox({
   const handleBreadcrumbSub = () => {
     if (!value.mainCategory) return;
 
-    const main = MAIN_CATEGORIES.find(
-      (item) => item.m_category_name === value.mainCategory
+    const matchedMain = MAIN_CATEGORIES.find(
+      (main) => main.m_category_name === value.mainCategory
     );
 
-    setSelectedMainId(main ? main.m_category_id : null);
+    setSelectedMainId(matchedMain ? matchedMain.m_category_id : null);
     setIsCategoryOpen(true);
   };
 
@@ -325,9 +361,7 @@ export default function SearchFilterBox({
                   >
                     {value.subCategory
                       ? `전체 > ${value.mainCategory} > ${value.subCategory}`
-                      : value.mainCategory
-                      ? `전체 > ${value.mainCategory}`
-                      : "전체"}{" "}
+                      : `전체 > ${value.mainCategory}`}{" "}
                     ×
                   </button>
                 )}
@@ -353,15 +387,23 @@ export default function SearchFilterBox({
                 )}
 
                 {value.minPrice && (
-                  <span className={styles.selectedItem}>
-                    최소 {value.minPrice}원
-                  </span>
+                  <button
+                    type="button"
+                    className={styles.selectedItem}
+                    onClick={clearMinPrice}
+                  >
+                    최소 {value.minPrice}원 ×
+                  </button>
                 )}
 
                 {value.maxPrice && (
-                  <span className={styles.selectedItem}>
-                    최대 {value.maxPrice}원
-                  </span>
+                  <button
+                    type="button"
+                    className={styles.selectedItem}
+                    onClick={clearMaxPrice}
+                  >
+                    최대 {value.maxPrice}원 ×
+                  </button>
                 )}
               </div>
 
