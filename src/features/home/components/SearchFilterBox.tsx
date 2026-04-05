@@ -1,5 +1,10 @@
+import { useMemo, useState } from "react";
 import styles from "./SearchFilterBox.module.css";
 import type { SearchFilterValue } from "../types/home.types";
+import {
+  MAIN_CATEGORIES,
+  SUB_CATEGORIES,
+} from "../../../shared/constants/category";
 
 type SearchFilterBoxProps = {
   value: SearchFilterValue;
@@ -16,6 +21,14 @@ export default function SearchFilterBox({
   onReset,
   onImmediateApply,
 }: SearchFilterBoxProps) {
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [selectedMainId, setSelectedMainId] = useState<number | null>(null);
+
+  const filteredSubCategories = useMemo(() => {
+    if (selectedMainId === null) return [];
+    return SUB_CATEGORIES.filter((sub) => sub.parent_id === selectedMainId);
+  }, [selectedMainId]);
+
   const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
     onChange({
@@ -54,6 +67,7 @@ export default function SearchFilterBox({
       mainCategory: "",
       subCategory: "",
     };
+    setSelectedMainId(null);
     onImmediateApply(next);
   };
 
@@ -73,19 +87,106 @@ export default function SearchFilterBox({
     onImmediateApply(next);
   };
 
-  const categoryText =
-    value.mainCategory && value.subCategory
-      ? `${value.mainCategory} > ${value.subCategory}`
-      : value.mainCategory || "전체";
+  const handleCategoryOpen = () => {
+    setIsCategoryOpen((prev) => !prev);
+  };
+
+  const handleSelectMainCategory = (mainId: number, mainName: string) => {
+    setSelectedMainId(mainId);
+
+    const next = {
+      ...value,
+      mainCategory: mainName,
+      subCategory: "",
+    };
+
+    onImmediateApply(next);
+  };
+
+  const handleSelectSubCategory = (subName: string) => {
+    const next = {
+      ...value,
+      subCategory: subName,
+    };
+
+    onImmediateApply(next);
+  };
+
+  const handleBreadcrumbAll = () => {
+    setSelectedMainId(null);
+    onImmediateApply({
+      ...value,
+      mainCategory: "",
+      subCategory: "",
+    });
+  };
+
+  const handleBreadcrumbMain = () => {
+    if (!value.mainCategory) return;
+
+    const main = MAIN_CATEGORIES.find(
+      (item) => item.m_category_name === value.mainCategory
+    );
+
+    setSelectedMainId(main ? main.m_category_id : null);
+
+    onImmediateApply({
+      ...value,
+      subCategory: "",
+    });
+  };
+
+  const handleBreadcrumbSub = () => {
+    if (!value.mainCategory) return;
+
+    const main = MAIN_CATEGORIES.find(
+      (item) => item.m_category_name === value.mainCategory
+    );
+
+    setSelectedMainId(main ? main.m_category_id : null);
+    setIsCategoryOpen(true);
+  };
+
+  const renderCategoryPanelItems = () => {
+    if (selectedMainId === null) {
+      return MAIN_CATEGORIES.map((main) => (
+        <button
+          key={main.m_category_id}
+          type="button"
+          className={`${styles.categoryButton} ${
+            value.mainCategory === main.m_category_name && !value.subCategory
+              ? styles.optionItemActive
+              : ""
+          }`}
+          onClick={() =>
+            handleSelectMainCategory(main.m_category_id, main.m_category_name)
+          }
+        >
+          {main.m_category_name}
+        </button>
+      ));
+    }
+
+    return filteredSubCategories.map((sub) => (
+      <button
+        key={sub.s_category_id}
+        type="button"
+        className={`${styles.categoryButton} ${
+          value.subCategory === sub.s_category_name ? styles.optionItemActive : ""
+        }`}
+        onClick={() => handleSelectSubCategory(sub.s_category_name)}
+      >
+        {sub.s_category_name}
+      </button>
+    ));
+  };
 
   return (
     <section className={styles.wrapper} aria-label="검색 결과 필터">
       <div className={styles.headerRow}>
         <div className={styles.titleGroup}>
           <h2 className={styles.title}>
-            <span className={styles.keyword}>
-              '{value.keyword || "전체"}'
-            </span>{" "}
+            <span className={styles.keyword}>'{value.keyword || "전체"}'</span>{" "}
             검색결과
           </h2>
           <span className={styles.count}>총 322개</span>
@@ -98,10 +199,61 @@ export default function SearchFilterBox({
         <div className={styles.row}>
           <div className={styles.label}>
             <span>카테고리</span>
-            <span className={styles.plus}>＋</span>
+            <button
+              type="button"
+              className={styles.toggleButton}
+              onClick={handleCategoryOpen}
+              aria-label={isCategoryOpen ? "카테고리 닫기" : "카테고리 열기"}
+            >
+              <span className={styles.plus}>{isCategoryOpen ? "－" : "＋"}</span>
+            </button>
           </div>
-          <div className={styles.value}>{categoryText}</div>
+
+          <div className={styles.value}>
+            <div className={styles.breadcrumb}>
+              <button
+                type="button"
+                className={styles.breadcrumbButton}
+                onClick={handleBreadcrumbAll}
+              >
+                전체
+              </button>
+
+              {value.mainCategory && (
+                <>
+                  <span className={styles.breadcrumbDivider}>&gt;</span>
+                  <button
+                    type="button"
+                    className={styles.breadcrumbButton}
+                    onClick={handleBreadcrumbMain}
+                  >
+                    {value.mainCategory}
+                  </button>
+                </>
+              )}
+
+              {value.subCategory && (
+                <>
+                  <span className={styles.breadcrumbDivider}>&gt;</span>
+                  <button
+                    type="button"
+                    className={styles.breadcrumbButton}
+                    onClick={handleBreadcrumbSub}
+                  >
+                    {value.subCategory}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
         </div>
+
+        {isCategoryOpen && (
+          <div className={styles.categoryPanel}>
+            <div className={styles.categoryPanelLabel} />
+            <div className={styles.subCategoryList}>{renderCategoryPanelItems()}</div>
+          </div>
+        )}
 
         <div className={styles.row}>
           <div className={styles.label}>가격</div>
@@ -171,7 +323,12 @@ export default function SearchFilterBox({
                     className={styles.selectedItem}
                     onClick={clearMainCategory}
                   >
-                    {categoryText} ×
+                    {value.subCategory
+                      ? `전체 > ${value.mainCategory} > ${value.subCategory}`
+                      : value.mainCategory
+                      ? `전체 > ${value.mainCategory}`
+                      : "전체"}{" "}
+                    ×
                   </button>
                 )}
 
