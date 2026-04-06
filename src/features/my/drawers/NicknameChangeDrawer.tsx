@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import MyDrawerLayout from './components/MyDrawerLayout';
+import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import { myPageApi } from '../api/userInfoApi';
 import styles from './NicknameChangeDrawer.module.css';
 
@@ -53,7 +53,7 @@ const NicknameChangeDrawer: React.FC<NicknameChangeDrawerProps> = ({
   };
 
   return (
-    <MyDrawerLayout
+    <DrawerLayout
       title="닉네임 변경"
       onBack={onClose}
       mainClassName={styles.main}
@@ -83,7 +83,7 @@ const NicknameChangeDrawer: React.FC<NicknameChangeDrawerProps> = ({
           aria-invalid={!!error}
         />
       </div>
-    </MyDrawerLayout>
+    </DrawerLayout>
   );
 };
 

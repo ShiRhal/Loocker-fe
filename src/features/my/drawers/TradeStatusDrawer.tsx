@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styles from './TradeStatusDrawer.module.css';
-import MyDrawerLayout from './components/MyDrawerLayout';
+import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 
 interface TradeStatusDrawerProps {
   onClose: () => void;
@@ -10,7 +10,7 @@ const TradeStatusDrawer: React.FC<TradeStatusDrawerProps> = ({ onClose }) => {
   const [keyword, setKeyword] = useState('');
 
   return (
-    <MyDrawerLayout title="거래 상태" onBack={onClose} mainClassName={styles.content}>
+    <DrawerLayout title="거래 상태" onBack={onClose} mainClassName={styles.content}>
         <div className={styles.scrollArea}>
           <div className={styles.searchSection}>
             <form className={styles.search}>
@@ -101,7 +101,7 @@ const TradeStatusDrawer: React.FC<TradeStatusDrawerProps> = ({ onClose }) => {
             </div>
           </div>
         </div>
-    </MyDrawerLayout>
+    </DrawerLayout>
   );
 };
 

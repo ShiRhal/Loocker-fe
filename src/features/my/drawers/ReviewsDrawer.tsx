@@ -1,5 +1,5 @@
 import React from 'react';
-import MyDrawerLayout from './components/MyDrawerLayout';
+import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import styles from './ReviewsDrawer.module.css';
 import type { UserInfoReview } from '../api/userInfoApi';
 
@@ -53,7 +53,7 @@ function EmptyState({ text }: { text: string }) {
 
 export default function ReviewsDrawer({ onClose, reviewList }: ReviewsDrawerProps) {
   return (
-    <MyDrawerLayout title="후기" onBack={onClose}>
+    <DrawerLayout title="후기" onBack={onClose}>
       <main className={styles.innerMain}>
         <section className={styles.section}>
           <header className={styles.sectionHeader}>이런점이 좋았어요</header>
@@ -98,7 +98,7 @@ export default function ReviewsDrawer({ onClose, reviewList }: ReviewsDrawerProp
           <EmptyState text="상세 후기 분리 로직은 REVIEW_TYPE 확인 후 구현 예정" />
         </section>
       </main>
-    </MyDrawerLayout>
+    </DrawerLayout>
   );
 }
 

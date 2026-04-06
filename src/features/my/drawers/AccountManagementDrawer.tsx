@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styles from './AccountManagementDrawer.module.css';
-import MyDrawerLayout from './components/MyDrawerLayout';
+import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import { myPageApi, type UserInfoAccount } from '../api/userInfoApi';
 
 interface AccountManagementDrawerProps {
@@ -183,7 +183,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({
 
   if (isRegistering) { // 계좌 등록
     return (
-      <MyDrawerLayout
+      <DrawerLayout
         title="계좌 등록"
         onBack={submitting ? () => undefined : handleBack}
         footer={
@@ -297,12 +297,12 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({
           <span>명의의 계좌만 사용하실 수 있습니다.</span>
         </div>
       </form>
-      </MyDrawerLayout>
+      </DrawerLayout>
     );
     }
 
   return (
-    <MyDrawerLayout
+    <DrawerLayout
       title="계좌 관리"
       onBack={handleBack}
       mainClassName={styles.main}
@@ -409,7 +409,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({
           </ul>
         </div>
       </div>
-    </MyDrawerLayout>
+    </DrawerLayout>
   );
 };
 

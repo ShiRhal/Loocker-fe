@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styles from './FavoritesDrawer.module.css';
-import MyDrawerLayout from './components/MyDrawerLayout';
+import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import { myPageApi, type UserInfoProduct } from '../api/userInfoApi';
 
 interface FavoritesDrawerProps {
@@ -16,6 +16,28 @@ const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({
   wishlist,
   onRefreshWishlist,
 }) => {
+  const STATUS_LABEL_MAP: Record<'SALE' | 'SOLD' | 'TRADING', string> = {
+    SALE: '판매중',
+    SOLD: '판매 완료',
+    TRADING: '거래중',
+  };
+
+  const normalizeStatusCode = (statusCode: string): 'SALE' | 'SOLD' | 'TRADING' | null => {
+    if (statusCode === 'SALE' || statusCode === '판매중') return 'SALE';
+    if (statusCode === 'SOLD' || statusCode === '판매 완료') return 'SOLD';
+    if (statusCode === 'TRADING' || statusCode === '거래중') return 'TRADING';
+    return null;
+  };
+
+  const formatDate = (value?: string) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(
+      date.getDate(),
+    ).padStart(2, '0')}`;
+  };
+
   const [keyword, setKeyword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +65,7 @@ const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({
   };
 
   return (
-    <MyDrawerLayout title="찜한 상품" onBack={onClose} mainClassName={styles.content}>
+    <DrawerLayout title="찜한 상품" onBack={onClose} mainClassName={styles.content}>
       <div className={styles.scrollArea}>
         <div className={styles.searchSection}>
           <form className={styles.search}>
@@ -86,37 +108,56 @@ const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({
                 <tr>
                   <th>상품</th>
                   <th>상태</th>
-                  <th>조회수</th>
+                  <th>가격</th>
+                  <th>등록일</th>
                   <th>찜</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredWishlist.map((item, index) => (
-                  <tr
-                    key={item.PRODUCT_ID ?? `${item.TITLE}-${index}`}
-                    className={styles.listRow}
-                    onClick={() => {
-                      console.log('찜목록 상품 클릭', item);
-                    }}
-                  >
-                    <td className={styles.titleCell}>{item.TITLE || '-'}</td>
-                    <td>{item.PRODUCT_STATUS_CODE || '-'}</td>
-                    <td>{item.VIEW_COUNT ?? 0}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className={styles.unlikeButton}
-                        disabled={submitting || userId === null || item.PRODUCT_ID == null}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void handleWishlistRemove(item);
-                        }}
-                      >
-                        찜 해제
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredWishlist.map((item, index) => {
+                  const statusCode = normalizeStatusCode(item.PRODUCT_STATUS_CODE);
+                  return (
+                    <tr
+                      key={item.PRODUCT_ID ?? `${item.TITLE}-${index}`}
+                      className={styles.listRow}
+                      onClick={() => {
+                        console.log('찜목록 상품 클릭', item);
+                      }}
+                    >
+                      <td className={styles.titleCell}>
+                        <div className={styles.productInfo}>
+                          <img
+                            src={item.IMAGE_URL}
+                            alt={item.TITLE}
+                            className={styles.productImage}
+                            onError={(e) => {
+                              const target = e.currentTarget as HTMLImageElement;
+                              target.src =
+                                'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22%3E%3Crect width=%2264%22 height=%2264%22 fill=%22%23e5e7eb%22/%3E%3Ctext x=%2232%22 y=%2236%22 font-size=%2212%22 text-anchor=%22middle%22 fill=%22%23787689%22%3E%3F%3C/text%3E%3C/svg%3E';
+                            }}
+                          />
+                          <span>{item.TITLE || '-'}</span>
+                        </div>
+                      </td>
+                      <td>{statusCode ? STATUS_LABEL_MAP[statusCode] : item.PRODUCT_STATUS_CODE || '-'}</td>
+                      <td>{(item.BASE_PRICE ?? 0).toLocaleString()}원</td>
+                      <td>{formatDate(item.CREATED_AT)}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className={styles.unlikeButton}
+                          disabled={submitting || userId === null || item.PRODUCT_ID == null}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleWishlistRemove(item);
+                          }}
+                        >
+                          찜 해제
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           ) : (
@@ -170,7 +211,7 @@ const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({
           <div id="observer" className={styles.observer} aria-hidden="true"></div>
         </div>
       </div>
-    </MyDrawerLayout>
+    </DrawerLayout>
   );
 };
 

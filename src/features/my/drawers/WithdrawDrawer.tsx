@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './WithdrawDrawer.module.css';
-import MyDrawerLayout from './components/MyDrawerLayout';
+import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import { myPageApi } from '../api/userInfoApi';
 
 interface WithdrawDrawerProps {
@@ -53,7 +53,7 @@ const WithdrawDrawer: React.FC<WithdrawDrawerProps> = ({ onClose, userId }) => {
   };
 
   return (
-    <MyDrawerLayout
+    <DrawerLayout
       title="회원 탈퇴"
       onBack={onClose}
       mainClassName={styles.main}
@@ -189,7 +189,7 @@ const WithdrawDrawer: React.FC<WithdrawDrawerProps> = ({ onClose, userId }) => {
             </li>
           </ul>
         </section>
-    </MyDrawerLayout>
+    </DrawerLayout>
   );
 };
 

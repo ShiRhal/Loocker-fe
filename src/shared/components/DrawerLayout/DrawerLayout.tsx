@@ -1,7 +1,7 @@
 import React from 'react';
-import styles from './MyDrawerLayout.module.css';
+import styles from './DrawerLayout.module.css';
 
-type MyDrawerLayoutProps = {
+type DrawerLayoutProps = {
   title: string;
   onBack: () => void;
   children: React.ReactNode;
@@ -10,14 +10,14 @@ type MyDrawerLayoutProps = {
   headerAction?: React.ReactNode;
 };
 
-export default function MyDrawerLayout({
+export default function DrawerLayout({
   title,
   onBack,
   children,
   footer,
   mainClassName,
   headerAction,
-}: MyDrawerLayoutProps) {
+}: DrawerLayoutProps) {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -42,4 +42,3 @@ export default function MyDrawerLayout({
     </div>
   );
 }
-

@@ -803,6 +803,7 @@
   width: 100%;
   text-align: left;
   border-collapse: collapse;
+  position: relative;
 }
 
 .tableHeader th {
@@ -831,6 +832,118 @@
   padding: 1.25rem 0.75rem;
   font-size: 0.875rem;
   color: #374151;
+}
+
+.headerCellInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+}
+
+.tableSearchInput {
+  width: 140px;
+  height: 24px;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  color: #111827;
+  background: transparent;
+  outline: none;
+}
+
+.tableSearchInput::placeholder {
+  color: #9ca3af;
+}
+
+.underlinedSearchBox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid #27b5df;
+  padding-bottom: 2px;
+}
+
+.searchIcon {
+  color: #27b5df;
+  flex-shrink: 0;
+}
+
+.headerSortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.sortArrows {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  color: #9ca3af;
+}
+
+.sortArrowButton {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: #9ca3af;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.sortArrowActive {
+  color: #0ea5e9;
+}
+
+.statusFilterButton {
+  border: none;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+  padding: 0;
+  line-height: 0;
+}
+
+.statusFilterButtonActive {
+  color: #0ea5e9;
+}
+
+.statusDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 112px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  z-index: 20;
+  overflow: hidden;
+}
+
+.statusOption {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: #fff;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.statusOption:hover {
+  background-color: #f3f4f6;
+}
+
+.statusOptionActive {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  font-weight: 600;
 }
 
 .productInfo {
@@ -886,6 +999,8 @@
 
 .actionCell {
   padding: 1.25rem 0.75rem;
+  position: relative;
+  width: 64px;
 }
 
 .actionButton {
@@ -896,6 +1011,112 @@
 
 .actionButton:hover {
   color: #1d4ed8;
+}
+
+.actionHeaderCell {
+  width: 64px;
+}
+
+.moreButton {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #4b5563;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.moreButton:hover {
+  background-color: #f3f4f6;
+}
+
+.rowMenu {
+  position: absolute;
+  right: 8px;
+  top: calc(100% - 8px);
+  min-width: 96px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  z-index: 30;
+  overflow: hidden;
+}
+
+.rowMenuButton {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: #fff;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.rowMenuButton:hover {
+  background: #f3f4f6;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(17, 24, 39, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalCard {
+  width: min(360px, calc(100% - 32px));
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.modalDescription {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.modalActions {
+  margin-top: 20px;
+  display: flex;
+  gap: 8px;
+}
+
+.modalCancelButton,
+.modalConfirmButton {
+  flex: 1;
+  height: 42px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modalCancelButton {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+}
+
+.modalConfirmButton {
+  border: none;
+  background: #111827;
+  color: #fff;
 }
 
 .emptyCell {

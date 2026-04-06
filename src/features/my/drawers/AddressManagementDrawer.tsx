@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styles from './AddressManagementDrawer.module.css';
-import MyDrawerLayout from './components/MyDrawerLayout';
+import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import { myPageApi, type UserInfoAddress } from '../api/userInfoApi';
 
 interface AddressManagementDrawerProps {
@@ -26,6 +26,7 @@ const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({
   onRefreshAddresses,
 }) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<AddressFormData>({
@@ -123,7 +124,7 @@ const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({
   // 배송지 추가 폼 화면
   if (isAdding) {
     return (
-      <MyDrawerLayout
+      <DrawerLayout
         title="배송지 추가"
         onBack={submitting ? () => undefined : () => setIsAdding(false)}
         mainClassName={styles.main}
@@ -212,42 +213,63 @@ const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({
             </label>
             {error ? <p role="alert">{error}</p> : null}
           </form>
-      </MyDrawerLayout>
+      </DrawerLayout>
     );
   }
 
   // 초기 상태 (빈 배송지 목록) 화면
   return (
-    <MyDrawerLayout title="배송지 관리" onBack={onClose} mainClassName={styles.main}>
+    <DrawerLayout
+      title="배송지 관리"
+      onBack={onClose}
+      mainClassName={styles.main}
+      headerAction={
+        addresses.length > 0 ? (
+          <button
+            type="button"
+            className={styles.headerEditButton}
+            onClick={() => setIsEditMode((prev) => !prev)}
+            disabled={submitting}
+          >
+            {isEditMode ? '완료' : '편집'}
+          </button>
+        ) : null
+      }
+    >
       {addresses.length > 0 ? (
-        <div className={styles.emptyState}>
+        <div className={styles.listContainer}>
           {error ? <p role="alert">{error}</p> : null}
           {addresses.map((address) => (
-            <div key={address.ADDRESS_ID}>
-              <h3>
-                {address.ADDRESS} {address.IS_DEFAULT ? '(기본)' : ''}
-              </h3>
-              <p>{address.IS_ACTIVE ? '활성' : '비활성'}</p>
-              <p>{address.CREATED_AT || '-'}</p>
-              <button
-                type="button"
-                className={styles.addButton}
-                onClick={() => void handleSetDefault(address)}
-                disabled={submitting || userId === null || address.IS_DEFAULT}
-              >
-                기본 배송지 설정
-              </button>
-              <button
-                type="button"
-                className={styles.addButton}
-                onClick={() => void handleDeleteAddress(address)}
-                disabled={submitting || userId === null}
-              >
-                배송지 삭제
-              </button>
+            <div key={address.ADDRESS_ID} className={styles.addressCard}>
+              <div className={styles.addressCardHeader}>
+                <h3 className={styles.addressTitle}>배송지</h3>
+                {address.IS_DEFAULT ? <span className={styles.defaultBadge}>기본배송지</span> : null}
+              </div>
+              <p className={styles.addressText}>{address.ADDRESS}</p>
+              <p className={styles.addressMeta}>{address.CREATED_AT || '-'}</p>
+              {isEditMode ? (
+                <div className={styles.cardActionRow}>
+                  <button
+                    type="button"
+                    className={styles.cardActionButton}
+                    onClick={() => void handleSetDefault(address)}
+                    disabled={submitting || userId === null || address.IS_DEFAULT}
+                  >
+                    기본 배송지 설정
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.cardActionButtonDanger}
+                    onClick={() => void handleDeleteAddress(address)}
+                    disabled={submitting || userId === null}
+                  >
+                    삭제
+                  </button>
+                </div>
+              ) : null}
             </div>
           ))}
-          <button className={styles.addButton} onClick={() => setIsAdding(true)} disabled={userId === null}>
+          <button className={styles.addAddressButton} onClick={() => setIsAdding(true)} disabled={userId === null}>
             배송지 추가
           </button>
         </div>
@@ -265,7 +287,7 @@ const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({
           </button>
         </div>
       )}
-    </MyDrawerLayout>
+    </DrawerLayout>
   );
 };
 

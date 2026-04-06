@@ -78,7 +78,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         onClose={onClose}
         closable={false}
         open={open}
-        width={600}
+        width={640}
         styles={{ 
           body: { padding: 0 }, 
           header: { display: 'none' } 
@@ -96,7 +96,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         onClose={onClose}
         closable={false}
         open={open}
-        width={600}
+        width={640}
         styles={{ 
           body: { padding: 0 }, 
           header: { display: 'none' } 
@@ -115,7 +115,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         onClose={onClose}
         closable={false}
         open={open}
-        width={600}
+        width={640}
         styles={{ 
           body: { padding: 0 }, 
           header: { display: 'none' } 
@@ -137,7 +137,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         onClose={onClose}
         closable={false}
         open={open}
-        width={600}
+        width={640}
         styles={{ 
           body: { padding: 0 }, 
           header: { display: 'none' } 
@@ -154,7 +154,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         onClose={onClose}
         closable={false}
         open={open}
-        width={600}
+        width={640}
         styles={{
           body: { padding: 0 },
           header: { display: 'none' },
@@ -177,7 +177,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         onClose={onClose}
         closable={false}
         open={open}
-        width={600}
+        width={640}
         styles={{ 
           body: { padding: 0 }, 
           header: { display: 'none' } 
@@ -201,7 +201,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         onClose={onClose}
         closable={false}
         open={open}
-        width={600}
+        width={640}
         styles={{ 
           body: { padding: 0 }, 
           header: { display: 'none' } 
@@ -219,7 +219,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         onClose={onClose}
         closable={false}
         open={open}
-        width={600}
+        width={640}
         styles={{
           body: { padding: 0 },
           header: { display: 'none' },
@@ -237,7 +237,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         onClose={onClose}
         closable={false}
         open={open}
-        width={600}
+        width={640}
         styles={{
           body: { padding: 0 },
           header: { display: 'none' },
@@ -259,7 +259,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
       placement="right"
       onClose={onClose}
       open={open}
-      width={600}
+      width={640}
     >
     </Drawer>
   );

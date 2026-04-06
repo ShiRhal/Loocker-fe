@@ -11,6 +11,8 @@ export interface UserInfoProduct {
   IMAGE_URL: string;
   PRODUCT_STATUS_CODE: string;
   VIEW_COUNT: number;
+  BASE_PRICE: number;
+  CREATED_AT: string;
 }
 
 export interface UserInfoAccount {
@@ -42,10 +44,13 @@ export interface UserInfoResponse {
 }
 
 export interface UserInfoSale {
+  PRODUCT_ID?: number;
   TITLE: string;
   IMAGE_URL: string;
   PRODUCT_STATUS_CODE: string;
   VIEW_COUNT: number;
+  BASE_PRICE?: number;
+  CREATED_AT?: string;
   BUYER_NICKNAME: string;
   COMPLETED_AT: string;
   // 백엔드 스펙에 따라 존재할 수 있는 값(목록/상세 이동에 필요할 가능성)
@@ -53,10 +58,13 @@ export interface UserInfoSale {
 }
 
 export interface UserInfoBuy {
+  PRODUCT_ID?: number;
   TITLE: string;
   IMAGE_URL: string;
   PRODUCT_STATUS_CODE: string;
   VIEW_COUNT: number;
+  BASE_PRICE?: number;
+  CREATED_AT?: string;
   SELLER_NICKNAME: string;
   COMPLETED_AT: string;
   // 백엔드 스펙에 따라 존재할 수 있는 값(목록/상세 이동에 필요할 가능성)
