@@ -5,9 +5,15 @@ import {
   MAIN_CATEGORIES,
   SUB_CATEGORIES,
 } from "../../../shared/constants/category";
+import {
+  STATE_CODES,
+  CITY_CODES,
+} from "../../../shared/constants/location";
 
 type SearchFilterBoxProps = {
   value: SearchFilterValue;
+  resultKeyword: string;
+  totalCount: number;
   onChange: (next: SearchFilterValue) => void;
   onSearch: () => void;
   onReset: () => void;
@@ -16,6 +22,8 @@ type SearchFilterBoxProps = {
 
 export default function SearchFilterBox({
   value,
+  resultKeyword,
+  totalCount,
   onChange,
   onSearch,
   onReset,
@@ -23,6 +31,7 @@ export default function SearchFilterBox({
 }: SearchFilterBoxProps) {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [selectedMainId, setSelectedMainId] = useState<number | null>(null);
+  const [selectedStateId, setSelectedStateId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!value.mainCategory) {
@@ -37,10 +46,64 @@ export default function SearchFilterBox({
     setSelectedMainId(matchedMain ? matchedMain.m_category_id : null);
   }, [value.mainCategory]);
 
+  useEffect(() => {
+    if (!value.stateName) {
+      setSelectedStateId(null);
+      return;
+    }
+
+    const matchedState = STATE_CODES.find(
+      (state) => state.state_name === value.stateName
+    );
+
+    setSelectedStateId(matchedState ? matchedState.s_id : null);
+  }, [value.stateName]);
+
   const filteredSubCategories = useMemo(() => {
     if (selectedMainId === null) return [];
     return SUB_CATEGORIES.filter((sub) => sub.parent_id === selectedMainId);
   }, [selectedMainId]);
+
+  const filteredCities = useMemo(() => {
+    if (selectedStateId === null) return [];
+    return CITY_CODES.filter((city) => city.parent_id === selectedStateId);
+  }, [selectedStateId]);
+
+  const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange({
+      ...value,
+      keyword: e.target.value,
+    });
+  };
+
+  const handleKeywordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      onSearch();
+    }
+  };
+
+  const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextStateName = e.target.value;
+
+    const matchedState = STATE_CODES.find(
+      (state) => state.state_name === nextStateName
+    );
+
+    setSelectedStateId(matchedState ? matchedState.s_id : null);
+
+    onChange({
+      ...value,
+      stateName: nextStateName,
+      cityName: "",
+    });
+  };
+
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onChange({
+      ...value,
+      cityName: e.target.value,
+    });
+  };
 
   const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
@@ -74,12 +137,42 @@ export default function SearchFilterBox({
     onImmediateApply(next);
   };
 
+  const clearKeyword = () => {
+    const next = {
+      ...value,
+      keyword: "",
+    };
+    onChange(next);
+    onImmediateApply(next);
+  };
+
   const clearMainCategory = () => {
     const next = {
       ...value,
       mainCategory: "",
       subCategory: "",
     };
+    onImmediateApply(next);
+  };
+
+  const clearState = () => {
+    setSelectedStateId(null);
+
+    const next = {
+      ...value,
+      stateName: "",
+      cityName: "",
+    };
+    onChange(next);
+    onImmediateApply(next);
+  };
+
+  const clearCity = () => {
+    const next = {
+      ...value,
+      cityName: "",
+    };
+    onChange(next);
     onImmediateApply(next);
   };
 
@@ -100,25 +193,21 @@ export default function SearchFilterBox({
   };
 
   const clearMinPrice = () => {
-    onChange({
+    const next = {
       ...value,
       minPrice: "",
-    });
-    onImmediateApply({
-      ...value,
-      minPrice: "",
-    });
+    };
+    onChange(next);
+    onImmediateApply(next);
   };
 
   const clearMaxPrice = () => {
-    onChange({
+    const next = {
       ...value,
       maxPrice: "",
-    });
-    onImmediateApply({
-      ...value,
-      maxPrice: "",
-    });
+    };
+    onChange(next);
+    onImmediateApply(next);
   };
 
   const handleCategoryOpen = () => {
@@ -208,7 +297,9 @@ export default function SearchFilterBox({
         key={sub.s_category_id}
         type="button"
         className={`${styles.categoryButton} ${
-          value.subCategory === sub.s_category_name ? styles.optionItemActive : ""
+          value.subCategory === sub.s_category_name
+            ? styles.optionItemActive
+            : ""
         }`}
         onClick={() => handleSelectSubCategory(sub.s_category_name)}
       >
@@ -222,16 +313,34 @@ export default function SearchFilterBox({
       <div className={styles.headerRow}>
         <div className={styles.titleGroup}>
           <h2 className={styles.title}>
-            <span className={styles.keyword}>'{value.keyword || "전체"}'</span>{" "}
+            <span className={styles.keyword}>
+              '{resultKeyword || "전체"}'
+            </span>{" "}
             검색결과
           </h2>
-          <span className={styles.count}>총 322개</span>
+          <span className={styles.count}>
+            총 {totalCount.toLocaleString("ko-KR")}개
+          </span>
         </div>
       </div>
 
       <div className={styles.topLine} />
 
       <div className={styles.filterTable}>
+        <div className={styles.row}>
+          <div className={styles.label}>검색어</div>
+          <div className={styles.value}>
+            <input
+              className={styles.searchInput}
+              type="text"
+              placeholder="상품명을 입력해주세요."
+              value={value.keyword}
+              onChange={handleKeywordChange}
+              onKeyDown={handleKeywordKeyDown}
+            />
+          </div>
+        </div>
+
         <div className={styles.row}>
           <div className={styles.label}>
             <span>카테고리</span>
@@ -287,9 +396,45 @@ export default function SearchFilterBox({
         {isCategoryOpen && (
           <div className={styles.categoryPanel}>
             <div className={styles.categoryPanelLabel} />
-            <div className={styles.subCategoryList}>{renderCategoryPanelItems()}</div>
+            <div className={styles.subCategoryList}>
+              {renderCategoryPanelItems()}
+            </div>
           </div>
         )}
+
+        <div className={styles.row}>
+          <div className={styles.label}>지역</div>
+          <div className={styles.value}>
+            <div className={styles.regionRow}>
+              <select
+                className={styles.regionSelect}
+                value={value.stateName}
+                onChange={handleStateChange}
+              >
+                <option value="">도 선택</option>
+                {STATE_CODES.map((state) => (
+                  <option key={state.s_id} value={state.state_name}>
+                    {state.state_name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className={styles.regionSelect}
+                value={value.cityName}
+                onChange={handleCityChange}
+                disabled={!value.stateName}
+              >
+                <option value="">시 선택</option>
+                {filteredCities.map((city) => (
+                  <option key={city.c_id} value={city.city_name}>
+                    {city.city_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
 
         <div className={styles.row}>
           <div className={styles.label}>가격</div>
@@ -353,6 +498,16 @@ export default function SearchFilterBox({
           <div className={styles.value}>
             <div className={styles.selectedRow}>
               <div className={styles.selectedFilters}>
+                {value.keyword && (
+                  <button
+                    type="button"
+                    className={styles.selectedItem}
+                    onClick={clearKeyword}
+                  >
+                    검색어: {value.keyword} ×
+                  </button>
+                )}
+
                 {(value.mainCategory || value.subCategory) && (
                   <button
                     type="button"
@@ -363,6 +518,26 @@ export default function SearchFilterBox({
                       ? `전체 > ${value.mainCategory} > ${value.subCategory}`
                       : `전체 > ${value.mainCategory}`}{" "}
                     ×
+                  </button>
+                )}
+
+                {value.stateName && (
+                  <button
+                    type="button"
+                    className={styles.selectedItem}
+                    onClick={clearState}
+                  >
+                    지역: {value.stateName} ×
+                  </button>
+                )}
+
+                {value.cityName && (
+                  <button
+                    type="button"
+                    className={styles.selectedItem}
+                    onClick={clearCity}
+                  >
+                    시: {value.cityName} ×
                   </button>
                 )}
 

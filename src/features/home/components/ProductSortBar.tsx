@@ -15,22 +15,22 @@ export default function ProductSortBar({
       <button
         type="button"
         className={`${styles.sortButton} ${
-          value === "recommended" ? styles.active : ""
+          value === "latest" ? styles.active : ""
         }`}
-        onClick={() => onChange("recommended")}
+        onClick={() => onChange("latest")}
       >
-        추천순
+        최신순
       </button>
       <span className={styles.divider}>|</span>
 
       <button
         type="button"
         className={`${styles.sortButton} ${
-          value === "latest" ? styles.active : ""
+          value === "recommended" ? styles.active : ""
         }`}
-        onClick={() => onChange("latest")}
+        onClick={() => onChange("recommended")}
       >
-        최신순
+        추천순
       </button>
       <span className={styles.divider}>|</span>
 
