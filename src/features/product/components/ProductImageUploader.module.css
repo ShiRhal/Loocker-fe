@@ -1,0 +1,184 @@
+.wrapper {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.uploadButton {
+  width: 100px;
+  height: 100px;
+  border: none;
+  border-radius: 8px;
+  background: #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.uploadButton:hover {
+  background: #dde2e8;
+}
+
+.cameraIcon {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cameraSvg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.countText {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1;
+}
+
+.hiddenInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sliderSection {
+  flex: 1;
+  min-width: 0;
+}
+
+.swiper {
+  width: 100%;
+  height: 112px;
+  padding: 6px 0 16px;
+}
+
+.swiperSlide {
+  width: auto !important;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+
+.previewItem {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.previewImage {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.removeButton {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #141313;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 2;
+}
+
+.removeButton:hover {
+  background: #f9fafb;
+}
+
+.swiper :global(.swiper-scrollbar) {
+  height: 6px !important;
+  background: #e5e7eb;
+  border-radius: 999px;
+}
+
+.swiper :global(.swiper-scrollbar-drag) {
+  background: #bfc5cc;
+  border-radius: 999px;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 92px;
+  transform: translateX(-50%);
+  min-width: 280px;
+  max-width: calc(100vw - 32px);
+  padding: 14px 22px;
+  border-radius: 999px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+    gap: 10px;
+  }
+
+  .uploadButton {
+    width: 68px;
+    height: 68px;
+  }
+
+  .cameraIcon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .countText {
+    font-size: 12px;
+  }
+
+  .swiper {
+    height: 78px;
+    padding: 4px 0 14px;
+  }
+
+  .previewItem {
+    width: 68px;
+    height: 68px;
+  }
+
+  .removeButton {
+    top: -6px;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+  }
+
+  .toast {
+    bottom: 86px;
+    font-size: 14px;
+    padding: 12px 18px;
+  }
+}

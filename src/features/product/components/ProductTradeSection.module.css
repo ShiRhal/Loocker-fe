@@ -1,0 +1,154 @@
+.block {
+  display: flex;
+  flex-direction: column;
+}
+
+.blockHeader {
+  margin-bottom: 12px;
+}
+
+.blockTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: #141313;
+  margin: 0;
+}
+
+.blockDescription {
+  margin: 8px 0 0;
+  font-size: 16px;
+  color: #787e89;
+}
+
+.mainDivider {
+  width: 100%;
+  height: 1px;
+  background-color: #141313;
+}
+
+.itemDivider {
+  width: 100%;
+  height: 1px;
+  background-color: #f1f4f6;
+}
+
+.tradeSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.tradeRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+  padding: 28px 0;
+}
+
+.tradeLabelBox {
+  flex: 0 0 180px;
+}
+
+.sectionLabel {
+  font-size: 20px;
+  font-weight: 700;
+  color: #141313;
+  margin: 0;
+}
+
+.tradeContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.tradeOptionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tradeOptionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.locationButtonRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.locationButton {
+  min-width: 88px;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #ffffff;
+  font-size: 13px;
+  color: #141313;
+  cursor: pointer;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #87b9ff;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  color: #141313;
+  cursor: pointer;
+  position: relative;
+}
+
+.checkboxInput {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.checkboxIcon {
+  width: 24px;
+  height: 24px;
+  color: #d1d5db;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.checkboxInput:checked + .checkboxIcon {
+  color: #3182f6;
+}
+
+@media (max-width: 768px) {
+  .blockTitle {
+    font-size: 24px;
+  }
+
+  .tradeRow {
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 0;
+  }
+
+  .tradeLabelBox {
+    flex: none;
+    width: 100%;
+  }
+}
