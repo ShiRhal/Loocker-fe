@@ -51,14 +51,14 @@ export type HomeSearchRequest = {
 
 export type HomeProductResponseItem = {
   PRODUCT_ID: number;
-  IMAGE_URL: string;
+  IMAGE_URL: string | null;
   BASE_PRICE: number;
   CITY: string;
   TITLE: string;
   CHAT_COUNT: number;
   WISH_COUNT: number;
   CREATED_AT: string;
-  YN_LOCKER: boolean;
+  LOCKER_BADGE: string | null;
 };
 
 export type HomePriceStatusResponse = {

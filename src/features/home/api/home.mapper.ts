@@ -9,6 +9,9 @@ import type {
   SortType,
 } from "../types/home.types";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL?.trim() || "http://localhost:8080";
+
 function mapSortType(sort: SortType): HomeSortType {
   switch (sort) {
     case "latest":
@@ -38,13 +41,54 @@ function toNullableNumber(value: string): number | null {
   return parsed;
 }
 
-//추후 상대 시간으로 변경해야함.
 function formatCreatedText(createdAt: string): string {
   if (!createdAt) {
     return "";
   }
 
-  return createdAt;
+  const normalized = createdAt.replace(" ", "T");
+  const targetDate = new Date(normalized);
+
+  if (Number.isNaN(targetDate.getTime())) {
+    return createdAt;
+  }
+
+  const now = new Date();
+  const diffMs = now.getTime() - targetDate.getTime();
+
+  const minute = 1000 * 60;
+  const hour = minute * 60;
+  const day = hour * 24;
+
+  if (diffMs < minute) {
+    return "방금 전";
+  }
+
+  if (diffMs < hour) {
+    return `${Math.floor(diffMs / minute)}분 전`;
+  }
+
+  if (diffMs < day) {
+    return `${Math.floor(diffMs / hour)}시간 전`;
+  }
+
+  if (diffMs < day * 7) {
+    return `${Math.floor(diffMs / day)}일 전`;
+  }
+
+  return createdAt.slice(0, 10);
+}
+
+function toImageUrl(imageUrl: string | null): string {
+  if (!imageUrl) {
+    return "";
+  }
+
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    return imageUrl;
+  }
+
+  return `${API_BASE_URL}${imageUrl}`;
 }
 
 export function toHomeSearchRequest(
@@ -58,7 +102,7 @@ export function toHomeSearchRequest(
     MAX_PRICE: toNullableNumber(filters.maxPrice),
     DS_STATE: filters.stateName,
     DS_CITY: filters.cityName,
-    YN_SOLDED: !filters.excludeSold,
+    YN_SOLDED: filters.excludeSold,
     YN_LOCKER: filters.isLocker,
     DS_TITLE: filters.keyword,
     SORT_TYPE: mapSortType(filters.sort),
@@ -89,8 +133,8 @@ export function toProductItem(
     createdText: formatCreatedText(product.CREATED_AT),
     likeCount: product.WISH_COUNT,
     chatCount: product.CHAT_COUNT,
-    isLockerTrade: product.YN_LOCKER,
-    imageUrl: product.IMAGE_URL,
+    isLockerTrade: product.LOCKER_BADGE === "LOCKER",
+    imageUrl: toImageUrl(product.IMAGE_URL),
   };
 }
 

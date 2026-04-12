@@ -12,6 +12,7 @@ import {
 
 type SearchFilterBoxProps = {
   value: SearchFilterValue;
+  appliedValue: SearchFilterValue;
   resultKeyword: string;
   totalCount: number;
   onChange: (next: SearchFilterValue) => void;
@@ -22,6 +23,7 @@ type SearchFilterBoxProps = {
 
 export default function SearchFilterBox({
   value,
+  appliedValue,
   resultKeyword,
   totalCount,
   onChange,
@@ -91,18 +93,24 @@ export default function SearchFilterBox({
 
     setSelectedStateId(matchedState ? matchedState.s_id : null);
 
-    onChange({
+    const next = {
       ...value,
       stateName: nextStateName,
       cityName: "",
-    });
+    };
+
+    onChange(next);
+    onImmediateApply(next);
   };
 
   const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange({
+    const next = {
       ...value,
       cityName: e.target.value,
-    });
+    };
+
+    onChange(next);
+    onImmediateApply(next);
   };
 
   const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -498,50 +506,50 @@ export default function SearchFilterBox({
           <div className={styles.value}>
             <div className={styles.selectedRow}>
               <div className={styles.selectedFilters}>
-                {value.keyword && (
+                {appliedValue.keyword && (
                   <button
                     type="button"
                     className={styles.selectedItem}
                     onClick={clearKeyword}
                   >
-                    검색어: {value.keyword} ×
+                    검색어: {appliedValue.keyword} ×
                   </button>
                 )}
 
-                {(value.mainCategory || value.subCategory) && (
+                {(appliedValue.mainCategory || appliedValue.subCategory) && (
                   <button
                     type="button"
                     className={styles.selectedItem}
                     onClick={clearMainCategory}
                   >
-                    {value.subCategory
-                      ? `전체 > ${value.mainCategory} > ${value.subCategory}`
-                      : `전체 > ${value.mainCategory}`}{" "}
+                    {appliedValue.subCategory
+                      ? `전체 > ${appliedValue.mainCategory} > ${appliedValue.subCategory}`
+                      : `전체 > ${appliedValue.mainCategory}`}{" "}
                     ×
                   </button>
                 )}
 
-                {value.stateName && (
+                {appliedValue.stateName && (
                   <button
                     type="button"
                     className={styles.selectedItem}
                     onClick={clearState}
                   >
-                    지역: {value.stateName} ×
+                    지역: {appliedValue.stateName} ×
                   </button>
                 )}
 
-                {value.cityName && (
+                {appliedValue.cityName && (
                   <button
                     type="button"
                     className={styles.selectedItem}
                     onClick={clearCity}
                   >
-                    시: {value.cityName} ×
+                    시: {appliedValue.cityName} ×
                   </button>
                 )}
 
-                {value.isLocker && (
+                {appliedValue.isLocker && (
                   <button
                     type="button"
                     className={styles.selectedItem}
@@ -551,7 +559,7 @@ export default function SearchFilterBox({
                   </button>
                 )}
 
-                {value.excludeSold && (
+                {appliedValue.excludeSold && (
                   <button
                     type="button"
                     className={styles.selectedItem}
@@ -561,23 +569,23 @@ export default function SearchFilterBox({
                   </button>
                 )}
 
-                {value.minPrice && (
+                {appliedValue.minPrice && (
                   <button
                     type="button"
                     className={styles.selectedItem}
                     onClick={clearMinPrice}
                   >
-                    최소 {value.minPrice}원 ×
+                    최소 {appliedValue.minPrice}원 ×
                   </button>
                 )}
 
-                {value.maxPrice && (
+                {appliedValue.maxPrice && (
                   <button
                     type="button"
                     className={styles.selectedItem}
                     onClick={clearMaxPrice}
                   >
-                    최대 {value.maxPrice}원 ×
+                    최대 {appliedValue.maxPrice}원 ×
                   </button>
                 )}
               </div>

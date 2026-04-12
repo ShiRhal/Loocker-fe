@@ -143,7 +143,7 @@ export default function HomePage() {
         setPriceStats(toPriceStats(response.PRICE_STATUS));
         setProducts(toProductItems(response.PRODUCT_LIST));
       } catch (err) {
-        console.error(err);
+        console.error("home fetch error =", err);
 
         if (!isMounted) return;
 
@@ -168,6 +168,7 @@ export default function HomePage() {
       <section className={styles.content}>
         <SearchFilterBox
           value={draftFilters}
+          appliedValue={appliedFilters}
           resultKeyword={appliedFilters.keyword}
           totalCount={priceStats.totalCount}
           onChange={handleDraftFilterChange}

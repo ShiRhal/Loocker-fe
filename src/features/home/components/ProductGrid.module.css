@@ -52,6 +52,16 @@
   color: #ffffff;
 }
 
+.imageFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
 @media (max-width: 1200px) {
   .grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
