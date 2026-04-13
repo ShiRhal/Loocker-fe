@@ -1,4 +1,11 @@
+import { useEffect, useState } from "react";
 import styles from "./ProductTradeSection.module.css";
+import {
+  findCities,
+  findStates,
+  type CityItem,
+  type StateItem,
+} from "../api/codeapi";
 
 type ProductTradeSectionProps = {
   tradeType: string[];
@@ -11,6 +18,27 @@ export default function ProductTradeSection({
   city,
   onTradeTypeChange,
 }: ProductTradeSectionProps) {
+  const [states, setStates] = useState<StateItem[]>([]);
+  const [cities, setCities] = useState<CityItem[]>([]);
+
+  useEffect(() => {
+    const fetchLocationCodes = async () => {
+      try {
+        const [stateRes, cityRes] = await Promise.all([
+          findStates(),
+          findCities(),
+        ]);
+
+        setStates(stateRes);
+        setCities(cityRes);
+      } catch (error) {
+        console.error("도/시 조회 실패", error);
+      }
+    };
+
+    fetchLocationCodes();
+  }, []);
+
   const isDeliveryTradeChecked = tradeType.includes("DELIVERY");
   const isDirectTradeChecked = tradeType.includes("DIRECT");
   const isLockerTradeChecked = tradeType.includes("LOCKER");
@@ -158,6 +186,11 @@ export default function ProductTradeSection({
           </div>
         </div>
       </section>
+
+      <div style={{ display: "none" }}>
+        {states.length}
+        {cities.length}
+      </div>
     </section>
   );
 }

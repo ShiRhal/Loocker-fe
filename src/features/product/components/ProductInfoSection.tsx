@@ -29,6 +29,35 @@ type ProductInfoSectionProps = {
   onAccessoryStatusChange: (value: string) => void;
 };
 
+function formatPrice(value: number | "") {
+  if (value === "") return "";
+  return value.toLocaleString("ko-KR");
+}
+
+function convertPriceToKorean(value: number | "") {
+  if (value === "" || value <= 0) return "";
+
+  const eok = Math.floor(value / 100000000);
+  const man = Math.floor((value % 100000000) / 10000);
+  const rest = value % 10000;
+
+  const parts: string[] = [];
+
+  if (eok > 0) {
+    parts.push(`${eok}억원`);
+  }
+
+  if (man > 0) {
+    parts.push(`${man}만원`);
+  }
+
+  if (rest > 0) {
+    parts.push(`${rest.toLocaleString("ko-KR")}원`);
+  }
+
+  return parts.join(" ");
+}
+
 export default function ProductInfoSection({
   images,
   toastMessage,
@@ -59,6 +88,9 @@ export default function ProductInfoSection({
 
     onBasePriceChange(Number(onlyNumber));
   };
+
+  const formattedPrice = formatPrice(basePrice);
+  const koreanPriceText = convertPriceToKorean(basePrice);
 
   return (
     <section className={styles.block}>
@@ -101,11 +133,16 @@ export default function ProductInfoSection({
             type="text"
             placeholder="상품명을 입력해주세요"
             value={title}
+            maxLength={64}
             onChange={(e) => onTitleChange(e.target.value)}
           />
 
+          <div className={styles.textCount}>{title.length} / 64</div>
+
           {errors.TITLE && (
-            <div className={styles.errorText}>상품명을 입력해주세요.</div>
+            <div className={styles.errorText}>
+              상품명은 최소 2자 이상 입력해 주세요.
+            </div>
           )}
         </div>
       </section>
@@ -136,11 +173,15 @@ export default function ProductInfoSection({
                 className={styles.priceInput}
                 type="text"
                 placeholder="판매가격"
-                value={basePrice}
+                value={formattedPrice}
                 onChange={(e) => handlePriceChange(e.target.value)}
               />
             </div>
           </div>
+
+          {!errors.BASE_PRICE && koreanPriceText && (
+            <div className={styles.priceGuideText}>{koreanPriceText}</div>
+          )}
 
           {errors.BASE_PRICE && (
             <div className={styles.errorText}>상품 가격을 입력해주세요.</div>
@@ -167,8 +208,7 @@ export default function ProductInfoSection({
 - 구매 시기 (년, 월, 일)
 - 사용 기간
 - 하자 여부
-* 실제 촬영한 사진과 함께 상세 정보를 입력해주세요.
-`}
+* 실제 촬영한 사진과 함께 상세 정보를 입력해주세요.`}
               value={description}
               onChange={(e) => onDescriptionChange(e.target.value)}
               maxLength={5000}
@@ -184,7 +224,7 @@ export default function ProductInfoSection({
 
           {errors.DESCRIPTION && (
             <div className={styles.errorText}>
-              상품 설명은 필수 입력 사항입니다.
+              상품 설명은 10자 이상 입력해주세요.
             </div>
           )}
         </div>

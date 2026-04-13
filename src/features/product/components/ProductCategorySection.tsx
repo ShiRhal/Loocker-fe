@@ -1,12 +1,11 @@
+import { useEffect, useMemo, useState } from "react";
 import styles from "./ProductCategorySection.module.css";
 import {
-  MAIN_CATEGORIES,
-  SUB_CATEGORIES,
-} from "../../../shared/constants/category";
-import type {
-  MainCategory,
-  SubCategory,
-} from "../../../shared/types/category.types";
+  findMainCategories,
+  findSubCategories,
+  type MainCategoryItem,
+  type SubCategoryItem,
+} from "../api/codeapi";
 
 type ProductCategorySectionProps = {
   value: string;
@@ -17,20 +16,47 @@ export default function ProductCategorySection({
   value,
   onChange,
 }: ProductCategorySectionProps) {
-  const selectedSubCategory: SubCategory | null =
-    SUB_CATEGORIES.find((sub) => sub.s_category_name === value) ?? null;
+  const [mainCategories, setMainCategories] = useState<MainCategoryItem[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategoryItem[]>([]);
 
-  const selectedMainCategory: MainCategory | null = selectedSubCategory
-    ? (MAIN_CATEGORIES.find(
-        (main) => main.m_category_id === selectedSubCategory.parent_id,
-      ) ?? null)
-    : null;
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const [mainRes, subRes] = await Promise.all([
+          findMainCategories(),
+          findSubCategories(),
+        ]);
 
-  const filteredSubCategories = selectedMainCategory
-    ? SUB_CATEGORIES.filter(
-        (sub) => sub.parent_id === selectedMainCategory.m_category_id,
-      )
-    : [];
+        setMainCategories(mainRes);
+        setSubCategories(subRes);
+      } catch (error) {
+        console.error("카테고리 조회 실패", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const selectedSubCategory = useMemo(() => {
+    return subCategories.find((sub) => sub.SUB_CATEGORY === value) ?? null;
+  }, [subCategories, value]);
+
+  const selectedMainCategory = useMemo(() => {
+    if (!selectedSubCategory) return null;
+
+    return (
+      mainCategories.find((main) => main.ID === selectedSubCategory.MAIN_ID) ??
+      null
+    );
+  }, [mainCategories, selectedSubCategory]);
+
+  const filteredSubCategories = useMemo(() => {
+    if (!selectedMainCategory) return [];
+
+    return subCategories.filter(
+      (sub) => sub.MAIN_ID === selectedMainCategory.ID,
+    );
+  }, [selectedMainCategory, subCategories]);
 
   return (
     <section className={styles.sectionRow}>
@@ -46,26 +72,24 @@ export default function ProductCategorySection({
         >
           <div className={styles.categoryPanel}>
             <ul className={styles.categoryList}>
-              {MAIN_CATEGORIES.map((category) => {
-                const isSelected =
-                  selectedMainCategory?.m_category_id ===
-                  category.m_category_id;
+              {mainCategories.map((category) => {
+                const isSelected = selectedMainCategory?.ID === category.ID;
 
                 return (
                   <li
-                    key={category.m_category_id}
+                    key={category.ID}
                     className={`${styles.categoryItem} ${
                       isSelected ? styles.categoryItemSelected : ""
                     }`}
                     onClick={() => {
-                      const firstSubCategory = SUB_CATEGORIES.find(
-                        (sub) => sub.parent_id === category.m_category_id,
+                      const firstSubCategory = subCategories.find(
+                        (sub) => sub.MAIN_ID === category.ID,
                       );
 
-                      onChange(firstSubCategory?.s_category_name ?? "");
+                      onChange(firstSubCategory?.SUB_CATEGORY ?? "");
                     }}
                   >
-                    {category.m_category_name}
+                    {category.MAIN_CATEGORY}
                   </li>
                 );
               })}
@@ -80,19 +104,17 @@ export default function ProductCategorySection({
             {selectedMainCategory && (
               <ul className={styles.categoryList}>
                 {filteredSubCategories.map((category) => {
-                  const isSelected =
-                    selectedSubCategory?.s_category_id ===
-                    category.s_category_id;
+                  const isSelected = selectedSubCategory?.ID === category.ID;
 
                   return (
                     <li
-                      key={category.s_category_id}
+                      key={category.ID}
                       className={`${styles.categoryItem} ${
                         isSelected ? styles.categoryItemSelected : ""
                       }`}
-                      onClick={() => onChange(category.s_category_name)}
+                      onClick={() => onChange(category.SUB_CATEGORY)}
                     >
-                      {category.s_category_name}
+                      {category.SUB_CATEGORY}
                     </li>
                   );
                 })}

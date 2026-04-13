@@ -205,3 +205,10 @@
 .textCountError {
   color: #ff4d4f;
 }
+
+.priceGuideText {
+  font-size: 14px;
+  font-weight: 600;
+  color: #a2a6af;
+  line-height: 1.4;
+}

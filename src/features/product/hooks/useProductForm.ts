@@ -113,12 +113,14 @@ export default function useProductForm() {
   };
 
   const setTitle = (value: string) => {
+    const limitedValue = value.slice(0, 64);
+
     setForm((prev) => ({
       ...prev,
-      TITLE: value,
+      TITLE: limitedValue,
     }));
 
-    if (value.trim()) {
+    if (limitedValue.trim().length >= 2) {
       setErrors((prev) => ({
         ...prev,
         TITLE: false,
@@ -134,12 +136,15 @@ export default function useProductForm() {
   };
 
   const setBasePrice = (value: number | "") => {
+    const limitedValue =
+      value === "" ? "" : Math.min(Number(value), 99_999_999);
+
     setForm((prev) => ({
       ...prev,
-      BASE_PRICE: value,
+      BASE_PRICE: limitedValue,
     }));
 
-    if (value !== "" && Number(value) > 0) {
+    if (limitedValue !== "" && Number(limitedValue) > 0) {
       setErrors((prev) => ({
         ...prev,
         BASE_PRICE: false,
@@ -189,7 +194,7 @@ export default function useProductForm() {
       DESCRIPTION: false,
     };
 
-    if (!form.TITLE.trim()) {
+    if (form.TITLE.trim().length < 2) {
       nextErrors.TITLE = true;
       setErrors(nextErrors);
 
