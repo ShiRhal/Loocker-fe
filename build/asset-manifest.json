@@ -1,0 +1,22 @@
+{
+  "files": {
+    "main.css": "/static/css/main.75ac70d0.css",
+    "main.js": "/static/js/main.67a3c2a1.js",
+    "static/media/Loocker.png": "/static/media/Loocker.3ee716aeb3c6d9b65779.png",
+    "static/media/Kakao.svg": "/static/media/Kakao.089747302ea61e487c4ef5f53c628f5a.svg",
+    "static/media/Google.svg": "/static/media/Google.6d4fd9251ebda773620fdedb30bb85d4.svg",
+    "static/media/chat.svg": "/static/media/chat.2250e9bcd005aaa240eeeae5e53be352.svg",
+    "index.html": "/index.html",
+    "static/media/sale.svg": "/static/media/sale.bdda34358207cd396d3e5ed4a565cb1b.svg",
+    "static/media/user.svg": "/static/media/user.ffc375b7430252b62254931539550ce5.svg",
+    "static/media/search.svg": "/static/media/search.f6219c0a0fd9bacf0a005e52781c9009.svg",
+    "static/media/left.svg": "/static/media/left.e69ecb4c871448641176badb7498e406.svg",
+    "static/media/right.svg": "/static/media/right.35dd77d3901656154ea67e44b7b15fea.svg",
+    "main.75ac70d0.css.map": "/static/css/main.75ac70d0.css.map",
+    "main.67a3c2a1.js.map": "/static/js/main.67a3c2a1.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.75ac70d0.css",
+    "static/js/main.67a3c2a1.js"
+  ]
+}

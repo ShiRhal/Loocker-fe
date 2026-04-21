@@ -1,0 +1,243 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+}
+
+.header {
+  display: flex;
+  width: 100%;
+  padding: 10px 20px;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+  position: relative;
+}
+
+.backButton {
+  position: absolute;
+  left: 20px;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.backButton:hover {
+  color: #000;
+}
+
+.title {
+  flex: 1;
+  text-align: center;
+  margin-right: 24px; /* 뒤로가기 버튼 영역만큼 여백을 주어 완벽한 중앙 정렬 */
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.main {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #e5e7eb; /* jnGray-200 */
+  display: flex;
+  flex-direction: column;
+}
+
+.section {
+  background-color: #fff;
+  padding: 24px 20px 32px;
+}
+
+.section + .section {
+  margin-top: 6px;
+}
+
+.headline {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #111827;
+  margin-bottom: 24px;
+}
+
+.subText {
+  font-size: 14px;
+  color: #4b5563; /* jnGray-600 */
+  margin-bottom: 20px;
+}
+
+.reasonList {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.reasonItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.checkboxInput {
+  display: none;
+}
+
+.checkboxIcon {
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.reasonText {
+  font-size: 16px;
+  color: #111827;
+}
+
+.textareaContainer {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  margin-top: 8px;
+  margin-left: 32px; /* 아이콘 넓이만큼 들여쓰기 */
+}
+
+.textarea {
+  width: 100%;
+  height: 68px;
+  border: none;
+  resize: none;
+  outline: none;
+  font-size: 16px;
+  color: #111827;
+  font-family: inherit;
+}
+
+.textarea::placeholder {
+  color: #6b7280;
+}
+
+.charCount {
+  font-size: 14px;
+  color: #6b7280;
+  text-align: right;
+  margin-top: 8px;
+}
+
+/* 유의사항 섹션 */
+.noticeTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 24px;
+}
+
+.noticeList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.noticeItem {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.noticeItem:last-child {
+  margin-bottom: 0;
+}
+
+.noticeNumber {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0dcc5a; /* jnGreen */
+  margin-right: 20px;
+  flex-shrink: 0;
+}
+
+.noticeText {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #1f2937;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.retentionList {
+  margin-top: 20px;
+  border-top: 1px solid #111827;
+  list-style: none;
+  padding: 0;
+}
+
+.retentionItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.retentionText {
+  font-size: 14px;
+  color: #1f2937;
+  margin: 0;
+}
+
+.retentionPeriod {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.footer {
+  background-color: #fff;
+  padding: 12px 20px;
+  border-top: 1px solid #d1d5db;
+  margin-top: auto;
+}
+
+.submitButton {
+  width: 100%;
+  height: 52px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submitButtonDisabled {
+  background-color: #9ca3af;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+.submitButtonActive {
+  background-color: #111827;
+  color: #fff;
+}

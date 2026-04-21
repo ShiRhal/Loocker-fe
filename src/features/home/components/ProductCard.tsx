@@ -1,11 +1,6 @@
 import type { ProductItem } from "../types/home.types";
 import styles from "./ProductCard.module.css";
 
-/*
-  홈 화면 상품 카드 컴포넌트입니다.
-  이미지 1:1, 제목 2줄, 가격, 지역과 시간, 찜수와 채팅수를 표시합니다.
-*/
-
 type ProductCardProps = {
   product: ProductItem;
 };
@@ -15,6 +10,8 @@ function formatPrice(price: number) {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const hasImage = Boolean(product.imageUrl);
+
   return (
     <article className={styles.card}>
       <div className={styles.imageWrap}>
@@ -23,11 +20,15 @@ export default function ProductCard({ product }: ProductCardProps) {
         )}
 
         <button type="button" className={styles.imageButton}>
-          <img
-            src={product.imageUrl}
-            alt={product.title}
-            className={styles.image}
-          />
+          {hasImage ? (
+            <img
+              src={product.imageUrl}
+              alt={product.title}
+              className={styles.image}
+            />
+          ) : (
+            <div className={styles.imageFallback}>이미지 없음</div>
+          )}
         </button>
 
         <button type="button" className={styles.likeButton} aria-label="찜하기">

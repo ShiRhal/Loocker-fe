@@ -1,0 +1,174 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+}
+
+.header {
+  display: flex;
+  width: 100%;
+  padding: 10px 20px;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+  position: relative;
+}
+
+.backButton {
+  position: absolute;
+  left: 20px;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.backButton:hover {
+  color: #000;
+}
+
+.title {
+  flex: 1;
+  text-align: center;
+  margin-right: 24px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tabs {
+  border-bottom: 1px solid #d9d9d9;
+}
+
+.tabList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  padding: 0 26px;
+  gap: 24px;
+}
+
+.tabButton {
+  padding: 16px 0;
+  margin: 0;
+  border: none;
+  background: none;
+  color: #9ca3af;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid #141313;
+  padding-bottom: 14px;
+}
+
+.scrollArea {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.searchSection {
+  padding: 20px;
+}
+
+.search {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 44px;
+  background-color: #f1f4f6;
+  border-radius: 6px;
+  padding: 10px 12px;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.search button {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.search button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 14px;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: #9ca3af;
+}
+
+.listContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.productList {
+  list-style: none;
+  margin: 0;
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.observer {
+  position: relative;
+  width: 100%;
+  height: 1px;
+}
+
+.emptyState {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #8c8c8c;
+}
+
+.emptyState svg {
+  color: #bfbfbf;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 14px;
+  color: #8c8c8c;
+}

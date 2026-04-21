@@ -28,11 +28,11 @@ export default function AuthProvider({ children }: Props) {
       const data = await authApi.me();
 
       setMe(data);
-      localStorage.setItem("me", JSON.stringify(data));
+      localStorage.setItem("userId", String(data.userId));
       localStorage.setItem("nickname", data.nickname);
     } catch {
       setMe(null);
-      localStorage.removeItem("me");
+      localStorage.removeItem("userId");
       localStorage.removeItem("nickname");
     }
   };

@@ -1,11 +1,15 @@
 import styles from "./PriceStatsBox.module.css";
+import type { PriceStats } from "../types/home.types";
 
-/*
-  현재 페이지 기준 가격 통계 박스입니다.
-  참고 이미지처럼 하나의 요약 박스 안에 3개 통계를 나누어 배치합니다.
-*/
+type PriceStatsBoxProps = {
+  stats: PriceStats;
+};
 
-export default function PriceStatsBox() {
+function formatPrice(value: number) {
+  return `${value.toLocaleString("ko-KR")}원`;
+}
+
+export default function PriceStatsBox({ stats }: PriceStatsBoxProps) {
   return (
     <section className={styles.wrapper} aria-label="가격 통계">
       <div className={styles.header}>
@@ -16,17 +20,17 @@ export default function PriceStatsBox() {
       <div className={styles.section}>
         <div className={styles.item}>
           <p className={styles.label}>평균 가격</p>
-          <strong className={styles.value}>155,554원</strong>
+          <strong className={styles.value}>{formatPrice(stats.avgPrice)}</strong>
         </div>
 
         <div className={styles.item}>
           <p className={styles.label}>가장 높은 가격</p>
-          <strong className={styles.value}>800,000원</strong>
+          <strong className={styles.value}>{formatPrice(stats.maxPrice)}</strong>
         </div>
 
         <div className={styles.item}>
           <p className={styles.label}>가장 낮은 가격</p>
-          <strong className={styles.value}>5,000원</strong>
+          <strong className={styles.value}>{formatPrice(stats.minPrice)}</strong>
         </div>
       </div>
     </section>

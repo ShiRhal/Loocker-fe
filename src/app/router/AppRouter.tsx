@@ -3,6 +3,7 @@ import AppLayout from "../../layout/AppLayout";
 import HomePage from "../../features/home/pages/HomePage";
 import SignInPage from "../../features/auth/pages/SignInPage";
 import ProductFormPage from "../../features/product/pages/ProductFormPage";
+import MyPage from "../../features/my/pages/MyPage";
 
 export default function AppRouter() {
   return (
@@ -12,6 +13,7 @@ export default function AppRouter() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/product/form" element={<ProductFormPage />} />
+          <Route path="/mypage" element={<MyPage />} />
         </Route>
 
         {/* ✅ NavBar 없는 페이지 */}
