@@ -79,6 +79,7 @@ export default function NavBar() {
   };
 
   const goIfAuthedOrSignin = (to: string) => {
+    // 클릭시 로그인 상태면 이동, 로그인 상태가 아니면 로그인 페이지로 이동
     if (me) {
       nav(to);
       return;

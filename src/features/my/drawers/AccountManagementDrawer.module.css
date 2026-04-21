@@ -1,0 +1,712 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+}
+
+.main {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100%;
+}
+
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.accountCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background-color: #fff;
+}
+
+.accountCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bankInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bankLogo {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  border: 1px solid #d1d5db;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.bankLogoFallback {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  border: 1px solid #d1d5db;
+  background-color: #f3f4f6;
+  flex-shrink: 0;
+}
+
+.bankName {
+  font-size: 16px;
+  font-weight: 500;
+  color: #111827;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.defaultBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  border-radius: 9999px;
+  background-color: #0dcc5a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 6px;
+}
+
+.accountDetailRows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.accountDetailRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detailLabel {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.detailValue {
+  font-size: 14px;
+  color: #111827;
+  font-weight: 500;
+}
+
+.cardActionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.cardActionButton {
+  flex: 1;
+  height: 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cardActionButtonDanger {
+  flex: 1;
+  height: 36px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background-color: #fff5f5;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cardActionButton:disabled,
+.cardActionButtonDanger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.headerEditButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  border: none;
+  background: transparent;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.headerEditButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.addAccountButton {
+  margin-top: 4px;
+  width: 100%;
+  height: 52px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #141313;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.addAccountButton:hover:not(:disabled) {
+  border-color: #9ca3af;
+  background-color: #f9fafb;
+}
+
+.addAccountButton:active:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+.addButtonInner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.addAccountButton:disabled {
+  opacity: 0.45;
+  color: #9ca3af;
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.noticeBox {
+  margin-top: auto;
+  border-radius: 8px;
+  background-color: #e5e7eb;
+  padding: 10px 12px;
+}
+
+.noticeHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #363738;
+}
+
+.noticeHeader svg {
+  color: #363738;
+}
+
+.noticeList {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.noticeList li {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #363738;
+  list-style: disc;
+}
+
+.errorText {
+  margin: 0;
+  font-size: 13px;
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+/* Form Styles */
+.form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px;
+  position: relative;
+}
+
+.form > * {
+  margin-top: 0;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  margin-top: 24px;
+  gap: 12px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #141313;
+  line-height: 1.5;
+}
+
+.inputWrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  transition: border-color 0.2s;
+}
+
+.inputWrapper:focus-within {
+  border-color: #6b7280;
+}
+
+.input {
+  flex: 1;
+  width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: #141313;
+}
+
+.input:disabled {
+  background-color: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
+
+.selectWrapper {
+  position: relative;
+}
+
+.selectButton {
+  width: 100%;
+  height: 44px;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.selectButton:hover {
+  border-color: #9ca3af;
+}
+
+.selectButton:focus {
+  outline: 2px solid #9ca3af;
+  outline-offset: 2px;
+}
+
+.placeholder {
+  color: #9ca3af;
+}
+
+.selectedBank {
+  color: #141313;
+  font-weight: 500;
+}
+
+.bankMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.bankOption {
+  width: 100%;
+  text-align: left;
+  padding: 12px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.bankOption:hover {
+  background-color: #f3f4f6;
+}
+
+.bankOptionSelected {
+  background-color: #f0f9ff;
+  color: #141313;
+  font-weight: 500;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #141313;
+  user-select: none;
+}
+
+.checkboxIconWrapper {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.checkbox {
+  display: none;
+}
+
+.checkboxIcon {
+  display: block;
+  pointer-events: none;
+}
+
+.notice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 24px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6b7280;
+  text-align: center;
+}
+
+.noticeEmphasis {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.submitButton {
+  flex: 1;
+  height: 52px;
+  padding: 14px 16px;
+  border-radius: 4px;
+  border: none;
+  background-color: #141313;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: #374151;
+}
+
+.submitButton:active:not(:disabled) {
+  background-color: #111827;
+}
+
+.submitButtonDisabled {
+  background-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  border-radius: 6px;
+  border: 1px solid #9ca3af;
+  background-color: #fff;
+  color: #141313;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.registerButton:hover {
+  border-color: #141313;
+  background-color: #f9fafb;
+}
+
+.registerButton:active {
+  border-color: #141313;
+  background-color: #f3f4f6;
+}
+
+.registerButton svg {
+  flex-shrink: 0;
+}
+
+/* Form Styles */
+.form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px;
+  position: relative;
+}
+
+.backButton {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+  z-index: 10;
+}
+
+.backButton:hover {
+  color: #000;
+}
+
+.form > * {
+  margin-top: 0;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  margin-top: 24px;
+  gap: 12px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #141313;
+  line-height: 1.5;
+}
+
+.inputWrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  transition: border-color 0.2s;
+}
+
+.inputWrapper:focus-within {
+  border-color: #6b7280;
+}
+
+.input {
+  flex: 1;
+  width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: #141313;
+}
+
+.input:disabled {
+  background-color: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
+
+.selectWrapper {
+  position: relative;
+}
+
+.selectButton {
+  width: 100%;
+  height: 44px;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.selectButton:hover {
+  border-color: #9ca3af;
+}
+
+.selectButton:focus {
+  outline: 2px solid #9ca3af;
+  outline-offset: 2px;
+}
+
+.placeholder {
+  color: #9ca3af;
+}
+
+.selectedBank {
+  color: #141313;
+  font-weight: 500;
+}
+
+.bankMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.bankOption {
+  width: 100%;
+  text-align: left;
+  padding: 12px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.bankOption:hover {
+  background-color: #f3f4f6;
+}
+
+.bankOptionSelected {
+  background-color: #f0f9ff;
+  color: #141313;
+  font-weight: 500;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #141313;
+  user-select: none;
+}
+
+.notice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 24px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6b7280;
+  text-align: center;
+}
+
+.noticeEmphasis {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.submitButtonContainer {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding: 12px 20px;
+  padding-top: 20px;
+  margin-top: auto;
+  margin-left: -20px;
+  margin-right: -20px;
+  margin-bottom: -20px;
+  background-color: #fff;
+  border-top: 1px solid #e5e7eb;
+}
+
+.submitButton {
+  flex: 1;
+  height: 52px;
+  padding: 14px 16px;
+  border-radius: 4px;
+  border: none;
+  background-color: #141313;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: #374151;
+}
+
+.submitButton:active:not(:disabled) {
+  background-color: #111827;
+}
+
+.submitButtonDisabled {
+  background-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}

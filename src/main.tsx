@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./main.css";
+import "antd/dist/reset.css";
 import AppProviders from "./app/providers/AppProviders";
 import AppRouter from "./app/router/AppRouter";
 
