@@ -11,23 +11,18 @@ import leftIcon from "../../../assets/icons/left.svg";
 import rightIcon from "../../../assets/icons/right.svg";
 import "../../styles/global.css";
 
-type NavBarProps = {
-  showRecent?: boolean;
-};
-
 type PopularKeyword = {
   rank: number;
   keyword: string;
 };
 
-export default function NavBar({ showRecent = true }: NavBarProps) {
+export default function NavBar() {
   const { me } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
 
   const [pageIndex, setPageIndex] = useState(0);
 
-  // 나중에 백엔드에서 받아올 값
   const popularKeywords: PopularKeyword[] = [
     { rank: 1, keyword: "레고" },
     { rank: 2, keyword: "ps5" },
@@ -75,9 +70,7 @@ export default function NavBar({ showRecent = true }: NavBarProps) {
 
   const handlePrevKeywords = () => {
     if (!keywordPages.length) return;
-    setPageIndex(
-      (prev) => (prev - 1 + keywordPages.length) % keywordPages.length,
-    );
+    setPageIndex((prev) => (prev - 1 + keywordPages.length) % keywordPages.length);
   };
 
   const handleNextKeywords = () => {
@@ -144,11 +137,7 @@ export default function NavBar({ showRecent = true }: NavBarProps) {
                   type="button"
                   onClick={handleNextKeywords}
                 >
-                  <img
-                    src={rightIcon}
-                    alt="다음"
-                    className={styles.rightIcon}
-                  />
+                  <img src={rightIcon} alt="다음" className={styles.rightIcon} />
                 </button>
 
                 <ul className={styles.keywordList}>
@@ -158,12 +147,8 @@ export default function NavBar({ showRecent = true }: NavBarProps) {
                         href={`/search/${encodeURIComponent(item.keyword)}`}
                         className={styles.keywordLink}
                       >
-                        <span className={styles.keywordRank}>
-                          {item.rank}.{" "}
-                        </span>
-                        <span className={styles.keywordText}>
-                          {item.keyword}
-                        </span>
+                        <span className={styles.keywordRank}>{item.rank}. </span>
+                        <span className={styles.keywordText}>{item.keyword}</span>
                       </a>
                     </li>
                   ))}
@@ -200,20 +185,6 @@ export default function NavBar({ showRecent = true }: NavBarProps) {
               <img src={userIcon} alt="마이" className={styles.userIcon} />
               <span className={styles.OptionText}>마이</span>
             </button>
-
-            {showRecent && (
-              <aside className={styles.recentAside} aria-label="최근본상품">
-                <h2 className={styles.recentTitle}>최근본상품</h2>
-
-                <ul className={styles.recentList}>
-                  <li className={styles.recentEmptyItem}>
-                    <span className={styles.recentEmptyText}>
-                      최근 본 상품이 없습니다.
-                    </span>
-                  </li>
-                </ul>
-              </aside>
-            )}
           </div>
         </div>
       </div>
