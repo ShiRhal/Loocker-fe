@@ -1,7 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styles from './AddressManagementDrawer.module.css';
 import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import { myPageApi, type UserInfoAddress } from '../api/userInfoApi';
+
+declare global {
+  interface Window {
+    daum?: {
+      Postcode: new (options: {
+        oncomplete: (data: { roadAddress: string; jibunAddress: string }) => void;
+      }) => { open: () => void };
+    };
+  }
+}
 
 interface AddressManagementDrawerProps {
   onClose: () => void;
@@ -13,7 +23,6 @@ interface AddressManagementDrawerProps {
 interface AddressFormData {
   title: string;
   name: string;
-  phone: string;
   address: string;
   detailAddress: string;
   isMain: boolean;
@@ -29,10 +38,11 @@ const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({
   const [isEditMode, setIsEditMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isPostcodeReady, setIsPostcodeReady] = useState<boolean>(Boolean(window.daum?.Postcode));
+  const detailAddressInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<AddressFormData>({
     title: '',
-    name: '고호진', // 초기값 세팅
-    phone: '01049481760', // 초기값 세팅
+    name: '',
     address: '',
     detailAddress: '',
     isMain: false,
@@ -47,9 +57,60 @@ const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({
     setFormData((prev) => ({ ...prev, isMain: !prev.isMain }));
   };
 
+  useEffect(() => {
+    if (window.daum?.Postcode) {
+      setIsPostcodeReady(true);
+      return;
+    }
+
+    const scriptId = 'daum-postcode-script';
+    const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
+
+    const onLoad = () => {
+      setIsPostcodeReady(Boolean(window.daum?.Postcode));
+    };
+    const onError = () => {
+      setIsPostcodeReady(false);
+    };
+
+    if (existingScript) {
+      existingScript.addEventListener('load', onLoad);
+      existingScript.addEventListener('error', onError);
+      return () => {
+        existingScript.removeEventListener('load', onLoad);
+        existingScript.removeEventListener('error', onError);
+      };
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+    script.async = true;
+    script.addEventListener('load', onLoad);
+    script.addEventListener('error', onError);
+    document.body.appendChild(script);
+
+    return () => {
+      script.removeEventListener('load', onLoad);
+      script.removeEventListener('error', onError);
+    };
+  }, []);
+
   const handleAddressSearch = () => {
-    // TODO: 다음 우편번호 API 등의 주소 검색 로직 연동
-    setFormData((prev) => ({ ...prev, address: '서울 강남구 테헤란로 123' }));
+    setError(null);
+
+    if (!window.daum?.Postcode || !isPostcodeReady) {
+      setError('주소 검색 스크립트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+
+    new window.daum.Postcode({
+      oncomplete: (data) => {
+        const selectedAddress = data.roadAddress || data.jibunAddress || '';
+        setFormData((prev) => ({ ...prev, address: selectedAddress }));
+        detailAddressInputRef.current?.focus();
+      },
+    }).open();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,7 +177,6 @@ const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({
   const isFormValid =
     formData.title &&
     formData.name &&
-    formData.phone &&
     formData.address &&
     formData.detailAddress &&
     !submitting;
@@ -161,20 +221,6 @@ const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({
                 onChange={handleInputChange}
               />
             </div>
-            <div className={styles.inputGroup}>
-              <input
-                id="phone"
-                className={styles.input}
-                type="text"
-                placeholder="휴대폰 번호 (- 없이 숫자만 입력)"
-                value={formData.phone}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  setFormData((prev) => ({ ...prev, phone: value }));
-                }}
-              />
-            </div>
-            
             <button
               type="button"
               className={`${styles.searchAddressBtn} ${formData.address ? styles.searchAddressBtnActive : ''}`}
@@ -191,6 +237,7 @@ const AddressManagementDrawer: React.FC<AddressManagementDrawerProps> = ({
                 placeholder="상세주소 (예시 : 101동 101호)"
                 value={formData.detailAddress}
                 onChange={handleInputChange}
+                ref={detailAddressInputRef}
               />
             </div>
 

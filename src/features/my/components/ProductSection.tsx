@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import styles from '../pages/MyPage.module.css';
-import type { UserInfoProduct } from '../api/userInfoApi';
+import { myPageApi, type UserInfoProduct } from '../api/userInfoApi';
+import { toApiAssetUrl } from '../../../app/config/api';
 
 interface ProductSectionProps {
   products: UserInfoProduct[];
+  onRefreshProducts: () => Promise<void>;
 }
-
-const tabLabels = ['전체'] as const;
 
 type SortOrder = 'none' | 'asc' | 'desc';
 type ProductStatusFilter = 'SALE' | 'SOLD' | 'TRADING' | null;
@@ -24,8 +24,13 @@ const normalizeStatusCode = (statusCode: string): 'SALE' | 'SOLD' | 'TRADING' | 
   return null;
 };
 
-const ProductSection: React.FC<ProductSectionProps> = ({ products }) => {
-  const [selectedTab, setSelectedTab] = useState<string>('전체');
+const getNextSortOrder = (order: SortOrder): SortOrder => {
+  if (order === 'none') return 'asc';
+  if (order === 'asc') return 'desc';
+  return 'none';
+};
+
+const ProductSection: React.FC<ProductSectionProps> = ({ products, onRefreshProducts }) => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [priceSort, setPriceSort] = useState<SortOrder>('none');
   const [dateSort, setDateSort] = useState<SortOrder>('none');
@@ -49,18 +54,13 @@ const ProductSection: React.FC<ProductSectionProps> = ({ products }) => {
     };
   }, []);
 
-  const tabFilteredProducts = useMemo(() => {
-    if (selectedTab === '전체') return products;
-    return products;
-  }, [products, selectedTab]);
-
   const handleSelectProduct = (product: UserInfoProduct) => {
     // TODO: 제품 상세 페이지로 이동하는 등의 동작을 구현하세요.
     console.log('선택된 상품', product);
   };
 
   const visibleProducts = useMemo(() => {
-    let next = [...tabFilteredProducts];
+    let next = [...products];
     const normalizedKeyword = searchKeyword.trim().toLowerCase();
 
     if (normalizedKeyword) {
@@ -88,15 +88,15 @@ const ProductSection: React.FC<ProductSectionProps> = ({ products }) => {
     }
 
     return next;
-  }, [tabFilteredProducts, searchKeyword, statusFilter, priceSort, dateSort]);
+  }, [products, searchKeyword, statusFilter, priceSort, dateSort]);
 
-  const setColumnSort = (target: 'price' | 'date', direction: 'asc' | 'desc') => {
+  const setColumnSort = (target: 'price' | 'date') => {
     if (target === 'price') {
-      setPriceSort((prev) => (prev === direction ? 'none' : direction));
+      setPriceSort((prev) => getNextSortOrder(prev));
       setDateSort('none');
       return;
     }
-    setDateSort((prev) => (prev === direction ? 'none' : direction));
+    setDateSort((prev) => getNextSortOrder(prev));
     setPriceSort('none');
   };
 
@@ -106,10 +106,16 @@ const ProductSection: React.FC<ProductSectionProps> = ({ products }) => {
     window.location.href = `/product/form?type=edit&productId=${product.PRODUCT_ID}`;
   };
 
-  const handleDeleteConfirm = () => {
-    if (!deleteTarget) return;
-    console.log('삭제 확인 클릭', deleteTarget);
-    setDeleteTarget(null);
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget?.PRODUCT_ID) return;
+    try {
+      await myPageApi.deleteProductDetail({ PRODUCT_ID: deleteTarget.PRODUCT_ID });
+      await onRefreshProducts();
+    } catch (e) {
+      console.error('상품 삭제 실패', e);
+    } finally {
+      setDeleteTarget(null);
+    }
   };
 
   const formatDate = (value: string) => {
@@ -123,21 +129,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ products }) => {
   return (
     <div className={styles.productsSection}>
       <div className={styles.productsHeader}>
-        <h3 className={styles.productsTitle}>내 상품</h3>
-        <div className={styles.productsTabs}>
-          <div className={styles.productsTabList}>
-            {tabLabels.map((label) => (
-              <button
-                key={label}
-                type="button"
-                className={`${styles.productsTab} ${selectedTab === label ? '' : styles.productsTabInactive}`}
-                onClick={() => setSelectedTab(label)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <h3 className={styles.productsTitle}>내 상품 관리</h3>
         <div className={styles.productsControls}>
           <div className={styles.productsCount}>총 {visibleProducts.length}개</div>
         </div>
@@ -190,21 +182,18 @@ const ProductSection: React.FC<ProductSectionProps> = ({ products }) => {
                   <span className={styles.sortArrows}>
                     <button
                       type="button"
-                      className={`${styles.sortArrowButton} ${priceSort === 'asc' ? styles.sortArrowActive : ''}`}
-                      onClick={() => setColumnSort('price', 'asc')}
-                      aria-label="가격 오름차순"
+                      className={`${styles.sortArrowButton} ${priceSort !== 'none' ? styles.sortArrowActive : ''}`}
+                      onClick={() => setColumnSort('price')}
+                      aria-label="가격 정렬"
                     >
-                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1 5L5 1L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.sortArrowButton} ${priceSort === 'desc' ? styles.sortArrowActive : ''}`}
-                      onClick={() => setColumnSort('price', 'desc')}
-                      aria-label="가격 내림차순"
-                    >
-                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg
+                        width="10"
+                        height="6"
+                        viewBox="0 0 10 6"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className={`${styles.sortArrowIcon} ${priceSort === 'asc' ? styles.sortArrowAsc : ''}`}
+                      >
                         <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </button>
@@ -248,21 +237,18 @@ const ProductSection: React.FC<ProductSectionProps> = ({ products }) => {
                   <span className={styles.sortArrows}>
                     <button
                       type="button"
-                      className={`${styles.sortArrowButton} ${dateSort === 'asc' ? styles.sortArrowActive : ''}`}
-                      onClick={() => setColumnSort('date', 'asc')}
-                      aria-label="등록일 오름차순"
+                      className={`${styles.sortArrowButton} ${dateSort !== 'none' ? styles.sortArrowActive : ''}`}
+                      onClick={() => setColumnSort('date')}
+                      aria-label="등록일 정렬"
                     >
-                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1 5L5 1L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.sortArrowButton} ${dateSort === 'desc' ? styles.sortArrowActive : ''}`}
-                      onClick={() => setColumnSort('date', 'desc')}
-                      aria-label="등록일 내림차순"
-                    >
-                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg
+                        width="10"
+                        height="6"
+                        viewBox="0 0 10 6"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className={`${styles.sortArrowIcon} ${dateSort === 'asc' ? styles.sortArrowAsc : ''}`}
+                      >
                         <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </button>
@@ -289,7 +275,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({ products }) => {
                   <td className={styles.productCell}>
                     <div className={styles.productInfo}>
                       <img
-                        src={product.IMAGE_URL}
+                        src={toApiAssetUrl(product.IMAGE_URL)}
                         alt={product.TITLE}
                         className={styles.productImage}
                         onError={(e) => {

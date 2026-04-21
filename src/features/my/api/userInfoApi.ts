@@ -146,6 +146,10 @@ export interface SaveWishlistBody {
   PRODUCT_ID: number;
 }
 
+export interface DeleteProductBody {
+  PRODUCT_ID: number;
+}
+
 export interface SelectWishlistQuery {
   USER_ID: number;
 }
@@ -205,5 +209,9 @@ export const myPageApi = {
 
   selectWishlist: async (query: SelectWishlistQuery): Promise<UserInfoProduct[]> => {
     return api(`/user/wishlist/select?USER_ID=${query.USER_ID}`, { method: "GET" });
+  },
+
+  deleteProductDetail: async (body: DeleteProductBody): Promise<unknown> => {
+    return api("/product/detail/delete", { method: "PUT", json: body });
   },
 };

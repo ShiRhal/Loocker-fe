@@ -895,6 +895,14 @@
   line-height: 0;
 }
 
+.sortArrowIcon {
+  transition: transform 0.2s ease;
+}
+
+.sortArrowAsc {
+  transform: rotate(180deg);
+}
+
 .sortArrowActive {
   color: #0ea5e9;
 }

@@ -110,6 +110,16 @@ const MyPage: React.FC = () => {
     }
   }, [userId]);
 
+  const refreshProducts = useCallback(async () => {
+    if (userId === null) return;
+    try {
+      const data = await myPageApi.selectUserInfo(userId);
+      setProducts(data.PRODUCT || []);
+    } catch (error) {
+      console.error('상품 정보 재조회 실패:', error);
+    }
+  }, [userId]);
+
   return (
     <div className={styles.container}>
       <MyPageMenuDesktop setDrawerType={setDrawerType} menuConfig={Sidebar} />
@@ -126,7 +136,7 @@ const MyPage: React.FC = () => {
             />
           </div>
 
-          <ProductSection products={products} />
+          <ProductSection products={products} onRefreshProducts={refreshProducts} />
         </div>
       </div>
       <MyPageDrawer
