@@ -127,13 +127,14 @@
 .categoryButton {
   border: 0;
   background: transparent;
-  padding: 0;
+  padding: 0 0 2px;
   font-size: 14px;
   font-weight: 700;
   color: #111111;
   cursor: pointer;
   text-align: left;
   line-height: 1.5;
+  border-bottom: 2px solid transparent;
 }
 
 .categoryButton:hover {
@@ -144,6 +145,7 @@
   background: transparent;
   border: 0;
   color: #3182f7;
+  border-bottom: 2px solid #3182f7;
 }
 
 .breadcrumb {
@@ -173,28 +175,17 @@
   color: #111111;
 }
 
-.regionRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.regionSelect {
-  width: 180px;
-  height: 40px;
-  border: 1px solid #d1d5db;
-  border-radius: 3px;
-  padding: 0 12px;
+.breadcrumbCurrent {
   font-size: 14px;
+  font-weight: 700;
   color: #111111;
-  background: #ffffff;
 }
 
-.regionSelect:disabled {
-  background: #f3f4f6;
-  color: #9ca3af;
-  cursor: not-allowed;
+.regionBox {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .priceRow {
