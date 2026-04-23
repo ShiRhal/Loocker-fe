@@ -32,9 +32,14 @@ export default function SearchFilterBox({
   onImmediateApply,
 }: SearchFilterBoxProps) {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
-  const [isRegionOpen, setIsRegionOpen] = useState(true);
+  const [isRegionOpen, setIsRegionOpen] = useState(false);
   const [selectedMainId, setSelectedMainId] = useState<number | null>(null);
   const [selectedStateId, setSelectedStateId] = useState<number | null>(null);
+
+  useEffect(() => {
+    setIsCategoryOpen(false);
+    setIsRegionOpen(false);
+  }, [resultKeyword]);
 
   useEffect(() => {
     if (!value.mainCategory) {

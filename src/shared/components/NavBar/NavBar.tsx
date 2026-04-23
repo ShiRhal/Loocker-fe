@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../app/providers/auth/useAuth";
 import styles from "./NavBar.module.css";
 import loockerLogo from "../../../assets/images/Loocker.png";
@@ -20,8 +20,12 @@ export default function NavBar() {
   const { me } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
+  const [searchParams] = useSearchParams();
 
   const [pageIndex, setPageIndex] = useState(0);
+  const [searchKeyword, setSearchKeyword] = useState(
+    searchParams.get("keyword") ?? ""
+  );
 
   const popularKeywords: PopularKeyword[] = [
     { rank: 1, keyword: "레고" },
@@ -53,10 +57,14 @@ export default function NavBar() {
       pages.push(popularKeywords.slice(i, i + pageSize));
     }
     return pages;
-  }, [popularKeywords]);
+  }, []);
 
   const hasKeywords = keywordPages.length > 0;
   const currentKeywords = hasKeywords ? keywordPages[pageIndex] : [];
+
+  useEffect(() => {
+    setSearchKeyword(searchParams.get("keyword") ?? "");
+  }, [searchParams]);
 
   useEffect(() => {
     if (keywordPages.length <= 1) return;
@@ -76,6 +84,23 @@ export default function NavBar() {
   const handleNextKeywords = () => {
     if (!keywordPages.length) return;
     setPageIndex((prev) => (prev + 1) % keywordPages.length);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const trimmedKeyword = searchKeyword.trim();
+
+    if (!trimmedKeyword) {
+      nav("/");
+      return;
+    }
+
+    nav(`/?keyword=${encodeURIComponent(trimmedKeyword)}`);
+  };
+
+  const handlePopularKeywordClick = (keyword: string) => {
+    nav(`/?keyword=${encodeURIComponent(keyword)}`);
   };
 
   const goIfAuthedOrSignin = (to: string) => {
@@ -102,7 +127,12 @@ export default function NavBar() {
           </div>
 
           <div className={styles.searchWrap}>
-            <form className={styles.searchForm} role="search" noValidate>
+            <form
+              className={styles.searchForm}
+              role="search"
+              noValidate
+              onSubmit={handleSearchSubmit}
+            >
               <span className={styles.searchIcon} aria-hidden="true">
                 <img
                   src={searchIcon}
@@ -116,6 +146,8 @@ export default function NavBar() {
                 placeholder="어떤 상품을 찾으시나요?"
                 autoComplete="off"
                 name="search"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
               />
             </form>
 
@@ -142,13 +174,14 @@ export default function NavBar() {
                 <ul className={styles.keywordList}>
                   {currentKeywords.map((item) => (
                     <li key={item.rank} className={styles.keywordItem}>
-                      <a
-                        href={`/search/${encodeURIComponent(item.keyword)}`}
+                      <button
+                        type="button"
                         className={styles.keywordLink}
+                        onClick={() => handlePopularKeywordClick(item.keyword)}
                       >
                         <span className={styles.keywordRank}>{item.rank}. </span>
                         <span className={styles.keywordText}>{item.keyword}</span>
-                      </a>
+                      </button>
                     </li>
                   ))}
                 </ul>
