@@ -55,6 +55,20 @@
   display: none;
 }
 
+.keywordLink {
+  color: #6b7280;
+  text-decoration: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.keywordLink:hover {
+  color: #111827;
+}
+
 @media (min-width: 1000px) {
   .searchWrap {
     display: block;

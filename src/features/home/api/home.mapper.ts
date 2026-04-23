@@ -41,6 +41,14 @@ function toNullableNumber(value: string): number | null {
   return parsed;
 }
 
+function formatAbsoluteDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}.${month}.${day}`;
+}
+
 function formatCreatedText(createdAt: string): string {
   if (!createdAt) {
     return "";
@@ -56,27 +64,49 @@ function formatCreatedText(createdAt: string): string {
   const now = new Date();
   const diffMs = now.getTime() - targetDate.getTime();
 
+  if (diffMs < 0) {
+    return formatAbsoluteDate(targetDate);
+  }
+
   const minute = 1000 * 60;
   const hour = minute * 60;
   const day = hour * 24;
 
-  if (diffMs < minute) {
-    return "방금 전";
-  }
+  const diffMinutes = Math.floor(diffMs / minute);
+  const diffHours = Math.floor(diffMs / hour);
+  const diffDays = Math.floor(diffMs / day);
 
+  // 1시간 이내: N분 전
   if (diffMs < hour) {
-    return `${Math.floor(diffMs / minute)}분 전`;
+    return `${Math.max(1, diffMinutes)}분 전`;
   }
 
+  // 하루 이내: N시간 전
   if (diffMs < day) {
-    return `${Math.floor(diffMs / hour)}시간 전`;
+    return `${Math.max(1, diffHours)}시간 전`;
   }
 
-  if (diffMs < day * 7) {
-    return `${Math.floor(diffMs / day)}일 전`;
+  // 이틀 이내: 하루 전
+  if (diffMs < day * 2) {
+    return "하루 전";
   }
 
-  return createdAt.slice(0, 10);
+  // 30일 미만: 일/주 단위 표시
+  if (diffDays < 30) {
+    if (
+      diffDays === 7 ||
+      diffDays === 14 ||
+      diffDays === 21 ||
+      diffDays === 28
+    ) {
+      return `${diffDays / 7}주 전`;
+    }
+
+    return `${diffDays}일 전`;
+  }
+
+  // 30일 이상: 절대 날짜
+  return formatAbsoluteDate(targetDate);
 }
 
 function toImageUrl(imageUrl: string | null): string {
