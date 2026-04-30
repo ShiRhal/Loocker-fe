@@ -27,6 +27,8 @@ export default function AuthProvider({ children }: Props) {
     try {
       const data = await authApi.me();
       setMe(data);
+      localStorage.setItem("userId", String(data.userId));
+      localStorage.setItem("nickname", data.nickname);
     } catch {
       setMe(null);
     }
