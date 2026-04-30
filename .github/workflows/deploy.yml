@@ -32,4 +32,4 @@ jobs:
           source: "dist/*"
           target: "/var/www/loocker-fe"
           strip_components: 1
-          rm: true
+          overwrite: true
