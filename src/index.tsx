@@ -9,7 +9,7 @@ const root = ReactDOM.createRoot(
 );
 
 root.render(
-  <React.StrictMode>
-    <Main />
-  </React.StrictMode>,
+  // <React.StrictMode>
+  <Main />,
+  // </React.StrictMode>,
 );

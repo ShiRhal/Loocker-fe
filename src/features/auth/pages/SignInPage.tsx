@@ -6,7 +6,6 @@ import logoImg from "../../../assets/images/Loocker.png";
 import "../../../shared/styles/global.css";
 import GoogleIcon from "../../../assets/icons/Google.svg";
 import KakaoIcon from "../../../assets/icons/Kakao.svg";
-import UserIcon from "../../../assets/icons/user.svg";
 
 declare global {
   interface Window {
@@ -15,7 +14,6 @@ declare global {
 }
 
 const GOOGLE_SCRIPT = "https://accounts.google.com/gsi/client";
-
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
 
 export default function SignInPage() {
@@ -26,63 +24,59 @@ export default function SignInPage() {
   const { me, loginWithGoogleIdToken } = useAuth();
   const [keepLogin, setKeepLogin] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [googleReady, setGoogleReady] = useState(false);
 
-  // 이미 로그인 상태면 redirect로 보내기
   useEffect(() => {
     if (me) nav(redirect, { replace: true });
   }, [me, nav, redirect]);
 
-  // Google Identity Services 로드
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) return;
 
+    const initGoogle = () => {
+      if (!window.google?.accounts?.id) return;
+
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (resp: { credential?: string }) => {
+          try {
+            const idToken = resp?.credential;
+            if (!idToken) throw new Error("id_token(credential)이 없습니다.");
+
+            await loginWithGoogleIdToken(idToken);
+            nav(redirect, { replace: true });
+          } catch (e: any) {
+            setErr(e?.message || "구글 로그인 실패");
+          }
+        },
+      });
+
+      setGoogleReady(true);
+    };
+
     const existed = document.querySelector(`script[src="${GOOGLE_SCRIPT}"]`);
-    if (existed) return;
+
+    if (existed) {
+      setTimeout(initGoogle, 300);
+      return;
+    }
 
     const s = document.createElement("script");
     s.src = GOOGLE_SCRIPT;
     s.async = true;
     s.defer = true;
+    s.onload = initGoogle;
     document.body.appendChild(s);
-  }, []);
+  }, [loginWithGoogleIdToken, nav, redirect]);
 
-  const onGoogleClick = async () => {
+  const onGoogleClick = () => {
     setErr(null);
 
-    if (!GOOGLE_CLIENT_ID) {
-      setErr("VITE_GOOGLE_CLIENT_ID가 설정되지 않았습니다.");
+    if (!googleReady) {
+      setErr("Google 로그인 모듈이 아직 준비되지 않았습니다.");
       return;
     }
 
-    // 스크립트 로딩 대기
-    if (!window.google?.accounts?.id) {
-      setErr(
-        "Google 스크립트가 아직 로드되지 않았습니다. 잠시 후 다시 클릭하세요.",
-      );
-      return;
-    }
-
-    //클릭 시 credential 콜백 받는 방식
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: async (resp: { credential?: string }) => {
-        try {
-          const idToken = resp?.credential;
-
-          if (!idToken) throw new Error("id_token(credential)이 없습니다.");
-
-          // FE는 저장 X, BE로 전달 → BE가 세션쿠키 발급
-          await loginWithGoogleIdToken(idToken);
-
-          // keepLogin은 지금은 UI만 (나중에 BE 세션 만료정책과 연결)
-          nav(redirect, { replace: true });
-        } catch (e: any) {
-          setErr(e?.message || "구글 로그인 실패");
-        }
-      },
-    });
-
-    // 버튼 클릭으로 프롬프트 띄움
     window.google.accounts.id.prompt();
   };
 

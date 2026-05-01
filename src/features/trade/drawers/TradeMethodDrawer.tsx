@@ -1,7 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Drawer, Button, message } from "antd";
+import { nanoid } from "nanoid";
 import DrawerLayout from "../../../shared/components/DrawerLayout/DrawerLayout";
+import TradeProgressView from "../components/TradeProgressView";
 import { tradeApi } from "../api/tradeApi";
+import { useAuth } from "../../../app/providers/auth/useAuth";
 import type {
   ProductTradePreview,
   TradeMethodOption,
@@ -9,62 +13,161 @@ import type {
 } from "../types/trade.types";
 import styles from "./TradeMethodDrawer.module.css";
 
-type TradeMethodDrawerProps = {
+declare global {
+  interface Window {
+    TossPayments?: any;
+  }
+}
+
+type ProgressTradeType = Exclude<TradeTab, "LOCKER">;
+
+type Props = {
   open: boolean;
   onClose: () => void;
   product: ProductTradePreview;
+  initialTradeId?: number | null;
+  initialPaid?: boolean;
 };
 
-const DELIVERY_OPTIONS: TradeMethodOption[] = [
-  {
-    id: "delivery-normal",
-    title: "일반 택배",
-    description: "상품이 문 앞으로 도착해요.",
-  },
-];
+const TOSS_CLIENT_KEY = "test_ck_QbgMGZzorzzY5z652y7Krl5E1em4";
+const TOSS_SCRIPT_URL = "https://js.tosspayments.com/v1/payment";
 
-const DIRECT_OPTIONS: TradeMethodOption[] = [
-  {
-    id: "direct-meet",
-    title: "직거래",
-    description: "판매자와 장소를 정해 직접 만나서 거래해요.",
-  },
-];
-
-const LOCKER_OPTIONS: TradeMethodOption[] = [
-  {
-    id: "locker-basic",
-    title: "보관함 거래",
-    description: "보관함에 상품을 맡기고 상대방이 수령해요.",
-  },
-];
+const OPTIONS: Record<TradeTab, TradeMethodOption[]> = {
+  DELIVERY: [
+    {
+      id: "DELIVERY",
+      title: "택배거래",
+      description: "Toss 결제 후 택배거래를 진행합니다.",
+    },
+  ],
+  DIRECT: [
+    {
+      id: "DIRECT",
+      title: "직거래",
+      description: "판매자와 직접 만나 상품을 확인하고 거래합니다.",
+    },
+  ],
+  LOCKER: [
+    {
+      id: "LOCKER",
+      title: "보관함거래",
+      description: "보관함 거래는 추후 지원 예정입니다.",
+    },
+  ],
+};
 
 function formatPrice(value: number) {
   return `${value.toLocaleString()}원`;
+}
+
+function toProgressTradeType(tab: TradeTab): ProgressTradeType {
+  return tab === "LOCKER" ? "DELIVERY" : tab;
+}
+
+function getNickname(me: unknown) {
+  const user = me as Record<string, unknown> | null;
+
+  return (
+    String(
+      user?.nickname ?? user?.NICKNAME ?? user?.USER_NICKNAME ?? "구매자",
+    ).trim() || "구매자"
+  );
+}
+
+function loadTossScript() {
+  return new Promise<void>((resolve, reject) => {
+    if (window.TossPayments) {
+      resolve();
+      return;
+    }
+
+    const existed = document.querySelector(`script[src="${TOSS_SCRIPT_URL}"]`);
+
+    if (existed) {
+      existed.addEventListener("load", () => resolve());
+      existed.addEventListener("error", () =>
+        reject(new Error("Toss 스크립트 로드 실패")),
+      );
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = TOSS_SCRIPT_URL;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Toss 스크립트 로드 실패"));
+    document.body.appendChild(script);
+  });
 }
 
 export default function TradeMethodDrawer({
   open,
   onClose,
   product,
-}: TradeMethodDrawerProps) {
+  initialTradeId,
+  initialPaid = false,
+}: Props) {
+  const nav = useNavigate();
+  const { me } = useAuth();
+
   const [activeTab, setActiveTab] = useState<TradeTab>("DELIVERY");
   const [selectedOptionId, setSelectedOptionId] =
-    useState<string>("delivery-normal");
+    useState<TradeTab>("DELIVERY");
   const [submitting, setSubmitting] = useState(false);
 
-  const options = useMemo(() => {
-    if (activeTab === "DELIVERY") return DELIVERY_OPTIONS;
-    if (activeTab === "DIRECT") return DIRECT_OPTIONS;
-    return LOCKER_OPTIONS;
-  }, [activeTab]);
+  const [progressMode, setProgressMode] = useState(false);
+  const [currentTradeId, setCurrentTradeId] = useState<number | null>(null);
+  const [currentTradeType, setCurrentTradeType] =
+    useState<ProgressTradeType | null>(null);
+
+  const options = useMemo(() => OPTIONS[activeTab], [activeTab]);
+
+  useEffect(() => {
+    if (!initialTradeId || Number.isNaN(initialTradeId)) return;
+
+    setCurrentTradeId(initialTradeId);
+    setCurrentTradeType(toProgressTradeType(activeTab));
+    setProgressMode(true);
+  }, [initialTradeId, activeTab]);
+
+  const handleClose = () => {
+    setProgressMode(false);
+    setCurrentTradeId(null);
+    setCurrentTradeType(null);
+    onClose();
+  };
+
+  const handleBackToMethod = () => {
+    setProgressMode(false);
+    setCurrentTradeId(null);
+    setCurrentTradeType(null);
+    nav(`/product/${product.productId}/trade`);
+  };
 
   const handleChangeTab = (tab: TradeTab) => {
     setActiveTab(tab);
+    setSelectedOptionId(tab);
+  };
 
-    if (tab === "DELIVERY") setSelectedOptionId("delivery-normal");
-    if (tab === "DIRECT") setSelectedOptionId("direct-meet");
-    if (tab === "LOCKER") setSelectedOptionId("locker-basic");
+  const requestTossPayment = async (accessToken: string, tradeId: number) => {
+    await tradeApi.createPayment(accessToken, {
+      PRODUCT_ID: product.productId,
+      TRADE_ID: tradeId,
+    });
+
+    await loadTossScript();
+
+    const orderId = nanoid();
+    const tossPayments = window.TossPayments(TOSS_CLIENT_KEY);
+
+    await tossPayments.requestPayment("카드", {
+      amount: product.expectedPrice,
+      orderId,
+      orderName: product.title,
+      customerName: getNickname(me),
+      successUrl: `${window.location.origin}/product/${product.productId}/trade/${tradeId}?payment=success`,
+      failUrl: `${window.location.origin}/product/${product.productId}/trade/${tradeId}?payment=fail`,
+    });
   };
 
   const handleBuyClick = async () => {
@@ -75,30 +178,54 @@ export default function TradeMethodDrawer({
       return;
     }
 
-    let tradeTypeCode: "DELIVERY" | "DIRECT" | "LOCKER" = "DIRECT";
+    if (activeTab === "LOCKER") {
+      message.info("보관함 거래는 추후 지원 예정입니다.");
+      return;
+    }
 
     try {
       setSubmitting(true);
 
-      await tradeApi.createTrade(accessToken, {
-        PRODUCT_ID: 5,
-        TRADE_TYPE_CODE: "DIRECT",
-        TRADE_ID: 0,
-      });
+      const tradeIdRes = await tradeApi.getTradeId(
+        accessToken,
+        product.productId,
+      );
 
-      const payload = {
-        PRODUCT_ID: 5,
-        TRADE_TYPE_CODE: tradeTypeCode,
-        TRADE_ID: 0,
-      };
-      console.log("accessToken =", accessToken);
-      console.log("trade/create request body =", payload);
-      console.log("Authorization token =", accessToken);
+      let tradeId = Array.isArray(tradeIdRes)
+        ? tradeIdRes[0]?.TRADE_ID
+        : tradeIdRes?.TRADE_ID;
 
-      message.success("거래 생성 요청이 전송되었습니다.");
+      if (!tradeId) {
+        const createRes = await tradeApi.createTrade(accessToken, {
+          PRODUCT_ID: product.productId,
+          TRADE_TYPE_CODE: activeTab,
+          CHAT_ROOM_ID: 0,
+          TRADE_ID: 0,
+        });
+
+        tradeId = Number(createRes);
+      }
+
+      if (!tradeId || Number.isNaN(Number(tradeId))) {
+        message.error("거래 ID를 확인할 수 없습니다.");
+        return;
+      }
+
+      const numericTradeId = Number(tradeId);
+
+      if (activeTab === "DELIVERY") {
+        await requestTossPayment(accessToken, numericTradeId);
+        return;
+      }
+
+      setCurrentTradeId(numericTradeId);
+      setCurrentTradeType("DIRECT");
+      setProgressMode(true);
+
+      nav(`/product/${product.productId}/trade/${numericTradeId}`);
     } catch (error) {
       console.error(error);
-      message.error("거래 생성에 실패했습니다.");
+      message.error("거래 진행 화면으로 이동할 수 없습니다.");
     } finally {
       setSubmitting(false);
     }
@@ -107,7 +234,7 @@ export default function TradeMethodDrawer({
   return (
     <Drawer
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       placement="right"
       width={520}
       closable={false}
@@ -115,45 +242,45 @@ export default function TradeMethodDrawer({
       className={styles.drawer}
       styles={{ body: { padding: 0 } }}
     >
-      <DrawerLayout
-        title="거래 방법 선택"
-        onBack={onClose}
-        mainClassName={styles.layoutMain}
-        footer={
-          <div className={styles.bottomArea}>
-            <div className={styles.summarySection}>
-              <img
-                src={product.imageUrl}
-                alt={product.title}
-                className={styles.productImage}
-              />
+      {progressMode && currentTradeId && currentTradeType ? (
+        <TradeProgressView
+          tradeId={currentTradeId}
+          tradeType={currentTradeType}
+          product={product}
+          initialPaid={initialPaid}
+          onBack={handleBackToMethod}
+          onClose={handleClose}
+        />
+      ) : (
+        <DrawerLayout
+          title="거래 방법 선택"
+          onBack={handleClose}
+          mainClassName={styles.layoutMain}
+          footer={
+            <div className={styles.bottomArea}>
+              <div className={styles.summarySection}>
+                {product.imageUrl ? (
+                  <img
+                    src={product.imageUrl}
+                    alt={product.title}
+                    className={styles.productImage}
+                  />
+                ) : (
+                  <div className={styles.productImageEmpty}>이미지 없음</div>
+                )}
 
-              <div className={styles.summaryTextArea}>
-                <div className={styles.productTitle}>{product.title}</div>
+                <div className={styles.summaryTextArea}>
+                  <div className={styles.productTitle}>{product.title}</div>
 
-                <div className={styles.priceRow}>
-                  <span className={styles.priceLabel}>예상금액</span>
-                  <span className={styles.priceValue}>
-                    {formatPrice(product.expectedPrice)}
-                  </span>
+                  <div className={styles.priceRow}>
+                    <span className={styles.priceLabel}>결제금액</span>
+                    <span className={styles.priceValue}>
+                      {formatPrice(product.expectedPrice)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <button
-                type="button"
-                className={styles.foldButton}
-                aria-label="요약 접기"
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path
-                    d="M3.525 6.41a.616.616 0 0 1 .857.027L10 12.292l5.618-5.855a.616.616 0 0 1 .857-.027.583.583 0 0 1 .028.837l-6.06 6.316a.613.613 0 0 1-.885 0l-6.06-6.316a.583.583 0 0 1 .027-.837"
-                    fill="currentColor"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <div className={styles.footerButtonRow}>
               <Button
                 type="primary"
                 size="large"
@@ -164,63 +291,50 @@ export default function TradeMethodDrawer({
                 구매하기
               </Button>
             </div>
-          </div>
-        }
-      >
-        <section className={styles.tabSection}>
-          <button
-            type="button"
-            className={`${styles.tabButton} ${activeTab === "DELIVERY" ? styles.tabButtonActive : ""}`}
-            onClick={() => handleChangeTab("DELIVERY")}
-          >
-            택배거래
-          </button>
-          <button
-            type="button"
-            className={`${styles.tabButton} ${activeTab === "DIRECT" ? styles.tabButtonActive : ""}`}
-            onClick={() => handleChangeTab("DIRECT")}
-          >
-            직거래
-          </button>
-          <button
-            type="button"
-            className={`${styles.tabButton} ${activeTab === "LOCKER" ? styles.tabButtonActive : ""}`}
-            onClick={() => handleChangeTab("LOCKER")}
-          >
-            보관함거래
-          </button>
-        </section>
+          }
+        >
+          <section className={styles.tabSection}>
+            {(["DELIVERY", "DIRECT", "LOCKER"] as TradeTab[]).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                className={`${styles.tabButton} ${
+                  activeTab === tab ? styles.tabButtonActive : ""
+                }`}
+                onClick={() => handleChangeTab(tab)}
+              >
+                {tab === "DELIVERY"
+                  ? "택배거래"
+                  : tab === "DIRECT"
+                    ? "직거래"
+                    : "보관함거래"}
+              </button>
+            ))}
+          </section>
 
-        <section className={styles.optionList}>
-          {options.map((option) => {
-            const selected = selectedOptionId === option.id;
-
-            return (
+          <section className={styles.optionList}>
+            {options.map((option) => (
               <button
                 key={option.id}
                 type="button"
-                className={`${styles.optionCard} ${selected ? styles.optionCardSelected : ""}`}
+                className={`${styles.optionCard} ${
+                  selectedOptionId === option.id
+                    ? styles.optionCardSelected
+                    : ""
+                }`}
                 onClick={() => setSelectedOptionId(option.id)}
               >
-                <div className={styles.optionTextArea}>
+                <div>
                   <div className={styles.optionTitle}>{option.title}</div>
                   <div className={styles.optionDescription}>
                     {option.description}
                   </div>
                 </div>
-
-                {option.feeLabel ? (
-                  <div className={styles.optionFeeBox}>
-                    <span className={styles.optionFeeLabel}>
-                      {option.feeLabel}
-                    </span>
-                  </div>
-                ) : null}
               </button>
-            );
-          })}
-        </section>
-      </DrawerLayout>
+            ))}
+          </section>
+        </DrawerLayout>
+      )}
     </Drawer>
   );
 }

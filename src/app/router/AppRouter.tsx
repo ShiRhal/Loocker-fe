@@ -9,11 +9,18 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ✅ NavBar 필요한 페이지들 */}
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/mypage" element={<MyPage />} />
           <Route path="/product/:productId" element={<ProductTradePage />} />
+          <Route
+            path="/product/:productId/trade"
+            element={<ProductTradePage />}
+          />
+          <Route
+            path="/product/:productId/trade/:tradeId"
+            element={<ProductTradePage />}
+          />
         </Route>
 
         {/* ✅ NavBar 없는 페이지 */}
