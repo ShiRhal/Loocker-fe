@@ -1,8 +1,8 @@
 import type { RefObject } from "react";
 import styles from "./ProductInfoSection.module.css";
+import ProductImageUploader from "./ProductImageUploader";
 import ProductCategorySection from "./ProductCategorySection";
 import ProductAccessorySection from "./ProductAccessorySection";
-import ProductImageUploader from "./ProductImageUploader";
 import type {
   ProductFormErrors,
   ProductImageItem,
@@ -34,28 +34,26 @@ function formatPrice(value: number | "") {
   return value.toLocaleString("ko-KR");
 }
 
-function convertPriceToKorean(value: number | "") {
-  if (value === "" || value <= 0) return "";
+function formatPriceKorean(value: number | "") {
+  if (value === "") return "";
 
-  const eok = Math.floor(value / 100000000);
-  const man = Math.floor((value % 100000000) / 10000);
-  const rest = value % 10000;
+  if (value >= 10000) {
+    const man = Math.floor(value / 10000);
+    const rest = value % 10000;
 
-  const parts: string[] = [];
-
-  if (eok > 0) {
-    parts.push(`${eok}억원`);
+    if (rest === 0) return `${man.toLocaleString("ko-KR")}만원`;
+    return `${man.toLocaleString("ko-KR")}만 ${rest.toLocaleString("ko-KR")}원`;
   }
 
-  if (man > 0) {
-    parts.push(`${man}만원`);
+  if (value >= 1000) {
+    const cheon = Math.floor(value / 1000);
+    const rest = value % 1000;
+
+    if (rest === 0) return `${cheon}천원`;
+    return `${cheon}천 ${rest.toLocaleString("ko-KR")}원`;
   }
 
-  if (rest > 0) {
-    parts.push(`${rest.toLocaleString("ko-KR")}원`);
-  }
-
-  return parts.join(" ");
+  return `${value.toLocaleString("ko-KR")}원`;
 }
 
 export default function ProductInfoSection({
@@ -78,20 +76,6 @@ export default function ProductInfoSection({
   onDescriptionChange,
   onAccessoryStatusChange,
 }: ProductInfoSectionProps) {
-  const handlePriceChange = (value: string) => {
-    const onlyNumber = value.replace(/[^0-9]/g, "");
-
-    if (onlyNumber === "") {
-      onBasePriceChange("");
-      return;
-    }
-
-    onBasePriceChange(Number(onlyNumber));
-  };
-
-  const formattedPrice = formatPrice(basePrice);
-  const koreanPriceText = convertPriceToKorean(basePrice);
-
   return (
     <section className={styles.block}>
       <div className={styles.blockHeader}>
@@ -100,7 +84,7 @@ export default function ProductInfoSection({
 
       <div className={styles.mainDivider} />
 
-      <section className={styles.sectionRow}>
+      <div className={styles.sectionRow}>
         <div className={styles.sectionLabelBox}>
           <h2 className={styles.sectionLabel}>상품 이미지</h2>
         </div>
@@ -113,39 +97,29 @@ export default function ProductInfoSection({
             onRemoveImage={onRemoveImage}
           />
         </div>
-      </section>
+      </div>
 
       <div className={styles.itemDivider} />
 
-      <section className={styles.sectionRow} ref={titleSectionRef}>
+      <div ref={titleSectionRef} className={styles.sectionRow}>
         <div className={styles.sectionLabelBox}>
-          <h2 className={styles.sectionLabel}>상품명</h2>
-          <button type="button" className={styles.helperLink}>
-            거래 제한 품목 안내
-          </button>
+          <h2 className={styles.sectionLabel}>제목</h2>
         </div>
 
         <div className={styles.sectionContent}>
           <input
+            type="text"
             className={`${styles.textInput} ${
               errors.TITLE ? styles.inputError : ""
             }`}
-            type="text"
-            placeholder="상품명을 입력해주세요"
+            placeholder="상품명을 입력해 주세요."
             value={title}
-            maxLength={64}
-            onChange={(e) => onTitleChange(e.target.value)}
+            onChange={(event) => onTitleChange(event.target.value)}
           />
 
-          <div className={styles.textCount}>{title.length} / 64</div>
-
-          {errors.TITLE && (
-            <div className={styles.errorText}>
-              상품명은 최소 2자 이상 입력해 주세요.
-            </div>
-          )}
+          {errors.TITLE && <p className={styles.errorText}>{errors.TITLE}</p>}
         </div>
-      </section>
+      </div>
 
       <div className={styles.itemDivider} />
 
@@ -156,44 +130,48 @@ export default function ProductInfoSection({
 
       <div className={styles.itemDivider} />
 
-      <section className={styles.sectionRow} ref={priceSectionRef}>
+      <div ref={priceSectionRef} className={styles.sectionRow}>
         <div className={styles.sectionLabelBox}>
-          <h2 className={styles.sectionLabel}>판매가격</h2>
+          <h2 className={styles.sectionLabel}>가격</h2>
         </div>
 
         <div className={styles.sectionContent}>
-          <div className={styles.priceRow}>
-            <div
-              className={`${styles.priceInputBox} ${
-                errors.BASE_PRICE ? styles.inputError : ""
-              }`}
-            >
-              <span className={styles.pricePrefix}>₩</span>
-              <input
-                className={styles.priceInput}
-                type="text"
-                placeholder="판매가격"
-                value={formattedPrice}
-                onChange={(e) => handlePriceChange(e.target.value)}
-              />
-            </div>
+          <div
+            className={`${styles.priceInputBox} ${
+              errors.BASE_PRICE ? styles.inputError : ""
+            }`}
+          >
+            <span className={styles.pricePrefix}>₩</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              className={styles.priceInput}
+              placeholder="가격을 입력해 주세요."
+              value={formatPrice(basePrice)}
+              onChange={(event) => {
+                const value = event.target.value.replace(/[^0-9]/g, "");
+                onBasePriceChange(value === "" ? "" : Number(value));
+              }}
+            />
           </div>
 
-          {!errors.BASE_PRICE && koreanPriceText && (
-            <div className={styles.priceGuideText}>{koreanPriceText}</div>
+          {basePrice !== "" && (
+            <p className={styles.priceKoreanText}>
+              {formatPriceKorean(basePrice)}
+            </p>
           )}
 
           {errors.BASE_PRICE && (
-            <div className={styles.errorText}>상품 가격을 입력해주세요.</div>
+            <p className={styles.errorText}>{errors.BASE_PRICE}</p>
           )}
         </div>
-      </section>
+      </div>
 
       <div className={styles.itemDivider} />
 
-      <section className={styles.sectionRow} ref={descriptionSectionRef}>
+      <div ref={descriptionSectionRef} className={styles.sectionRow}>
         <div className={styles.sectionLabelBox}>
-          <h2 className={styles.sectionLabel}>상품설명</h2>
+          <h2 className={styles.sectionLabel}>설명</h2>
         </div>
 
         <div className={styles.sectionContent}>
@@ -204,31 +182,26 @@ export default function ProductInfoSection({
           >
             <textarea
               className={styles.textarea}
-              placeholder={`- 상품명(브랜드)
-- 구매 시기 (년, 월, 일)
-- 사용 기간
-- 하자 여부
-* 실제 촬영한 사진과 함께 상세 정보를 입력해주세요.`}
+              placeholder="상품 설명을 입력해 주세요."
               value={description}
-              onChange={(e) => onDescriptionChange(e.target.value)}
-              maxLength={5000}
+              maxLength={2000}
+              onChange={(event) => onDescriptionChange(event.target.value)}
             />
+
             <div
               className={`${styles.textCount} ${
                 errors.DESCRIPTION ? styles.textCountError : ""
               }`}
             >
-              {description.length} / 5000
+              {description.length}/2000
             </div>
           </div>
 
           {errors.DESCRIPTION && (
-            <div className={styles.errorText}>
-              상품 설명은 10자 이상 입력해주세요.
-            </div>
+            <p className={styles.errorText}>{errors.DESCRIPTION}</p>
           )}
         </div>
-      </section>
+      </div>
 
       <div className={styles.itemDivider} />
 

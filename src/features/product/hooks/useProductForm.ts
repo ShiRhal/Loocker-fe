@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 export type ProductImageItem = {
   id: string;
@@ -6,126 +6,72 @@ export type ProductImageItem = {
   previewUrl: string;
 };
 
-export type ProductFormState = {
-  FILES: File[];
-  NEW_ID: 0;
-  ACCESSORY_STATUS: string;
-  BASE_PRICE: number | "";
-  SUB_CATEGORY: string;
-  NICKNAME: string;
-  TRADE_TYPE: string[];
-  DESCRIPTION: string;
-  CITY: string | null;
-  TITLE: string;
+export type ProductFormErrors = {
+  TITLE?: string;
+  BASE_PRICE?: string;
+  DESCRIPTION?: string;
 };
 
-export type ProductFormErrors = {
-  TITLE: boolean;
-  BASE_PRICE: boolean;
-  DESCRIPTION: boolean;
+type ProductFormState = {
+  TITLE: string;
+  SUB_CATEGORY: string;
+  BASE_PRICE: number | "";
+  DESCRIPTION: string;
+  ACCESSORY_STATUS: string;
+  TRADE_TYPE: string[];
+  CITY: string | null;
+  FILES: File[];
 };
+
+type ValidateResult = {
+  isValid: boolean;
+  focusField?: "TITLE" | "BASE_PRICE" | "DESCRIPTION";
+};
+
+const MAX_IMAGE_COUNT = 10;
 
 export default function useProductForm() {
+  const [form, setForm] = useState<ProductFormState>({
+    TITLE: "",
+    SUB_CATEGORY: "",
+    BASE_PRICE: "",
+    DESCRIPTION: "",
+    ACCESSORY_STATUS: "NONE",
+    TRADE_TYPE: [],
+    CITY: null,
+    FILES: [],
+  });
+
   const [images, setImages] = useState<ProductImageItem[]>([]);
+  const [errors, setErrors] = useState<ProductFormErrors>({});
   const [toastMessage, setToastMessage] = useState("");
 
-  const [form, setForm] = useState<ProductFormState>({
-    FILES: [],
-    NEW_ID: 0,
-    ACCESSORY_STATUS: "",
-    BASE_PRICE: "",
-    SUB_CATEGORY: "",
-    NICKNAME: "",
-    TRADE_TYPE: [],
-    DESCRIPTION: "",
-    CITY: null,
-    TITLE: "",
-  });
-
-  const [errors, setErrors] = useState<ProductFormErrors>({
-    TITLE: false,
-    BASE_PRICE: false,
-    DESCRIPTION: false,
-  });
+  useEffect(() => {
+    return () => {
+      images.forEach((image) => {
+        URL.revokeObjectURL(image.previewUrl);
+      });
+    };
+  }, [images]);
 
   const showToast = (message: string) => {
     setToastMessage(message);
-  };
 
-  useEffect(() => {
-    if (!toastMessage) return;
-
-    const timer = window.setTimeout(() => {
+    window.setTimeout(() => {
       setToastMessage("");
     }, 1800);
-
-    return () => window.clearTimeout(timer);
-  }, [toastMessage]);
-
-  const imageFiles = useMemo(() => {
-    return images.map((item) => item.file);
-  }, [images]);
-
-  useEffect(() => {
-    setForm((prev) => ({
-      ...prev,
-      FILES: imageFiles,
-    }));
-  }, [imageFiles]);
-
-  const addImages = (files: File[]) => {
-    if (files.length === 0) return;
-
-    const remainingCount = 10 - images.length;
-
-    if (remainingCount <= 0) {
-      showToast("이미지는 최대 10장까지 등록할 수 있습니다.");
-      return;
-    }
-
-    const filesToAdd = files.slice(0, remainingCount);
-
-    if (files.length > remainingCount) {
-      showToast("이미지는 최대 10장까지 등록할 수 있습니다.");
-    }
-
-    const newItems: ProductImageItem[] = filesToAdd.map((file) => ({
-      id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`,
-      file,
-      previewUrl: URL.createObjectURL(file),
-    }));
-
-    setImages((prev) => [...prev, ...newItems]);
-  };
-
-  const removeImage = (id: string) => {
-    setImages((prev) => {
-      const target = prev.find((item) => item.id === id);
-
-      if (target) {
-        URL.revokeObjectURL(target.previewUrl);
-      }
-
-      return prev.filter((item) => item.id !== id);
-    });
-
-    showToast("삭제되었습니다.");
   };
 
   const setTitle = (value: string) => {
-    const limitedValue = value.slice(0, 64);
-
     setForm((prev) => ({
       ...prev,
-      TITLE: limitedValue,
+      TITLE: value,
     }));
 
-    if (limitedValue.trim().length >= 2) {
-      setErrors((prev) => ({
-        ...prev,
-        TITLE: false,
-      }));
-    }
+    setErrors((prev) => ({
+      ...prev,
+      TITLE: undefined,
+    }));
   };
 
   const setSubCategory = (value: string) => {
@@ -136,20 +82,15 @@ export default function useProductForm() {
   };
 
   const setBasePrice = (value: number | "") => {
-    const limitedValue =
-      value === "" ? "" : Math.min(Number(value), 99_999_999);
-
     setForm((prev) => ({
       ...prev,
-      BASE_PRICE: limitedValue,
+      BASE_PRICE: value,
     }));
 
-    if (limitedValue !== "" && Number(limitedValue) > 0) {
-      setErrors((prev) => ({
-        ...prev,
-        BASE_PRICE: false,
-      }));
-    }
+    setErrors((prev) => ({
+      ...prev,
+      BASE_PRICE: undefined,
+    }));
   };
 
   const setDescription = (value: string) => {
@@ -158,12 +99,10 @@ export default function useProductForm() {
       DESCRIPTION: value,
     }));
 
-    if (value.trim().length >= 10) {
-      setErrors((prev) => ({
-        ...prev,
-        DESCRIPTION: false,
-      }));
-    }
+    setErrors((prev) => ({
+      ...prev,
+      DESCRIPTION: undefined,
+    }));
   };
 
   const setAccessoryStatus = (value: string) => {
@@ -187,50 +126,90 @@ export default function useProductForm() {
     }));
   };
 
-  const validateBeforeSubmit = () => {
-    const nextErrors: ProductFormErrors = {
-      TITLE: false,
-      BASE_PRICE: false,
-      DESCRIPTION: false,
-    };
+  const addImages = (files: File[]) => {
+    if (files.length === 0) return;
 
-    if (form.TITLE.trim().length < 2) {
-      nextErrors.TITLE = true;
-      setErrors(nextErrors);
+    const availableCount = MAX_IMAGE_COUNT - images.length;
 
-      return {
-        isValid: false,
-        focusField: "TITLE" as const,
-      };
+    if (availableCount <= 0) {
+      showToast("이미지는 최대 10장까지 등록할 수 있습니다.");
+      return;
     }
 
-    if (form.BASE_PRICE === "" || Number(form.BASE_PRICE) <= 0) {
-      nextErrors.BASE_PRICE = true;
-      setErrors(nextErrors);
+    const selectedFiles = files.slice(0, availableCount);
 
-      return {
-        isValid: false,
-        focusField: "BASE_PRICE" as const,
-      };
+    if (files.length > availableCount) {
+      showToast("이미지는 최대 10장까지 등록할 수 있습니다.");
     }
 
-    if (form.DESCRIPTION.trim().length < 10) {
-      nextErrors.DESCRIPTION = true;
-      setErrors(nextErrors);
+    const nextImages = selectedFiles.map((file) => ({
+      id: `${file.name}-${file.size}-${crypto.randomUUID()}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
 
-      return {
-        isValid: false,
-        focusField: "DESCRIPTION" as const,
-      };
+    setImages((prev) => [...prev, ...nextImages]);
+
+    setForm((prev) => ({
+      ...prev,
+      FILES: [...prev.FILES, ...selectedFiles],
+    }));
+  };
+
+  const removeImage = (id: string) => {
+    setImages((prev) => {
+      const targetImage = prev.find((image) => image.id === id);
+
+      if (targetImage) {
+        URL.revokeObjectURL(targetImage.previewUrl);
+      }
+
+      const nextImages = prev.filter((image) => image.id !== id);
+
+      setForm((prevForm) => ({
+        ...prevForm,
+        FILES: nextImages.map((image) => image.file),
+      }));
+
+      return nextImages;
+    });
+  };
+
+  const validateBeforeSubmit = (): ValidateResult => {
+    const nextErrors: ProductFormErrors = {};
+
+    if (!form.TITLE.trim()) {
+      nextErrors.TITLE = "상품명을 입력해 주세요.";
+    }
+
+    if (form.BASE_PRICE === "" || form.BASE_PRICE <= 0) {
+      nextErrors.BASE_PRICE = "가격을 입력해 주세요.";
+    }
+
+    if (!form.DESCRIPTION.trim()) {
+      nextErrors.DESCRIPTION = "상품 설명을 입력해 주세요.";
     }
 
     setErrors(nextErrors);
 
-    if (!form.ACCESSORY_STATUS) {
-      showToast("구성품을 선택해주세요.");
+    if (nextErrors.TITLE) {
       return {
         isValid: false,
-        focusField: null,
+        focusField: "TITLE",
+      };
+    }
+
+    if (nextErrors.BASE_PRICE) {
+      return {
+        isValid: false,
+        focusField: "BASE_PRICE",
+      };
+    }
+
+    if (nextErrors.DESCRIPTION) {
+      return {
+        isValid: false,
+        focusField: "DESCRIPTION",
       };
     }
 
@@ -238,50 +217,20 @@ export default function useProductForm() {
       showToast("거래방법을 1개이상 선택해주세요.");
       return {
         isValid: false,
-        focusField: null,
-      };
-    }
-
-    if (!form.SUB_CATEGORY.trim()) {
-      showToast("카테고리를 선택해주세요.");
-      return {
-        isValid: false,
-        focusField: null,
-      };
-    }
-
-    const imageOnlyFiles = form.FILES.filter((file) =>
-      file.type.startsWith("image/"),
-    );
-
-    if (imageOnlyFiles.length === 0) {
-      showToast("이미지를 1개이상 첨부해주세요.");
-      return {
-        isValid: false,
-        focusField: null,
       };
     }
 
     return {
       isValid: true,
-      focusField: null,
     };
   };
-
-  useEffect(() => {
-    return () => {
-      images.forEach((item) => {
-        URL.revokeObjectURL(item.previewUrl);
-      });
-    };
-  }, [images]);
 
   return {
     form,
     errors,
     images,
-    imageFiles,
     toastMessage,
+    showToast,
     addImages,
     removeImage,
     setTitle,

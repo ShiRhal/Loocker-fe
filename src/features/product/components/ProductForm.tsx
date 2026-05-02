@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./ProductForm.module.css";
 import ProductInfoSection from "./ProductInfoSection";
 import ProductTradeSection from "./ProductTradeSection";
 import useProductForm from "../hooks/useProductForm";
-import { productApi } from "../api/productApi";
+import { productApi } from "../api/productapi";
 
 function getStoredNickname() {
   const directNickname = localStorage.getItem("nickname");
@@ -27,11 +28,14 @@ function getStoredNickname() {
 }
 
 export default function ProductForm() {
+  const navigate = useNavigate();
+
   const {
     form,
     errors,
     images,
     toastMessage,
+    showToast,
     addImages,
     removeImage,
     setTitle,
@@ -40,6 +44,7 @@ export default function ProductForm() {
     setDescription,
     setAccessoryStatus,
     setTradeType,
+    setCity,
     validateBeforeSubmit,
   } = useProductForm();
 
@@ -77,6 +82,11 @@ export default function ProductForm() {
       return;
     }
 
+    if (form.TRADE_TYPE.includes("DIRECT") && !form.CITY) {
+      showToast("위치 설정을 해주세요.");
+      return;
+    }
+
     const nickname = getStoredNickname();
 
     const tradeTypeOrder = ["DIRECT", "LOCKER", "DELIVERY"];
@@ -100,20 +110,19 @@ export default function ProductForm() {
       formData.append("files", file);
     });
 
-    console.log("FormData 전송 전 확인");
-    for (const [key, value] of formData.entries()) {
-      console.log(key, value);
-    }
-
     try {
       setSubmitting(true);
 
-      const createdProductId = await productApi.createProductDetail(formData);
+      await productApi.createProductDetail(formData);
 
-      console.log("상품 등록 성공");
-      console.log("createdProductId:", createdProductId);
+      showToast("판매등록되었습니다.");
+
+      window.setTimeout(() => {
+        navigate("/");
+      }, 700);
     } catch (error) {
       console.error("상품 등록 실패", error);
+      showToast("상품 등록에 실패했습니다.");
     } finally {
       setSubmitting(false);
     }
@@ -149,6 +158,7 @@ export default function ProductForm() {
               tradeType={form.TRADE_TYPE}
               city={form.CITY}
               onTradeTypeChange={setTradeType}
+              onCityChange={setCity}
             />
           </div>
         </form>
