@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import RecentViewedBox from "../components/RecentViewedBox";
 import SearchFilterBox from "../components/SearchFilterBox";
 import PriceStatsBox from "../components/PriceStatsBox";
@@ -39,6 +40,9 @@ const initialPriceStats: PriceStats = {
 };
 
 export default function HomePage() {
+  const [searchParams] = useSearchParams();
+  const keywordFromNav = (searchParams.get("keyword") ?? "").trim();
+
   const [draftFilters, setDraftFilters] =
     useState<SearchFilterValue>(initialFilters);
   const [appliedFilters, setAppliedFilters] =
@@ -50,6 +54,20 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    setDraftFilters((prev) => ({
+      ...prev,
+      keyword: keywordFromNav,
+    }));
+
+    setAppliedFilters((prev) => ({
+      ...prev,
+      keyword: keywordFromNav,
+    }));
+
+    setPage(1);
+  }, [keywordFromNav]);
+
   const handleDraftFilterChange = (next: SearchFilterValue) => {
     setDraftFilters(next);
   };
@@ -58,7 +76,7 @@ export default function HomePage() {
     setDraftFilters(next);
     setAppliedFilters((prev) => ({
       ...prev,
-      keyword: next.keyword,
+      keyword: keywordFromNav,
       minPrice: next.minPrice,
       maxPrice: next.maxPrice,
       isLocker: next.isLocker,
@@ -73,8 +91,16 @@ export default function HomePage() {
   };
 
   const handleFilterReset = () => {
-    setDraftFilters(initialFilters);
-    setAppliedFilters(initialFilters);
+    setDraftFilters({
+      ...initialFilters,
+      keyword: keywordFromNav,
+    });
+
+    setAppliedFilters({
+      ...initialFilters,
+      keyword: keywordFromNav,
+    });
+
     setPage(1);
   };
 
@@ -100,7 +126,7 @@ export default function HomePage() {
 
     setAppliedFilters((prev) => ({
       ...prev,
-      keyword: draftFilters.keyword,
+      keyword: keywordFromNav,
       minPrice: draftFilters.minPrice,
       maxPrice: draftFilters.maxPrice,
       stateName: draftFilters.stateName,
@@ -169,7 +195,7 @@ export default function HomePage() {
         <SearchFilterBox
           value={draftFilters}
           appliedValue={appliedFilters}
-          resultKeyword={appliedFilters.keyword}
+          resultKeyword={keywordFromNav}
           totalCount={priceStats.totalCount}
           onChange={handleDraftFilterChange}
           onReset={handleFilterReset}
