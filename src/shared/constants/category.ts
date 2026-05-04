@@ -1,7 +1,4 @@
-import type {
-  MainCategory,
-  SubCategory,
-} from "../types/category.types";
+import type { MainCategory, SubCategory } from "../types/category.types";
 
 export const MAIN_CATEGORIES: MainCategory[] = [
   { m_category_id: 1, m_category_name: "패션의류" },

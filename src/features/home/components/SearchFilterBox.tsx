@@ -5,10 +5,7 @@ import {
   MAIN_CATEGORIES,
   SUB_CATEGORIES,
 } from "../../../shared/constants/category";
-import {
-  STATE_CODES,
-  CITY_CODES,
-} from "../../../shared/constants/location";
+import { STATE_CODES, CITY_CODES } from "../../../shared/constants/location";
 
 type SearchFilterBoxProps = {
   value: SearchFilterValue;
@@ -48,7 +45,7 @@ export default function SearchFilterBox({
     }
 
     const matchedMain = MAIN_CATEGORIES.find(
-      (main) => main.m_category_name === value.mainCategory
+      (main) => main.m_category_name === value.mainCategory,
     );
 
     setSelectedMainId(matchedMain ? matchedMain.m_category_id : null);
@@ -61,7 +58,7 @@ export default function SearchFilterBox({
     }
 
     const matchedState = STATE_CODES.find(
-      (state) => state.state_name === value.stateName
+      (state) => state.state_name === value.stateName,
     );
 
     setSelectedStateId(matchedState ? matchedState.s_id : null);
@@ -121,7 +118,7 @@ export default function SearchFilterBox({
     if (!value.stateName) return;
 
     const matchedState = STATE_CODES.find(
-      (state) => state.state_name === value.stateName
+      (state) => state.state_name === value.stateName,
     );
 
     setSelectedStateId(matchedState ? matchedState.s_id : null);
@@ -267,7 +264,7 @@ export default function SearchFilterBox({
     if (!value.mainCategory) return;
 
     const matchedMain = MAIN_CATEGORIES.find(
-      (main) => main.m_category_name === value.mainCategory
+      (main) => main.m_category_name === value.mainCategory,
     );
 
     setSelectedMainId(matchedMain ? matchedMain.m_category_id : null);
@@ -283,7 +280,7 @@ export default function SearchFilterBox({
     if (!value.mainCategory) return;
 
     const matchedMain = MAIN_CATEGORIES.find(
-      (main) => main.m_category_name === value.mainCategory
+      (main) => main.m_category_name === value.mainCategory,
     );
 
     setSelectedMainId(matchedMain ? matchedMain.m_category_id : null);
@@ -333,7 +330,8 @@ export default function SearchFilterBox({
           <h2 className={styles.title}>
             {displayKeyword ? (
               <>
-                <span className={styles.keyword}>'{displayKeyword}'</span> 검색결과
+                <span className={styles.keyword}>'{displayKeyword}'</span>{" "}
+                검색결과
               </>
             ) : (
               "검색결과"
@@ -357,7 +355,9 @@ export default function SearchFilterBox({
               onClick={handleCategoryOpen}
               aria-label={isCategoryOpen ? "카테고리 닫기" : "카테고리 열기"}
             >
-              <span className={styles.plus}>{isCategoryOpen ? "－" : "＋"}</span>
+              <span className={styles.plus}>
+                {isCategoryOpen ? "－" : "＋"}
+              </span>
             </button>
           </div>
 
