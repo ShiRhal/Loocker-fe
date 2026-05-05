@@ -1,11 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import styles from "./ProductCategorySection.module.css";
-import {
-  findMainCategories,
-  findSubCategories,
-  type MainCategoryItem,
-  type SubCategoryItem,
-} from "../api/codeapi";
+import { useCodeOptions } from "../../../shared/hooks/useCodeOptions";
 
 type ProductCategorySectionProps = {
   value: string;
@@ -16,26 +11,7 @@ export default function ProductCategorySection({
   value,
   onChange,
 }: ProductCategorySectionProps) {
-  const [mainCategories, setMainCategories] = useState<MainCategoryItem[]>([]);
-  const [subCategories, setSubCategories] = useState<SubCategoryItem[]>([]);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const [mainRes, subRes] = await Promise.all([
-          findMainCategories(),
-          findSubCategories(),
-        ]);
-
-        setMainCategories(mainRes);
-        setSubCategories(subRes);
-      } catch (error) {
-        console.error("카테고리 조회 실패", error);
-      }
-    };
-
-    fetchCategories();
-  }, []);
+  const { mainCategories, subCategories } = useCodeOptions();
 
   const selectedSubCategory = useMemo(() => {
     return subCategories.find((sub) => sub.SUB_CATEGORY === value) ?? null;

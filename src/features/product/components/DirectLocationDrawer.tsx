@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import DrawerLayout from "../../../shared/components/DrawerLayout/DrawerLayout";
-import {
-  findCities,
-  findStates,
-  type CityItem,
-  type StateItem,
-} from "../api/codeapi";
+import { useCodeOptions } from "../../../shared/hooks/useCodeOptions";
 import styles from "./DirectLocationDrawer.module.css";
 
 type DirectLocationDrawerProps = {
@@ -33,30 +28,12 @@ export default function DirectLocationDrawer({
   onBack,
   onSelectCity,
 }: DirectLocationDrawerProps) {
-  const [states, setStates] = useState<StateItem[]>([]);
-  const [cities, setCities] = useState<CityItem[]>([]);
+  const { states, cities } = useCodeOptions();
+
   const [keyword, setKeyword] = useState("");
   const [recentLocations, setRecentLocations] = useState<RecentLocationItem[]>(
     [],
   );
-
-  useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const [stateRes, cityRes] = await Promise.all([
-          findStates(),
-          findCities(),
-        ]);
-
-        setStates(stateRes);
-        setCities(cityRes);
-      } catch (error) {
-        console.error("지역 코드 조회 실패", error);
-      }
-    };
-
-    fetchLocations();
-  }, []);
 
   useEffect(() => {
     const rawRecentLocations = localStorage.getItem(RECENT_CITY_STORAGE_KEY);
