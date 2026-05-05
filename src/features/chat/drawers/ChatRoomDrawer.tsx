@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DrawerLayout from "../../../shared/components/DrawerLayout/DrawerLayout";
 import { getChatMessages } from "../api/chatApi";
 import { useChatSocket } from "../socket/useChatSocket";
@@ -37,6 +37,7 @@ export default function ChatRoomDrawer({ room, onBack, onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const messagesRef = useRef<HTMLDivElement | null>(null);
 
   const myUserId = useMemo(() => {
     const raw = localStorage.getItem("userId");
@@ -79,6 +80,13 @@ export default function ChatRoomDrawer({ room, onBack, onClose }: Props) {
       cancelled = true;
     };
   }, [reloadMessages]);
+
+  useEffect(() => {
+    // 새 메시지 수신/전송 시 스크롤을 맨 아래로 자동 이동
+    const el = messagesRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages.length, loading]);
 
   useEffect(() => {
     // WebSocket 수신 누락/지연 시 상대 메시지를 빠르게 보정하기 위한 안전망
@@ -176,7 +184,7 @@ export default function ChatRoomDrawer({ room, onBack, onClose }: Props) {
       ) : error ? (
         <div className={styles.error}>{error}</div>
       ) : (
-        <div className={styles.messages}>
+        <div ref={messagesRef} className={styles.messages}>
           {messages.map((m) => {
             const mine = myUserId !== null && m.SENDER_ID === myUserId;
             return (
