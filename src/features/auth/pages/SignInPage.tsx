@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../app/providers/auth/useAuth";
 import styles from "./SignInPage.module.css";
 import logoImg from "../../../assets/images/Loocker.png";
 import "../../../shared/styles/global.css";
-import GoogleIcon from "../../../assets/icons/Google.svg";
 import KakaoIcon from "../../../assets/icons/Kakao.svg";
-import UserIcon from "../../../assets/icons/user.svg";
 
 declare global {
   interface Window {
@@ -15,7 +13,6 @@ declare global {
 }
 
 const GOOGLE_SCRIPT = "https://accounts.google.com/gsi/client";
-
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
 
 export default function SignInPage() {
@@ -24,73 +21,85 @@ export default function SignInPage() {
   const redirect = useMemo(() => params.get("redirect") || "/", [params]);
 
   const { me, loginWithGoogleIdToken } = useAuth();
+
   const [keepLogin, setKeepLogin] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  // 이미 로그인 상태면 redirect로 보내기
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const renderedRef = useRef(false);
+
   useEffect(() => {
-    if (me) nav(redirect, { replace: true });
+    if (me) {
+      nav(redirect, { replace: true });
+    }
   }, [me, nav, redirect]);
 
-  // Google Identity Services 로드
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) return;
-
-    const existed = document.querySelector(`script[src="${GOOGLE_SCRIPT}"]`);
-    if (existed) return;
-
-    const s = document.createElement("script");
-    s.src = GOOGLE_SCRIPT;
-    s.async = true;
-    s.defer = true;
-    document.body.appendChild(s);
-  }, []);
-
-  const onGoogleClick = async () => {
-    setErr(null);
-
     if (!GOOGLE_CLIENT_ID) {
       setErr("VITE_GOOGLE_CLIENT_ID가 설정되지 않았습니다.");
       return;
     }
 
-    // 스크립트 로딩 대기
-    if (!window.google?.accounts?.id) {
-      setErr(
-        "Google 스크립트가 아직 로드되지 않았습니다. 잠시 후 다시 클릭하세요.",
-      );
-      return;
+    const existingScript = document.querySelector(
+      `script[src="${GOOGLE_SCRIPT}"]`,
+    );
+
+    if (!existingScript) {
+      const script = document.createElement("script");
+      script.src = GOOGLE_SCRIPT;
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
     }
 
-    //클릭 시 credential 콜백 받는 방식
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: async (resp: { credential?: string }) => {
-        try {
-          const idToken = resp?.credential;
+    const timer = window.setInterval(() => {
+      if (!window.google?.accounts?.id) return;
+      if (!googleButtonRef.current) return;
+      if (renderedRef.current) return;
 
-          if (!idToken) throw new Error("id_token(credential)이 없습니다.");
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (resp: { credential?: string }) => {
+          try {
+            setErr(null);
 
-          // FE는 저장 X, BE로 전달 → BE가 세션쿠키 발급
-          await loginWithGoogleIdToken(idToken);
+            const idToken = resp?.credential;
+            if (!idToken) {
+              throw new Error("id_token이 없습니다.");
+            }
 
-          // keepLogin은 지금은 UI만 (나중에 BE 세션 만료정책과 연결)
-          nav(redirect, { replace: true });
-        } catch (e: any) {
-          setErr(e?.message || "구글 로그인 실패");
-        }
-      },
-    });
+            await loginWithGoogleIdToken(idToken);
+            nav(redirect, { replace: true });
+          } catch (e: any) {
+            setErr(e?.message || "구글 로그인 실패");
+          }
+        },
+      });
 
-    // 버튼 클릭으로 프롬프트 띄움
-    window.google.accounts.id.prompt();
-  };
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        text: "continue_with",
+        shape: "rectangular",
+        logo_alignment: "left",
+        width: 360,
+      });
+
+      renderedRef.current = true;
+      window.clearInterval(timer);
+    }, 300);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [loginWithGoogleIdToken, nav, redirect]);
 
   return (
     <div className={styles.page}>
       <section className={styles.card}>
         <div className={styles.brandTop} onClick={() => nav("/")}>
-          <img src={logoImg} alt="Looker 로고" className={styles.brandLogo} />
+          <img src={logoImg} alt="Loocker 로고" className={styles.brandLogo} />
         </div>
 
         <label className={styles.keepRow}>
@@ -104,13 +113,9 @@ export default function SignInPage() {
 
         {err && <div className={styles.error}>{err}</div>}
 
-        <button className={styles.btnGoogle} onClick={onGoogleClick}>
-          <span className={styles.icon}>
-            <img src={GoogleIcon} alt="Google" className={styles.iconImg} />
-          </span>
-          <span className={styles.btnText}>구글로 시작하기</span>
-          <span className={styles.spacer} />
-        </button>
+        <div className={styles.googleButtonWrap}>
+          <div ref={googleButtonRef} />
+        </div>
 
         <button
           className={styles.btnKakao}

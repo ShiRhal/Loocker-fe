@@ -1,4 +1,4 @@
-import { api } from "../../../app/config/api";
+import { webapi } from "../../../app/config/api";
 import type {
   HomeSearchRequest,
   HomeSearchResponse,
@@ -9,8 +9,14 @@ function toQueryString(params: HomeSearchRequest): string {
 
   searchParams.set("DS_MAIN_CATEGORY", params.DS_MAIN_CATEGORY ?? "");
   searchParams.set("DS_SUB_CATEGORY", params.DS_SUB_CATEGORY ?? "");
-  searchParams.set("MIN_PRICE", params.MIN_PRICE === null ? "" : String(params.MIN_PRICE));
-  searchParams.set("MAX_PRICE", params.MAX_PRICE === null ? "" : String(params.MAX_PRICE));
+  searchParams.set(
+    "MIN_PRICE",
+    params.MIN_PRICE === null ? "" : String(params.MIN_PRICE),
+  );
+  searchParams.set(
+    "MAX_PRICE",
+    params.MAX_PRICE === null ? "" : String(params.MAX_PRICE),
+  );
   searchParams.set("DS_STATE", params.DS_STATE ?? "");
   searchParams.set("DS_CITY", params.DS_CITY ?? "");
   searchParams.set("YN_SOLDED", String(params.YN_SOLDED));
@@ -24,14 +30,14 @@ function toQueryString(params: HomeSearchRequest): string {
 }
 
 export async function searchHomeProducts(
-  request: HomeSearchRequest
+  request: HomeSearchRequest,
 ): Promise<HomeSearchResponse> {
   const queryString = toQueryString(request);
   const path = `/product/select?${queryString}`;
 
   //console.log("home api path =", path);
 
-  const data = await api(path, {
+  const data = await webapi(path, {
     method: "GET",
   });
 

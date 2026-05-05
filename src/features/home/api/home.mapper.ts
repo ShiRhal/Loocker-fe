@@ -123,7 +123,7 @@ function toImageUrl(imageUrl: string | null): string {
 
 export function toHomeSearchRequest(
   filters: SearchFilterValue,
-  page: number
+  page: number,
 ): HomeSearchRequest {
   return {
     DS_MAIN_CATEGORY: filters.mainCategory,
@@ -141,9 +141,7 @@ export function toHomeSearchRequest(
   };
 }
 
-export function toPriceStats(
-  priceStatus: HomePriceStatusResponse
-): PriceStats {
+export function toPriceStats(priceStatus: HomePriceStatusResponse): PriceStats {
   return {
     totalCount: priceStatus.PRODUCT_COUNT,
     avgPrice: priceStatus.AVG_PRICE,
@@ -152,9 +150,7 @@ export function toPriceStats(
   };
 }
 
-export function toProductItem(
-  product: HomeProductResponseItem
-): ProductItem {
+export function toProductItem(product: HomeProductResponseItem): ProductItem {
   return {
     id: product.PRODUCT_ID,
     title: product.TITLE,
@@ -169,7 +165,7 @@ export function toProductItem(
 }
 
 export function toProductItems(
-  products: HomeProductResponseItem[]
+  products: HomeProductResponseItem[],
 ): ProductItem[] {
   return products.map(toProductItem);
 }

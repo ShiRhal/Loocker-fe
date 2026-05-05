@@ -16,7 +16,11 @@ type PopularKeyword = {
   keyword: string;
 };
 
-export default function NavBar() {
+type NavBarProps = {
+  onOpenChat?: () => void;
+};
+
+export default function NavBar({ onOpenChat }: NavBarProps) {
   const { me } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
@@ -113,6 +117,15 @@ export default function NavBar() {
     nav(`/signin?redirect=${redirect}`);
   };
 
+  const openChatDrawerOrSignin = () => {
+    if (me) {
+      onOpenChat?.();
+      return;
+    }
+    const redirect = encodeURIComponent(loc.pathname + loc.search);
+    nav(`/signin?redirect=${redirect}`);
+  };
+
   return (
     <header id="siteHeader" className={styles.header}>
       <div className={styles.innerSticky}>
@@ -194,10 +207,10 @@ export default function NavBar() {
             <button
               className={styles.actionBtn}
               type="button"
-              onClick={() => goIfAuthedOrSignin("/chat")}
+              onClick={openChatDrawerOrSignin}
             >
               <img src={chatIcon} alt="채팅" className={styles.chatIcon} />
-              <span className={styles.badge}>0</span>
+              {/* <span className={styles.badge}>0</span> */}
               <span className={styles.OptionText}>채팅하기</span>
             </button>
 
