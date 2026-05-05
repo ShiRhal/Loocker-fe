@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Client, IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import { API_BASE } from "../../../app/config/api";
+import { API_BASE } from "../../../shared/config/apiBase";
 import type { ChatMessage } from "../types/chat";
 
 type OnIncoming = (msg: ChatMessage) => void;

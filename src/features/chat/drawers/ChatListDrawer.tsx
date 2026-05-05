@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { toApiAssetUrl } from "../../../app/config/api";
+import { toApiAssetUrl } from "../../../shared/utils/imageUrl";
 import DrawerLayout from "../../../shared/components/DrawerLayout/DrawerLayout";
 import { getChatRooms } from "../api/chatApi";
 import type { ChatRoomListItem } from "../types/chat";

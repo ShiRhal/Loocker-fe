@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styles from './FavoritesDrawer.module.css';
 import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import type { UserInfoBuy } from '../api/userInfoApi';
-import { toApiAssetUrl } from '../../../app/config/api';
+import { toApiAssetUrl } from '../../../shared/utils/imageUrl'; 
 
 interface BuyHistoryDrawerProps {
   onClose: () => void;
