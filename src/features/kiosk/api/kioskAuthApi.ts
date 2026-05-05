@@ -1,4 +1,4 @@
-import { api } from "../../../app/config/api";
+import { kioskapi } from "../../../app/config/api";
 
 export type KioskLoginRequest = {
   LOGIN_ID: string;
@@ -18,7 +18,7 @@ export type KioskLoginResponse = {
 
 export const kioskAuthApi = {
   async verify(code: string): Promise<void> {
-    await api(`/kiosk/verify?CODE=${encodeURIComponent(code)}`, {
+    await kioskapi(`/verify?CODE=${encodeURIComponent(code)}`, {
       method: "GET",
     });
   },
@@ -29,7 +29,7 @@ export const kioskAuthApi = {
     query.set("LOGIN_ID", body.LOGIN_ID);
     query.set("LOGIN_PW", body.LOGIN_PW);
 
-    const res = await api(`/kiosk/login?${query.toString()}`, {
+    const res = await kioskapi(`/login?${query.toString()}`, {
       method: "GET",
     });
 

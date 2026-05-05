@@ -1,4 +1,4 @@
-import { api } from "../../../app/config/api";
+import { kioskapi } from "../../../app/config/api";
 
 export type KioskDeviceVerifyResponse = {
   IS_VALID: boolean | number;
@@ -18,19 +18,19 @@ export type KioskTradeVerifyResponse = {
 
 export const kioskApi = {
   verifyDevice(code: string) {
-    return api(`/kiosk/verify?CODE=${encodeURIComponent(code)}`, {
+    return kioskapi(`/verify?CODE=${encodeURIComponent(code)}`, {
       method: "GET",
     }) as Promise<KioskDeviceVerifyResponse>;
   },
 
   verifyTrade(tradeCode: string) {
-    return api(`/kiosk/trade/verify?CODE=${encodeURIComponent(tradeCode)}`, {
+    return kioskapi(`/trade/verify?CODE=${encodeURIComponent(tradeCode)}`, {
       method: "GET",
     }) as Promise<KioskTradeVerifyResponse>;
   },
 
   openLocker(tradeId: number) {
-    return api(`/kiosk/locker/open`, {
+    return kioskapi(`/locker/open`, {
       method: "POST",
       json: {
         TRADE_ID: tradeId,
@@ -39,7 +39,7 @@ export const kioskApi = {
   },
 
   checkLockerClosed(tradeId: number) {
-    return api(`/kiosk/locker/close-check`, {
+    return kioskapi(`/locker/close-check`, {
       method: "POST",
       json: {
         TRADE_ID: tradeId,
