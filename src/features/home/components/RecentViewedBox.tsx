@@ -34,7 +34,6 @@ export default function RecentViewedBox({
           <p className={styles.emptyText}>최근 본 상품이 없습니다.</p>
         </div>
       ) : (
-        /* 나중에 mock 데이터나 API 데이터를 연결하면 이 영역에 목록이 렌더링됨 */
         <ul className={styles.list}>
           {items.map((item) => (
             <li key={item.id} className={styles.item}>
