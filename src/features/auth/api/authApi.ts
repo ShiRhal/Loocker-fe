@@ -1,25 +1,37 @@
-import { api } from "../../../app/config/api";
+import { webapi } from "../../../app/config/api";
 import type { Me } from "../../../app/providers/auth/AuthProvider";
+
+function getStoredAccessToken() {
+  const token = localStorage.getItem("accessToken");
+
+  if (!token || token === "null" || token === "undefined") {
+    return null;
+  }
+
+  return token;
+}
 
 export const authApi = {
   me: async (): Promise<Me> => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = getStoredAccessToken();
 
-    return api("/auth/me", {
+    if (!accessToken) {
+      throw new Error("NO_ACCESS_TOKEN");
+    }
+
+    return webapi("/auth/me", {
       method: "GET",
-      headers: accessToken
-        ? {
-            Authorization: `Bearer ${accessToken}`,
-          }
-        : undefined,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
     });
   },
 
   loginGoogle: async (payload: { idToken: string }) => {
-    return api("/auth/google", { method: "POST", json: payload });
+    return webapi("/auth/google", { method: "POST", json: payload });
   },
 
   logout: async () => {
-    return api("/auth/logout", { method: "POST" });
+    return webapi("/auth/logout", { method: "POST" });
   },
 };

@@ -49,6 +49,15 @@ interface AccountFormData {
   isMainAccount: boolean;
 }
 
+const normalizeCreateAccountError = (e: unknown) => {
+  const fallback = '계좌 등록에 실패했습니다.';
+  const message = e instanceof Error ? e.message : fallback;
+  if (/이미 존재하는 계좌|error code \[50000\]|existing account/i.test(message)) {
+    return '이미 등록된 계좌입니다.';
+  }
+  return message;
+};
+
 const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({
   onClose,
   userId,
@@ -61,7 +70,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<AccountFormData>({
-    accountHolder: '고호진', // 뒤로가기 시 복원을 위해 기본값 세팅
+    accountHolder: '',
     bank: '',
     accountNo: '',
     isMainAccount: false,
@@ -70,7 +79,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({
   useEffect(() => {
     if (!isRegistering) {
       setFormData({
-        accountHolder: '고호진',
+        accountHolder: '',
         bank: '',
         accountNo: '',
         isMainAccount: false,
@@ -95,6 +104,10 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({
     setFormData((prev) => ({ ...prev, accountNo: value }));
   };
 
+  const handleAccountHolderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, accountHolder: e.target.value }));
+  };
+
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, isMainAccount: e.target.checked }));
   };
@@ -115,7 +128,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({
         await onRefreshAccounts();
         setIsRegistering(false);
       } catch (e) {
-        const message = e instanceof Error ? e.message : '계좌 등록에 실패했습니다.';
+        const message = normalizeCreateAccountError(e);
         setError(message);
       } finally {
         setSubmitting(false);
@@ -204,10 +217,11 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({
           </label>
           <div className={styles.inputWrapper}>
             <input
-              disabled
               id="accountHolder"
               type="text"
+              placeholder="예금주 입력"
               value={formData.accountHolder}
+              onChange={handleAccountHolderChange}
               className={styles.input}
             />
           </div>
@@ -272,29 +286,32 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({
         </div>
 
         <label className={styles.checkboxLabel}>
-          <input
-            type="checkbox"
-            checked={formData.isMainAccount}
-            onChange={handleCheckboxChange}
-            className={styles.checkbox}
-          />
-          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              fillRule="evenodd"
-              d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0m-4.47-2.47a.75.75 0 0 0-1.06-1.06l-4.97 4.97-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0z"
-              clipRule="evenodd"
+          <span className={styles.checkboxIconWrapper}>
+            <input
+              type="checkbox"
+              checked={formData.isMainAccount}
+              onChange={handleCheckboxChange}
+              className={styles.checkbox}
             />
-          </svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.checkboxIcon}>
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12ZM16.5303 9.53033C16.8232 9.23744 16.8232 8.76256 16.5303 8.46967C16.2374 8.17678 15.7626 8.17678 15.4697 8.46967L10.5 13.4393L8.53033 11.4697C8.23744 11.1768 7.76256 11.1768 7.46967 11.4697C7.17678 11.7626 7.17678 12.2374 7.46967 12.5303L9.96967 15.0303C10.2626 15.3232 10.7374 15.3232 11.0303 15.0303L16.5303 9.53033Z"
+                fill={formData.isMainAccount ? '#111827' : '#C2C6CE'}
+              />
+            </svg>
+          </span>
           <span>대표계좌로 설정</span>
         </label>
         {error ? <p className={styles.errorText} role="alert">{error}</p> : null}
 
         <div className={styles.notice}>
-          <div>
+          {/* <div>
             <span>안전한 중고거래를 위해</span>
             <span className={styles.noticeEmphasis}>회원 가입시 본인 인증한</span>
           </div>
-          <span>명의의 계좌만 사용하실 수 있습니다.</span>
+          <span>명의의 계좌만 사용하실 수 있습니다.</span> */}
         </div>
       </form>
       </DrawerLayout>
@@ -340,7 +357,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({
                 <div className={styles.accountDetailRows}>
                   <div className={styles.accountDetailRow}>
                     <span className={styles.detailLabel}>예금주</span>
-                    <span className={styles.detailValue}>{formData.accountHolder}</span>
+                    <span className={styles.detailValue}>{formData.accountHolder || '-'}</span>
                   </div>
                   <div className={styles.accountDetailRow}>
                     <span className={styles.detailLabel}>계좌번호</span>
@@ -403,7 +420,6 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({
             <span>정산계좌 안내</span>
           </div>
           <ul className={styles.noticeList}>
-            <li>계좌정보는 최대 2개까지 등록 가능합니다.</li>
             <li>판매대금은 설정하신 대표계좌로 정산됩니다.</li>
             <li>대표계좌 변경 시, 진행 중 거래는 기존 계좌로 정산되니 참고해 주세요.</li>
           </ul>

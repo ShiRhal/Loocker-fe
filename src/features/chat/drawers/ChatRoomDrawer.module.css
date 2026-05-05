@@ -1,0 +1,114 @@
+.main {
+  flex: 1;
+  overflow: hidden;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.statusRow {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.connected {
+  color: #059669;
+}
+
+.disconnected {
+  color: #d97706;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+  min-height: 0;
+}
+
+.bubble {
+  max-width: 85%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.bubbleMine {
+  align-self: flex-end;
+  background: #1677ff;
+  color: #fff;
+}
+
+.bubbleOther {
+  align-self: flex-start;
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.meta {
+  font-size: 11px;
+  opacity: 0.85;
+  margin-top: 6px;
+}
+
+.loading,
+.error {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.error {
+  color: #cf1322;
+}
+
+.footerInner {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.input {
+  flex: 1;
+  min-height: 44px;
+  max-height: 120px;
+  padding: 10px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  font-size: 14px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #1677ff;
+}
+
+.sendBtn {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #1677ff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sendBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

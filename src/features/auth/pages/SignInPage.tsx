@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../app/providers/auth/useAuth";
 import styles from "./SignInPage.module.css";
 import logoImg from "../../../assets/images/Loocker.png";
 import "../../../shared/styles/global.css";
-import GoogleIcon from "../../../assets/icons/Google.svg";
 import KakaoIcon from "../../../assets/icons/Kakao.svg";
 
 declare global {
@@ -22,26 +21,53 @@ export default function SignInPage() {
   const redirect = useMemo(() => params.get("redirect") || "/", [params]);
 
   const { me, loginWithGoogleIdToken } = useAuth();
+
   const [keepLogin, setKeepLogin] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [googleReady, setGoogleReady] = useState(false);
 
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const renderedRef = useRef(false);
+
   useEffect(() => {
-    if (me) nav(redirect, { replace: true });
+    if (me) {
+      nav(redirect, { replace: true });
+    }
   }, [me, nav, redirect]);
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) return;
+    if (!GOOGLE_CLIENT_ID) {
+      setErr("VITE_GOOGLE_CLIENT_ID가 설정되지 않았습니다.");
+      return;
+    }
 
-    const initGoogle = () => {
+    const existingScript = document.querySelector(
+      `script[src="${GOOGLE_SCRIPT}"]`,
+    );
+
+    if (!existingScript) {
+      const script = document.createElement("script");
+      script.src = GOOGLE_SCRIPT;
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+
+    const timer = window.setInterval(() => {
       if (!window.google?.accounts?.id) return;
+      if (!googleButtonRef.current) return;
+      if (renderedRef.current) return;
 
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: async (resp: { credential?: string }) => {
           try {
+            setErr(null);
+
             const idToken = resp?.credential;
-            if (!idToken) throw new Error("id_token(credential)이 없습니다.");
+            if (!idToken) {
+              throw new Error("id_token이 없습니다.");
+            }
 
             await loginWithGoogleIdToken(idToken);
             nav(redirect, { replace: true });
@@ -51,40 +77,30 @@ export default function SignInPage() {
         },
       });
 
-      setGoogleReady(true);
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        text: "continue_with",
+        shape: "rectangular",
+        logo_alignment: "left",
+        width: 360,
+      });
+
+      renderedRef.current = true;
+      window.clearInterval(timer);
+    }, 300);
+
+    return () => {
+      window.clearInterval(timer);
     };
-
-    const existed = document.querySelector(`script[src="${GOOGLE_SCRIPT}"]`);
-
-    if (existed) {
-      setTimeout(initGoogle, 300);
-      return;
-    }
-
-    const s = document.createElement("script");
-    s.src = GOOGLE_SCRIPT;
-    s.async = true;
-    s.defer = true;
-    s.onload = initGoogle;
-    document.body.appendChild(s);
   }, [loginWithGoogleIdToken, nav, redirect]);
-
-  const onGoogleClick = () => {
-    setErr(null);
-
-    if (!googleReady) {
-      setErr("Google 로그인 모듈이 아직 준비되지 않았습니다.");
-      return;
-    }
-
-    window.google.accounts.id.prompt();
-  };
 
   return (
     <div className={styles.page}>
       <section className={styles.card}>
         <div className={styles.brandTop} onClick={() => nav("/")}>
-          <img src={logoImg} alt="Looker 로고" className={styles.brandLogo} />
+          <img src={logoImg} alt="Loocker 로고" className={styles.brandLogo} />
         </div>
 
         <label className={styles.keepRow}>
@@ -98,13 +114,9 @@ export default function SignInPage() {
 
         {err && <div className={styles.error}>{err}</div>}
 
-        <button className={styles.btnGoogle} onClick={onGoogleClick}>
-          <span className={styles.icon}>
-            <img src={GoogleIcon} alt="Google" className={styles.iconImg} />
-          </span>
-          <span className={styles.btnText}>구글로 시작하기</span>
-          <span className={styles.spacer} />
-        </button>
+        <div className={styles.googleButtonWrap}>
+          <div ref={googleButtonRef} />
+        </div>
 
         <button
           className={styles.btnKakao}

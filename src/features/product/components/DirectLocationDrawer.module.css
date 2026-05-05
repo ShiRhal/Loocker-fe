@@ -1,0 +1,147 @@
+.container {
+  width: 100%;
+  min-height: 100%;
+  background: #ffffff;
+}
+
+.searchBox {
+  padding: 28px 32px 20px;
+}
+
+.searchForm {
+  position: relative;
+  width: 100%;
+}
+
+.searchLabel {
+  display: block;
+  width: 100%;
+}
+
+.searchInput {
+  width: 100%;
+  height: 54px;
+  padding: 0 54px 0 18px;
+  border: none;
+  border-radius: 14px;
+  background: #f2f4f6;
+  color: #141313;
+  font-size: 16px;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: #9ca3af;
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  transform: translateY(-50%);
+  color: #787e89;
+  pointer-events: none;
+}
+
+.recentSection {
+  padding: 12px 32px 32px;
+}
+
+.sectionTitle,
+.resultTitle {
+  margin: 0 0 18px;
+  color: #141313;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.recentList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recentItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  border-bottom: 1px solid #f1f4f6;
+}
+
+.recentCityButton {
+  flex: 1;
+  height: 52px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recentCityButton p {
+  margin: 0;
+  color: #141313;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.recentRemoveButton {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 999px;
+  background: #d1d5db;
+  color: #ffffff;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.resultSection {
+  padding: 12px 32px 32px;
+}
+
+.resultList {
+  display: flex;
+  flex-direction: column;
+}
+
+.resultButton {
+  width: 100%;
+  min-height: 58px;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid #f1f4f6;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #141313;
+  font-size: 16px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.resultButton:hover {
+  background: #f9fafb;
+}
+
+.resultButtonSelected {
+  font-weight: 700;
+}
+
+.cityText {
+  color: #3182f6;
+  font-weight: 700;
+}
+
+.emptyText {
+  margin: 0;
+  padding: 18px 0;
+  color: #9ca3af;
+  font-size: 15px;
+}

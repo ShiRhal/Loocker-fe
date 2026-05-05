@@ -162,3 +162,24 @@
   object-fit: contain;
   display: block;
 }
+
+.googleButtonWrap {
+  width: 100%;
+  min-height: 3rem;
+  border-radius: 0.625rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.625rem;
+  overflow: hidden;
+}
+
+.googleButtonWrap > div {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.googleButtonWrap iframe {
+  width: 100% !important;
+}

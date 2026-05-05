@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import styles from './ReviewsDrawer.module.css';
 import type { UserInfoReview } from '../api/userInfoApi';
@@ -52,50 +52,67 @@ function EmptyState({ text }: { text: string }) {
 }
 
 export default function ReviewsDrawer({ onClose, reviewList }: ReviewsDrawerProps) {
+  const writtenReviews = useMemo(
+    () => reviewList.filter((review) => review.REVIEW_TYPE === 'WRITTEN'),
+    [reviewList]
+  );
+  const receivedReviews = useMemo(
+    () => reviewList.filter((review) => review.REVIEW_TYPE === 'RECEIVED'),
+    [reviewList]
+  );
+
+  const renderReviewCards = (reviews: UserInfoReview[]) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {reviews.map((review) => (
+        <div
+          key={review.REVIEW_ID}
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            console.log('후기 클릭', review);
+            // TODO: 상세 페이지 이동 (예: navigate(`/trades/${review.TRADE_ID}/reviews/${review.REVIEW_ID}`))
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              console.log('후기 클릭', review);
+            }
+          }}
+          className={styles.reviewCard}
+        >
+          <div className={styles.reviewTop}>
+            <div className={styles.reviewWriter}>
+              {review.WRITER_NICKNAME || '-'}
+            </div>
+            <div className={styles.reviewScore}>점수: {review.SCORE ?? 0}</div>
+          </div>
+          <div className={styles.reviewDate}>{review.CREATED_AT || '-'}</div>
+          <div className={styles.reviewContent}>{review.CONTENT || '-'}</div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <DrawerLayout title="후기" onBack={onClose}>
       <main className={styles.innerMain}>
         <section className={styles.section}>
-          <header className={styles.sectionHeader}>이런점이 좋았어요</header>
-          {reviewList.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {reviewList.map((review) => (
-                <div
-                  key={review.REVIEW_ID}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    console.log('후기 클릭', review);
-                    // TODO: 상세 페이지 이동 (예: navigate(`/trades/${review.TRADE_ID}/reviews/${review.REVIEW_ID}`))
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      console.log('후기 클릭', review);
-                    }
-                  }}
-                  className={styles.reviewCard}
-                >
-                  <div className={styles.reviewTop}>
-                    <div className={styles.reviewWriter}>
-                      {review.WRITER_NICKNAME || '-'}
-                    </div>
-                    <div className={styles.reviewScore}>점수: {review.SCORE ?? 0}</div>
-                  </div>
-                  <div className={styles.reviewDate}>{review.CREATED_AT || '-'}</div>
-                  <div className={styles.reviewContent}>{review.CONTENT || '-'}</div>
-                </div>
-              ))}
-            </div>
+          <header className={styles.sectionHeader}>내가 작성한 후기</header>
+          {writtenReviews.length > 0 ? (
+            renderReviewCards(writtenReviews)
           ) : (
-            <EmptyState text="받은 평가가 없습니다." />
+            <EmptyState text="작성한 후기가 없습니다." />
           )}
         </section>
 
         <div className={styles.divider} />
 
         <section className={styles.section}>
-          <header className={styles.sectionHeader}>상세한 후기도 있어요</header>
-          <EmptyState text="상세 후기 분리 로직은 REVIEW_TYPE 확인 후 구현 예정" />
+          <header className={styles.sectionHeader}>나에게 남긴 후기</header>
+          {receivedReviews.length > 0 ? (
+            renderReviewCards(receivedReviews)
+          ) : (
+            <EmptyState text="받은 후기가 없습니다." />
+          )}
         </section>
       </main>
     </DrawerLayout>

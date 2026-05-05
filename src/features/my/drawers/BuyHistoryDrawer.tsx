@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styles from './FavoritesDrawer.module.css';
 import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import type { UserInfoBuy } from '../api/userInfoApi';
+import { toApiAssetUrl } from '../../../app/config/api';
 
 interface BuyHistoryDrawerProps {
   onClose: () => void;
@@ -104,7 +105,7 @@ const BuyHistoryDrawer: React.FC<BuyHistoryDrawerProps> = ({ onClose, buyList })
                       <td className={styles.titleCell}>
                         <div className={styles.productInfo}>
                           <img
-                            src={item.IMAGE_URL}
+                            src={toApiAssetUrl(item.IMAGE_URL)}
                             alt={item.TITLE}
                             className={styles.productImage}
                             onError={(e) => {

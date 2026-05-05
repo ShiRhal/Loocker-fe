@@ -1,0 +1,30 @@
+/*
+  홈 화면 전체 레이아웃 스타일입니다.
+  본문과 우측 최근본상품 박스를 하나의 묶음처럼 가운데 정렬하고,
+  전체 가로 폭이 너무 퍼지지 않도록 제한합니다.
+*/
+
+.page {
+  display: grid;
+  grid-template-columns: 920px 88px;
+  gap: 60px;
+  justify-content: center;
+  align-items: start;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+@media (max-width: 1200px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+    gap: 24px;
+  }
+}

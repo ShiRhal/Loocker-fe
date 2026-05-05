@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../app/providers/auth/useAuth";
 import styles from "./NavBar.module.css";
 import loockerLogo from "../../../assets/images/Loocker.png";
@@ -11,23 +11,26 @@ import leftIcon from "../../../assets/icons/left.svg";
 import rightIcon from "../../../assets/icons/right.svg";
 import "../../styles/global.css";
 
-type NavBarProps = {
-  showRecent?: boolean;
-};
-
 type PopularKeyword = {
   rank: number;
   keyword: string;
 };
 
-export default function NavBar({ showRecent = true }: NavBarProps) {
+type NavBarProps = {
+  onOpenChat?: () => void;
+};
+
+export default function NavBar({ onOpenChat }: NavBarProps) {
   const { me } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
+  const [searchParams] = useSearchParams();
 
   const [pageIndex, setPageIndex] = useState(0);
+  const [searchKeyword, setSearchKeyword] = useState(
+    searchParams.get("keyword") ?? ""
+  );
 
-  // 나중에 백엔드에서 받아올 값
   const popularKeywords: PopularKeyword[] = [
     { rank: 1, keyword: "레고" },
     { rank: 2, keyword: "ps5" },
@@ -58,10 +61,14 @@ export default function NavBar({ showRecent = true }: NavBarProps) {
       pages.push(popularKeywords.slice(i, i + pageSize));
     }
     return pages;
-  }, [popularKeywords]);
+  }, []);
 
   const hasKeywords = keywordPages.length > 0;
   const currentKeywords = hasKeywords ? keywordPages[pageIndex] : [];
+
+  useEffect(() => {
+    setSearchKeyword(searchParams.get("keyword") ?? "");
+  }, [searchParams]);
 
   useEffect(() => {
     if (keywordPages.length <= 1) return;
@@ -75,9 +82,7 @@ export default function NavBar({ showRecent = true }: NavBarProps) {
 
   const handlePrevKeywords = () => {
     if (!keywordPages.length) return;
-    setPageIndex(
-      (prev) => (prev - 1 + keywordPages.length) % keywordPages.length,
-    );
+    setPageIndex((prev) => (prev - 1 + keywordPages.length) % keywordPages.length);
   };
 
   const handleNextKeywords = () => {
@@ -85,10 +90,36 @@ export default function NavBar({ showRecent = true }: NavBarProps) {
     setPageIndex((prev) => (prev + 1) % keywordPages.length);
   };
 
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const trimmedKeyword = searchKeyword.trim();
+
+    if (!trimmedKeyword) {
+      nav("/");
+      return;
+    }
+
+    nav(`/?keyword=${encodeURIComponent(trimmedKeyword)}`);
+  };
+
+  const handlePopularKeywordClick = (keyword: string) => {
+    nav(`/?keyword=${encodeURIComponent(keyword)}`);
+  };
+
   const goIfAuthedOrSignin = (to: string) => {
     // 클릭시 로그인 상태면 이동, 로그인 상태가 아니면 로그인 페이지로 이동
     if (me) {
       nav(to);
+      return;
+    }
+    const redirect = encodeURIComponent(loc.pathname + loc.search);
+    nav(`/signin?redirect=${redirect}`);
+  };
+
+  const openChatDrawerOrSignin = () => {
+    if (me) {
+      onOpenChat?.();
       return;
     }
     const redirect = encodeURIComponent(loc.pathname + loc.search);
@@ -110,7 +141,12 @@ export default function NavBar({ showRecent = true }: NavBarProps) {
           </div>
 
           <div className={styles.searchWrap}>
-            <form className={styles.searchForm} role="search" noValidate>
+            <form
+              className={styles.searchForm}
+              role="search"
+              noValidate
+              onSubmit={handleSearchSubmit}
+            >
               <span className={styles.searchIcon} aria-hidden="true">
                 <img
                   src={searchIcon}
@@ -124,6 +160,8 @@ export default function NavBar({ showRecent = true }: NavBarProps) {
                 placeholder="어떤 상품을 찾으시나요?"
                 autoComplete="off"
                 name="search"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
               />
             </form>
 
@@ -144,27 +182,20 @@ export default function NavBar({ showRecent = true }: NavBarProps) {
                   type="button"
                   onClick={handleNextKeywords}
                 >
-                  <img
-                    src={rightIcon}
-                    alt="다음"
-                    className={styles.rightIcon}
-                  />
+                  <img src={rightIcon} alt="다음" className={styles.rightIcon} />
                 </button>
 
                 <ul className={styles.keywordList}>
                   {currentKeywords.map((item) => (
                     <li key={item.rank} className={styles.keywordItem}>
-                      <a
-                        href={`/search/${encodeURIComponent(item.keyword)}`}
+                      <button
+                        type="button"
                         className={styles.keywordLink}
+                        onClick={() => handlePopularKeywordClick(item.keyword)}
                       >
-                        <span className={styles.keywordRank}>
-                          {item.rank}.{" "}
-                        </span>
-                        <span className={styles.keywordText}>
-                          {item.keyword}
-                        </span>
-                      </a>
+                        <span className={styles.keywordRank}>{item.rank}. </span>
+                        <span className={styles.keywordText}>{item.keyword}</span>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -176,10 +207,10 @@ export default function NavBar({ showRecent = true }: NavBarProps) {
             <button
               className={styles.actionBtn}
               type="button"
-              onClick={() => goIfAuthedOrSignin("/chat")}
+              onClick={openChatDrawerOrSignin}
             >
               <img src={chatIcon} alt="채팅" className={styles.chatIcon} />
-              <span className={styles.badge}>0</span>
+              {/* <span className={styles.badge}>0</span> */}
               <span className={styles.OptionText}>채팅하기</span>
             </button>
 
@@ -200,20 +231,6 @@ export default function NavBar({ showRecent = true }: NavBarProps) {
               <img src={userIcon} alt="마이" className={styles.userIcon} />
               <span className={styles.OptionText}>마이</span>
             </button>
-
-            {showRecent && (
-              <aside className={styles.recentAside} aria-label="최근본상품">
-                <h2 className={styles.recentTitle}>최근본상품</h2>
-
-                <ul className={styles.recentList}>
-                  <li className={styles.recentEmptyItem}>
-                    <span className={styles.recentEmptyText}>
-                      최근 본 상품이 없습니다.
-                    </span>
-                  </li>
-                </ul>
-              </aside>
-            )}
           </div>
         </div>
       </div>

@@ -181,12 +181,6 @@ const WithdrawDrawer: React.FC<WithdrawDrawerProps> = ({ onClose, userId }) => {
                 탈퇴 신청 후 72시간(3일) 이내 동일한 계정으로 로그인시 탈퇴 신청이 자동으로 철회됩니다.
               </p>
             </li>
-            <li className={styles.noticeItem}>
-              <span className={styles.noticeNumber}>05</span>
-              <p className={styles.noticeText}>
-                중고나라 카페 글쓰기 권한을 받은 상태에서 탈퇴할 경우, 중고나라 카페와의 연결이 해제되며 회원 등급도 변경됩니다. 이로 인해 카페에서 글쓰기가 제한될 수 있으니 유의해주세요.
-              </p>
-            </li>
           </ul>
         </section>
     </DrawerLayout>

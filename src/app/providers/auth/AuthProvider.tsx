@@ -26,11 +26,14 @@ export default function AuthProvider({ children }: Props) {
   const refreshMe = async () => {
     try {
       const data = await authApi.me();
+
       setMe(data);
       localStorage.setItem("userId", String(data.userId));
       localStorage.setItem("nickname", data.nickname);
     } catch {
       setMe(null);
+      localStorage.removeItem("userId");
+      localStorage.removeItem("nickname");
     }
   };
 
@@ -49,6 +52,9 @@ export default function AuthProvider({ children }: Props) {
   const logout = async () => {
     try {
       localStorage.removeItem("accessToken");
+      localStorage.removeItem("me");
+      localStorage.removeItem("nickname");
+
       await authApi.logout();
     } finally {
       setMe(null);

@@ -1,0 +1,25 @@
+.bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+.sortButton {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 14px;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.active {
+  color: #111111;
+  font-weight: 700;
+}
+
+.divider {
+  font-size: 13px;
+  color: #d1d5db;
+}

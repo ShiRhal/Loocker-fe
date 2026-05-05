@@ -177,10 +177,20 @@
   width: 100%;
   height: 52px;
   border-radius: 8px;
-  border: none;
-  background: #f3f4f6;
-  color: #9ca3af;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #141313;
   cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.addAccountButton:hover:not(:disabled) {
+  border-color: #9ca3af;
+  background-color: #f9fafb;
+}
+
+.addAccountButton:active:not(:disabled) {
+  background-color: #f3f4f6;
 }
 
 .addButtonInner {
@@ -193,7 +203,9 @@
 }
 
 .addAccountButton:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
+  color: #9ca3af;
+  background: #f3f4f6;
   cursor: not-allowed;
 }
 
@@ -387,26 +399,20 @@
   user-select: none;
 }
 
-.checkbox {
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  cursor: pointer;
+.checkboxIconWrapper {
+  position: relative;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
 }
 
-.checkboxLabel svg {
-  position: absolute;
-  left: 0;
-  pointer-events: none;
-  color: #10b981;
+.checkbox {
   display: none;
 }
 
-.checkbox:checked + svg {
+.checkboxIcon {
   display: block;
+  pointer-events: none;
 }
 
 .notice {
@@ -645,28 +651,6 @@
   font-weight: 500;
   color: #141313;
   user-select: none;
-}
-
-.checkbox {
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.checkboxLabel svg {
-  position: absolute;
-  left: 0;
-  pointer-events: none;
-  color: #10b981;
-  display: none;
-}
-
-.checkbox:checked + svg {
-  display: block;
 }
 
 .notice {

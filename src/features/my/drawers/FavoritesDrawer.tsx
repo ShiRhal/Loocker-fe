@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styles from './FavoritesDrawer.module.css';
 import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import { myPageApi, type UserInfoProduct } from '../api/userInfoApi';
+import { toApiAssetUrl } from '../../../app/config/api';
 
 interface FavoritesDrawerProps {
   onClose: () => void;
@@ -127,7 +128,7 @@ const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({
                       <td className={styles.titleCell}>
                         <div className={styles.productInfo}>
                           <img
-                            src={item.IMAGE_URL}
+                            src={toApiAssetUrl(item.IMAGE_URL)}
                             alt={item.TITLE}
                             className={styles.productImage}
                             onError={(e) => {
