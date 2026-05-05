@@ -1,4 +1,4 @@
-import { api } from "../../../app/config/api";
+import { webapi } from "../../../app/config/api";
 
 export type MainCategoryItem = {
   ID: number;
@@ -25,7 +25,7 @@ export type CityItem = {
 };
 
 export async function findMainCategories(): Promise<MainCategoryItem[]> {
-  const data = await api("/code/main/category", {
+  const data = await webapi("/code/main/category", {
     method: "GET",
   });
 
@@ -33,7 +33,7 @@ export async function findMainCategories(): Promise<MainCategoryItem[]> {
 }
 
 export async function findSubCategories(): Promise<SubCategoryItem[]> {
-  const data = await api("/code/sub/category", {
+  const data = await webapi("/code/sub/category", {
     method: "GET",
   });
 
@@ -41,7 +41,7 @@ export async function findSubCategories(): Promise<SubCategoryItem[]> {
 }
 
 export async function findStates(): Promise<StateItem[]> {
-  const data = await api("/code/state", {
+  const data = await webapi("/code/state", {
     method: "GET",
   });
 
@@ -49,7 +49,7 @@ export async function findStates(): Promise<StateItem[]> {
 }
 
 export async function findCities(): Promise<CityItem[]> {
-  const data = await api("/code/city", {
+  const data = await webapi("/code/city", {
     method: "GET",
   });
 

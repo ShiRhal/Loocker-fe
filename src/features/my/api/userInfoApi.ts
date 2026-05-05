@@ -1,4 +1,4 @@
-import { api } from "../../../app/config/api";
+import { webapi } from "../../../app/config/api";
 
 export interface UserInfoUser {
   USER_ID: number;
@@ -156,62 +156,78 @@ export interface SelectWishlistQuery {
 
 export const myPageApi = {
   selectUserInfo: async (USER_ID: number): Promise<UserInfoResponse> => {
-    return api(`/user/info/select?USER_ID=${USER_ID}`, { method: "GET" });
+    return webapi(`/user/info/select?USER_ID=${USER_ID}`, { method: "GET" });
   },
 
-  selectUserNickname: async (USER_ID: number): Promise<UserNicknameResponse> => {
-    return api(`/user/nickname/select?USER_ID=${USER_ID}`, { method: "GET" });
+  selectUserNickname: async (
+    USER_ID: number,
+  ): Promise<UserNicknameResponse> => {
+    return webapi(`/user/nickname/select?USER_ID=${USER_ID}`, {
+      method: "GET",
+    });
   },
 
   updateUserNickname: async (body: UpdateNicknameBody): Promise<unknown> => {
-    return api("/user/nickname/update", { method: "PUT", json: body });
+    return webapi("/user/nickname/update", { method: "PUT", json: body });
   },
 
   deleteUser: async (body: DeleteUserBody): Promise<unknown> => {
-    return api("/user/delete", { method: "PUT", json: body });
+    return webapi("/user/delete", { method: "PUT", json: body });
   },
 
   createAccount: async (body: CreateAccountBody): Promise<unknown> => {
-    return api("/user/account/create", { method: "PUT", json: body });
+    return webapi("/user/account/create", { method: "PUT", json: body });
   },
 
   updateAccount: async (body: UpdateAccountBody): Promise<unknown> => {
-    return api("/user/account/update", { method: "PUT", json: body });
+    return webapi("/user/account/update", { method: "PUT", json: body });
   },
 
   deleteAccount: async (body: DeleteAccountBody): Promise<unknown> => {
-    return api("/user/account/delete", { method: "PUT", json: body });
+    return webapi("/user/account/delete", { method: "PUT", json: body });
   },
 
-  selectAccount: async (query: SelectAccountQuery): Promise<UserInfoAccount[]> => {
-    return api(`/user/account/select?USER_ID=${query.USER_ID}`, { method: "GET" });
+  selectAccount: async (
+    query: SelectAccountQuery,
+  ): Promise<UserInfoAccount[]> => {
+    return webapi(`/user/account/select?USER_ID=${query.USER_ID}`, {
+      method: "GET",
+    });
   },
 
   createAddress: async (body: CreateAddressBody): Promise<unknown> => {
-    return api("/user/address/create", { method: "PUT", json: body });
+    return webapi("/user/address/create", { method: "PUT", json: body });
   },
 
   updateAddress: async (body: UpdateAddressBody): Promise<unknown> => {
-    return api("/user/address/update", { method: "PUT", json: body });
+    return webapi("/user/address/update", { method: "PUT", json: body });
   },
 
   deleteAddress: async (body: DeleteAddressBody): Promise<unknown> => {
-    return api("/user/address/delete", { method: "PUT", json: body });
+    return webapi("/user/address/delete", { method: "PUT", json: body });
   },
 
-  selectAddress: async (query: SelectAddressQuery): Promise<UserInfoAddress[]> => {
-    return api(`/user/address/select?USER_ID=${query.USER_ID}`, { method: "GET" });
+  selectAddress: async (
+    query: SelectAddressQuery,
+  ): Promise<UserInfoAddress[]> => {
+    return webapi(`/user/address/select?USER_ID=${query.USER_ID}`, {
+      method: "GET",
+    });
   },
 
   saveWishlist: async (body: SaveWishlistBody): Promise<unknown> => {
-    return api("/user/wishlist/save", { method: "PUT", json: body });
+    return webapi("/user/wishlist/save", { method: "PUT", json: body });
   },
 
-  selectWishlist: async (query: SelectWishlistQuery): Promise<UserInfoProduct[]> => {
-    return api(`/user/wishlist/select?USER_ID=${query.USER_ID}`, { method: "GET" });
+  selectWishlist: async (
+    query: SelectWishlistQuery,
+  ): Promise<UserInfoProduct[]> => {
+    return webapi(`/user/wishlist/select?USER_ID=${query.USER_ID}`, {
+      method: "GET",
+    });
   },
 
   deleteProductDetail: async (body: DeleteProductBody): Promise<unknown> => {
-    return api("/product/detail/delete", { method: "PUT", json: body });
+    return webapi("/product/detail/delete", { method: "PUT", json: body });
   },
 };

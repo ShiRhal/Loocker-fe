@@ -1,4 +1,4 @@
-import { api } from "../../../app/config/api";
+import { webapi } from "../../../app/config/api";
 import type { Me } from "../../../app/providers/auth/AuthProvider";
 
 function getStoredAccessToken() {
@@ -19,7 +19,7 @@ export const authApi = {
       throw new Error("NO_ACCESS_TOKEN");
     }
 
-    return api("/auth/me", {
+    return webapi("/auth/me", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -28,10 +28,10 @@ export const authApi = {
   },
 
   loginGoogle: async (payload: { idToken: string }) => {
-    return api("/auth/google", { method: "POST", json: payload });
+    return webapi("/auth/google", { method: "POST", json: payload });
   },
 
   logout: async () => {
-    return api("/auth/logout", { method: "POST" });
+    return webapi("/auth/logout", { method: "POST" });
   },
 };
