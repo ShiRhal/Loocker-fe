@@ -1,4 +1,4 @@
-import { api } from "../../../app/config/api";
+import { webapi } from "../../../app/config/api";
 import type {
   PaymentCreateRequest,
   PaymentUpdateRequest,
@@ -19,7 +19,7 @@ export const tradeApi = {
   async getProductTradePreview(
     productId: number,
   ): Promise<ProductTradePreview> {
-    const res = await api(`/product/detail/select?PRODUCT_ID=${productId}`, {
+    const res = await webapi(`/product/detail/select?PRODUCT_ID=${productId}`, {
       method: "GET",
     });
 
@@ -35,7 +35,7 @@ export const tradeApi = {
   },
 
   async createTrade(accessToken: string, body: TradeCreateRequest) {
-    return await api("/trade/create", {
+    return await webapi("/trade/create", {
       method: "PUT",
       body: JSON.stringify(body),
       headers: {
@@ -46,7 +46,7 @@ export const tradeApi = {
   },
 
   async getTradeId(accessToken: string, productId: number) {
-    return await api(`/trade/id/select?PRODUCT_ID=${productId}`, {
+    return await webapi(`/trade/id/select?PRODUCT_ID=${productId}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -55,7 +55,7 @@ export const tradeApi = {
   },
 
   async updateTradeStatus(accessToken: string, body: TradeUpdateRequest) {
-    return await api("/trade/update", {
+    return await webapi("/trade/update", {
       method: "PUT",
       body: JSON.stringify(body),
       headers: {
@@ -66,7 +66,7 @@ export const tradeApi = {
   },
 
   async createPayment(accessToken: string, body: PaymentCreateRequest) {
-    return await api("/payment/create", {
+    return await webapi("/payment/create", {
       method: "PUT",
       body: JSON.stringify(body),
       headers: {
@@ -77,7 +77,7 @@ export const tradeApi = {
   },
 
   async updatePayment(accessToken: string, body: PaymentUpdateRequest) {
-    return await api("/payment/update", {
+    return await webapi("/payment/paid/update", {
       method: "PUT",
       body: JSON.stringify(body),
       headers: {

@@ -7,6 +7,7 @@ import ProductFormPage from "../../features/product/pages/ProductFormPage";
 import MyPage from "../../features/my/pages/MyPage";
 import KioskLoginPage from "../../features/kiosk/pages/KioskLoginPage";
 import KioskHomePage from "../../features/kiosk/pages/KioskHomePage";
+import ProductTradePage from "../../features/trade/pages/ProductTradePage";
 
 function RequireKioskAuth({ children }: { children: ReactNode }) {
   const kioskAccessToken = localStorage.getItem("kioskAccessToken");
