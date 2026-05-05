@@ -1,4 +1,4 @@
-import { webapi } from "../../../app/config/api";
+import { webapi } from "../../../shared/api/apiClient";
 import type { ChatMessage, ChatRoomListItem } from "../types/chat";
 
 type RawRecord = Record<string, unknown>;

@@ -1,4 +1,4 @@
-import { webapi } from "../../../app/config/api";
+import { webapi } from "../../../shared/api/apiClient";
 
 export interface UserInfoUser {
   USER_ID: number;

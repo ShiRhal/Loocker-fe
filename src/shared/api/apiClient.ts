@@ -1,5 +1,9 @@
-import { API_BASE } from "../../shared/config/apiBase";
-type ApiOptions = RequestInit & { json?: any };
+export const API_BASE =
+  import.meta.env.VITE_API_BASE_URL?.trim() || "http://localhost:8080";
+
+type ApiOptions = RequestInit & {
+  json?: any;
+};
 
 export async function api(path: string, options: ApiOptions = {}) {
   const { json, headers, ...rest } = options;

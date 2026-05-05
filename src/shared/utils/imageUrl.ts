@@ -1,4 +1,4 @@
-import { API_BASE } from "../config/apiBase";
+import { API_BASE } from "../api/apiClient";
 
 export function toApiAssetUrl(path?: string | null): string {
   if (!path) {

@@ -1,4 +1,4 @@
-import { webapi } from "../../../app/config/api";
+import { webapi } from "../../../shared/api/apiClient";
 
 export const productApi = {
   createProductDetail: async (formData: FormData): Promise<number> => {

@@ -1,4 +1,4 @@
-import { webapi } from "../../../app/config/api";
+import { webapi } from "../../../shared/api/apiClient";
 
 export type MainCategoryItem = {
   ID: number;

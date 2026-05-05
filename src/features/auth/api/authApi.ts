@@ -1,4 +1,4 @@
-import { webapi } from "../../../app/config/api";
+import { webapi } from "../../../shared/api/apiClient"; 
 import type { Me } from "../../../app/providers/auth/AuthProvider";
 
 function getStoredAccessToken() {
