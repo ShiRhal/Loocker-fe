@@ -44,18 +44,9 @@ export default function AppRouter() {
           <Route path="/product/form" element={<ProductFormPage />} />
           <Route path="/mypage" element={<MyPage />} />
           <Route path="/product/:productId" element={<ProductTradePage />} />
-          <Route
-            path="/product/:productId/trade"
-            element={<ProductTradePage />}
-          />
-          <Route
-            path="/product/:productId/trade/:tradeId"
-            element={<ProductTradePage />}
-          />
         </Route>
 
         <Route path="/signin" element={<SignInPage />} />
-
         <Route path="/kiosk/login" element={<KioskLoginPage />} />
 
         <Route

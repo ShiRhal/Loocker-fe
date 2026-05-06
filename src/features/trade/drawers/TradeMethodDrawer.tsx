@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Drawer, Button, message } from "antd";
 import { nanoid } from "nanoid";
 import DrawerLayout from "../../../shared/components/DrawerLayout/DrawerLayout";
@@ -25,8 +24,6 @@ type Props = {
   open: boolean;
   onClose: () => void;
   product: ProductTradePreview;
-  initialTradeId?: number | null;
-  initialPaid?: boolean;
 };
 
 const TOSS_CLIENT_KEY = "test_ck_QbgMGZzorzzY5z652y7Krl5E1em4";
@@ -58,10 +55,6 @@ const OPTIONS: Record<TradeTab, TradeMethodOption[]> = {
 
 function formatPrice(value: number) {
   return `${value.toLocaleString()}원`;
-}
-
-function toProgressTradeType(tab: TradeTab): ProgressTradeType {
-  return tab === "LOCKER" ? "DELIVERY" : tab;
 }
 
 function getNickname(me: unknown) {
@@ -100,14 +93,7 @@ function loadTossScript() {
   });
 }
 
-export default function TradeMethodDrawer({
-  open,
-  onClose,
-  product,
-  initialTradeId,
-  initialPaid = false,
-}: Props) {
-  const nav = useNavigate();
+export default function TradeMethodDrawer({ open, onClose, product }: Props) {
   const { me } = useAuth();
 
   const [activeTab, setActiveTab] = useState<TradeTab>("DELIVERY");
@@ -123,12 +109,13 @@ export default function TradeMethodDrawer({
   const options = useMemo(() => OPTIONS[activeTab], [activeTab]);
 
   useEffect(() => {
-    if (!initialTradeId || Number.isNaN(initialTradeId)) return;
-
-    setCurrentTradeId(initialTradeId);
-    setCurrentTradeType(toProgressTradeType(activeTab));
-    setProgressMode(true);
-  }, [initialTradeId, activeTab]);
+    if (!open) {
+      setProgressMode(false);
+      setCurrentTradeId(null);
+      setCurrentTradeType(null);
+      setSubmitting(false);
+    }
+  }, [open]);
 
   const handleClose = () => {
     setProgressMode(false);
@@ -141,7 +128,6 @@ export default function TradeMethodDrawer({
     setProgressMode(false);
     setCurrentTradeId(null);
     setCurrentTradeType(null);
-    nav(`/product/${product.productId}/trade`);
   };
 
   const handleChangeTab = (tab: TradeTab) => {
@@ -165,8 +151,8 @@ export default function TradeMethodDrawer({
       orderId,
       orderName: product.title,
       customerName: getNickname(me),
-      successUrl: `${window.location.origin}/product/${product.productId}/trade/${tradeId}?payment=success`,
-      failUrl: `${window.location.origin}/product/${product.productId}/trade/${tradeId}?payment=fail`,
+      successUrl: `${window.location.origin}/product/${product.productId}`,
+      failUrl: `${window.location.origin}/product/${product.productId}`,
     });
   };
 
@@ -195,16 +181,23 @@ export default function TradeMethodDrawer({
         ? tradeIdRes[0]?.TRADE_ID
         : tradeIdRes?.TRADE_ID;
 
-      if (!tradeId) {
-        const createRes = await tradeApi.createTrade(accessToken, {
-          PRODUCT_ID: product.productId,
-          TRADE_TYPE_CODE: activeTab,
-          CHAT_ROOM_ID: 0,
-          TRADE_ID: 0,
-        });
+      if (tradeId) {
+        message.info("이미 진행 중인 거래가 있습니다.");
 
-        tradeId = Number(createRes);
+        setCurrentTradeId(Number(tradeId));
+        setCurrentTradeType(activeTab === "LOCKER" ? "DIRECT" : activeTab);
+        setProgressMode(true);
+        return;
       }
+
+      const createRes = await tradeApi.createTrade(accessToken, {
+        PRODUCT_ID: product.productId,
+        TRADE_TYPE_CODE: activeTab,
+        CHAT_ROOM_ID: 0,
+        TRADE_ID: 0,
+      });
+
+      tradeId = Number(createRes);
 
       if (!tradeId || Number.isNaN(Number(tradeId))) {
         message.error("거래 ID를 확인할 수 없습니다.");
@@ -221,8 +214,6 @@ export default function TradeMethodDrawer({
       setCurrentTradeId(numericTradeId);
       setCurrentTradeType("DIRECT");
       setProgressMode(true);
-
-      nav(`/product/${product.productId}/trade/${numericTradeId}`);
     } catch (error) {
       console.error(error);
       message.error("거래 진행 화면으로 이동할 수 없습니다.");
@@ -247,7 +238,6 @@ export default function TradeMethodDrawer({
           tradeId={currentTradeId}
           tradeType={currentTradeType}
           product={product}
-          initialPaid={initialPaid}
           onBack={handleBackToMethod}
           onClose={handleClose}
         />
