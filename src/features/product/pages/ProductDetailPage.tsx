@@ -4,6 +4,7 @@ import RecentViewedBox from "../../home/components/RecentViewedBox";
 import { productApi } from "../api/productapi";
 import { toApiAssetUrl } from "../../../shared/utils/imageUrl";
 import styles from "./ProductDetailPage.module.css";
+import { addRecentViewedProduct } from "../../../shared/utils/recentViewedStorage";
 
 type TradeTypeCode = "DIRECT" | "LOCKER" | "DELIVERY";
 
@@ -90,6 +91,11 @@ function getProductImageUrls(images?: ProductImage[]) {
     .map((image) => toApiAssetUrl(image.IMAGE_URL));
 }
 
+function getPrimaryImageUrl(images?: ProductImage[]) {
+  const imageUrls = getProductImageUrls(images);
+  return imageUrls[0] ?? "";
+}
+
 function getTradeTypes(tradeType?: string): TradeTypeCode[] {
   if (!tradeType) return [];
 
@@ -153,9 +159,17 @@ export default function ProductDetailPage() {
 
       try {
         const detail = await productApi.getProductDetail(Number(productId));
-        setProduct(detail);
-        setSelectedImageIndex(0);
-        setIsTradeBoxOpen(true);
+
+setProduct(detail);
+setSelectedImageIndex(0);
+setIsTradeBoxOpen(true);
+
+addRecentViewedProduct({
+  id: detail.PRODUCT_ID,
+  title: detail.TITLE,
+  price: detail.BASE_PRICE,
+  imageUrl: getPrimaryImageUrl(detail.IMAGE),
+});
       } catch (err) {
         console.error(err);
         setError("상품 상세 정보를 불러오지 못했습니다.");
@@ -374,7 +388,7 @@ export default function ProductDetailPage() {
       </main>
 
       <div className={styles.recentViewedArea}>
-        <RecentViewedBox items={[]} />
+        <RecentViewedBox />
       </div>
     </div>
   );
