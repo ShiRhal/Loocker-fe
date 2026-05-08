@@ -14,4 +14,12 @@ export const productApi = {
         : undefined,
     });
   },
+
+  getProductDetail: async (productId: number) => {
+    const res = await webapi(`/product/detail/select?PRODUCT_ID=${productId}`, {
+      method: "GET",
+    });
+
+    return Array.isArray(res) ? res[0] : res;
+  },
 };
