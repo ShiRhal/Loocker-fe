@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import styles from "./SearchFilterBox.module.css";
 import type { SearchFilterValue } from "../types/home.types";
-import {
-  MAIN_CATEGORIES,
-  SUB_CATEGORIES,
-} from "../../../shared/constants/category";
-import { STATE_CODES, CITY_CODES } from "../../../shared/constants/location";
+import { useCodeOptions } from "../../../shared/hooks/useCodeOptions";
 
 type SearchFilterBoxProps = {
   value: SearchFilterValue;
@@ -30,193 +26,45 @@ export default function SearchFilterBox({
 }: SearchFilterBoxProps) {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isRegionOpen, setIsRegionOpen] = useState(false);
-  const [selectedMainId, setSelectedMainId] = useState<number | null>(null);
-  const [selectedStateId, setSelectedStateId] = useState<number | null>(null);
+
+  const { states, cities, mainCategories, subCategories } = useCodeOptions();
 
   useEffect(() => {
     setIsCategoryOpen(false);
     setIsRegionOpen(false);
   }, [resultKeyword]);
 
-  useEffect(() => {
-    if (!value.mainCategory) {
-      setSelectedMainId(null);
-      return;
-    }
+  const selectedMainId = useMemo(() => {
+    if (!value.mainCategory) return null;
 
-    const matchedMain = MAIN_CATEGORIES.find(
-      (main) => main.m_category_name === value.mainCategory,
+    const matchedMain = mainCategories.find(
+      (main) => main.MAIN_CATEGORY === value.mainCategory,
     );
 
-    setSelectedMainId(matchedMain ? matchedMain.m_category_id : null);
-  }, [value.mainCategory]);
+    return matchedMain ? matchedMain.ID : null;
+  }, [value.mainCategory, mainCategories]);
 
-  useEffect(() => {
-    if (!value.stateName) {
-      setSelectedStateId(null);
-      return;
-    }
+  const selectedStateId = useMemo(() => {
+    if (!value.stateName) return null;
 
-    const matchedState = STATE_CODES.find(
-      (state) => state.state_name === value.stateName,
-    );
+    const matchedState = states.find((state) => state.STATE === value.stateName);
 
-    setSelectedStateId(matchedState ? matchedState.s_id : null);
-  }, [value.stateName]);
+    return matchedState ? matchedState.ID : null;
+  }, [value.stateName, states]);
 
   const filteredSubCategories = useMemo(() => {
     if (selectedMainId === null) return [];
-    return SUB_CATEGORIES.filter((sub) => sub.parent_id === selectedMainId);
-  }, [selectedMainId]);
+    return subCategories.filter((sub) => sub.MAIN_ID === selectedMainId);
+  }, [selectedMainId, subCategories]);
 
   const filteredCities = useMemo(() => {
     if (selectedStateId === null) return [];
-    return CITY_CODES.filter((city) => city.parent_id === selectedStateId);
-  }, [selectedStateId]);
+    return cities.filter((city) => city.STATE_ID === selectedStateId);
+  }, [selectedStateId, cities]);
 
   const displayKeyword = resultKeyword.trim();
 
-  const handleSelectState = (stateName: string, stateId: number) => {
-    setSelectedStateId(stateId);
-    setIsRegionOpen(true);
-
-    const next = {
-      ...value,
-      stateName,
-      cityName: "",
-    };
-
-    onChange(next);
-    onImmediateApply(next);
-  };
-
-  const handleSelectCity = (cityName: string) => {
-    const next = {
-      ...value,
-      cityName,
-    };
-
-    onChange(next);
-    onImmediateApply(next);
-  };
-
-  const handleRegionBreadcrumbAll = () => {
-    setSelectedStateId(null);
-    setIsRegionOpen(true);
-
-    const next = {
-      ...value,
-      stateName: "",
-      cityName: "",
-    };
-
-    onChange(next);
-    onImmediateApply(next);
-  };
-
-  const handleRegionBreadcrumbState = () => {
-    if (!value.stateName) return;
-
-    const matchedState = STATE_CODES.find(
-      (state) => state.state_name === value.stateName,
-    );
-
-    setSelectedStateId(matchedState ? matchedState.s_id : null);
-    setIsRegionOpen(true);
-
-    const next = {
-      ...value,
-      cityName: "",
-    };
-
-    onChange(next);
-    onImmediateApply(next);
-  };
-
-  const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
-    onChange({
-      ...value,
-      minPrice: onlyNumber,
-    });
-  };
-
-  const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
-    onChange({
-      ...value,
-      maxPrice: onlyNumber,
-    });
-  };
-
-  const toggleLocker = () => {
-    const next = {
-      ...value,
-      isLocker: !value.isLocker,
-    };
-    onImmediateApply(next);
-  };
-
-  const toggleExcludeSold = () => {
-    const next = {
-      ...value,
-      excludeSold: !value.excludeSold,
-    };
-    onImmediateApply(next);
-  };
-
-  const clearMainCategory = () => {
-    const next = {
-      ...value,
-      mainCategory: "",
-      subCategory: "",
-    };
-    onImmediateApply(next);
-  };
-
-  const clearState = () => {
-    setSelectedStateId(null);
-
-    const next = {
-      ...value,
-      stateName: "",
-      cityName: "",
-    };
-
-    onChange(next);
-    onImmediateApply(next);
-  };
-
-  const clearLocker = () => {
-    const next = {
-      ...value,
-      isLocker: false,
-    };
-    onImmediateApply(next);
-  };
-
-  const clearExcludeSold = () => {
-    const next = {
-      ...value,
-      excludeSold: false,
-    };
-    onImmediateApply(next);
-  };
-
-  const clearMinPrice = () => {
-    const next = {
-      ...value,
-      minPrice: "",
-    };
-    onChange(next);
-    onImmediateApply(next);
-  };
-
-  const clearMaxPrice = () => {
-    const next = {
-      ...value,
-      maxPrice: "",
-    };
+  const applyImmediately = (next: SearchFilterValue) => {
     onChange(next);
     onImmediateApply(next);
   };
@@ -229,16 +77,14 @@ export default function SearchFilterBox({
     setIsRegionOpen((prev) => !prev);
   };
 
-  const handleSelectMainCategory = (mainId: number, mainName: string) => {
-    setSelectedMainId(mainId);
-
+  const handleSelectMainCategory = (mainName: string) => {
     const next = {
       ...value,
       mainCategory: mainName,
       subCategory: "",
     };
 
-    onImmediateApply(next);
+    applyImmediately(next);
   };
 
   const handleSelectSubCategory = (subName: string) => {
@@ -247,78 +93,205 @@ export default function SearchFilterBox({
       subCategory: subName,
     };
 
-    onImmediateApply(next);
+    applyImmediately(next);
   };
 
   const handleBreadcrumbAll = () => {
-    setSelectedMainId(null);
     setIsCategoryOpen(true);
-    onImmediateApply({
+
+    const next = {
       ...value,
       mainCategory: "",
       subCategory: "",
-    });
+    };
+
+    applyImmediately(next);
   };
 
   const handleBreadcrumbMain = () => {
     if (!value.mainCategory) return;
 
-    const matchedMain = MAIN_CATEGORIES.find(
-      (main) => main.m_category_name === value.mainCategory,
-    );
-
-    setSelectedMainId(matchedMain ? matchedMain.m_category_id : null);
     setIsCategoryOpen(true);
 
-    onImmediateApply({
+    const next = {
       ...value,
       subCategory: "",
-    });
+    };
+
+    applyImmediately(next);
   };
 
   const handleBreadcrumbSub = () => {
     if (!value.mainCategory) return;
-
-    const matchedMain = MAIN_CATEGORIES.find(
-      (main) => main.m_category_name === value.mainCategory,
-    );
-
-    setSelectedMainId(matchedMain ? matchedMain.m_category_id : null);
     setIsCategoryOpen(true);
+  };
+
+  const handleSelectState = (stateName: string) => {
+    setIsRegionOpen(true);
+
+    const next = {
+      ...value,
+      stateName,
+      cityName: "",
+    };
+
+    applyImmediately(next);
+  };
+
+  const handleSelectCity = (cityName: string) => {
+    const next = {
+      ...value,
+      cityName,
+    };
+
+    applyImmediately(next);
+  };
+
+  const handleRegionBreadcrumbAll = () => {
+    setIsRegionOpen(true);
+
+    const next = {
+      ...value,
+      stateName: "",
+      cityName: "",
+    };
+
+    applyImmediately(next);
+  };
+
+  const handleRegionBreadcrumbState = () => {
+    if (!value.stateName) return;
+
+    setIsRegionOpen(true);
+
+    const next = {
+      ...value,
+      cityName: "",
+    };
+
+    applyImmediately(next);
+  };
+
+  const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
+
+    onChange({
+      ...value,
+      minPrice: onlyNumber,
+    });
+  };
+
+  const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
+
+    onChange({
+      ...value,
+      maxPrice: onlyNumber,
+    });
+  };
+
+  const toggleLocker = () => {
+    const next = {
+      ...value,
+      isLocker: !value.isLocker,
+    };
+
+    applyImmediately(next);
+  };
+
+  const toggleExcludeSold = () => {
+    const next = {
+      ...value,
+      excludeSold: !value.excludeSold,
+    };
+
+    applyImmediately(next);
+  };
+
+  const clearMainCategory = () => {
+    const next = {
+      ...value,
+      mainCategory: "",
+      subCategory: "",
+    };
+
+    applyImmediately(next);
+  };
+
+  const clearState = () => {
+    const next = {
+      ...value,
+      stateName: "",
+      cityName: "",
+    };
+
+    applyImmediately(next);
+  };
+
+  const clearLocker = () => {
+    const next = {
+      ...value,
+      isLocker: false,
+    };
+
+    applyImmediately(next);
+  };
+
+  const clearExcludeSold = () => {
+    const next = {
+      ...value,
+      excludeSold: false,
+    };
+
+    applyImmediately(next);
+  };
+
+  const clearMinPrice = () => {
+    const next = {
+      ...value,
+      minPrice: "",
+    };
+
+    applyImmediately(next);
+  };
+
+  const clearMaxPrice = () => {
+    const next = {
+      ...value,
+      maxPrice: "",
+    };
+
+    applyImmediately(next);
   };
 
   const renderCategoryPanelItems = () => {
     if (selectedMainId === null) {
-      return MAIN_CATEGORIES.map((main) => (
+      return mainCategories.map((main) => (
         <button
-          key={main.m_category_id}
+          key={main.ID}
           type="button"
           className={`${styles.categoryButton} ${
-            value.mainCategory === main.m_category_name && !value.subCategory
+            value.mainCategory === main.MAIN_CATEGORY && !value.subCategory
               ? styles.optionItemActive
               : ""
           }`}
-          onClick={() =>
-            handleSelectMainCategory(main.m_category_id, main.m_category_name)
-          }
+          onClick={() => handleSelectMainCategory(main.MAIN_CATEGORY)}
         >
-          {main.m_category_name}
+          {main.MAIN_CATEGORY}
         </button>
       ));
     }
 
     return filteredSubCategories.map((sub) => (
       <button
-        key={sub.s_category_id}
+        key={sub.ID}
         type="button"
         className={`${styles.categoryButton} ${
-          value.subCategory === sub.s_category_name
-            ? styles.optionItemActive
-            : ""
+          value.subCategory === sub.SUB_CATEGORY ? styles.optionItemActive : ""
         }`}
-        onClick={() => handleSelectSubCategory(sub.s_category_name)}
+        onClick={() => handleSelectSubCategory(sub.SUB_CATEGORY)}
       >
-        {sub.s_category_name}
+        {sub.SUB_CATEGORY}
       </button>
     ));
   };
@@ -355,9 +328,7 @@ export default function SearchFilterBox({
               onClick={handleCategoryOpen}
               aria-label={isCategoryOpen ? "카테고리 닫기" : "카테고리 열기"}
             >
-              <span className={styles.plus}>
-                {isCategoryOpen ? "－" : "＋"}
-              </span>
+              <span className={styles.plus}>{isCategoryOpen ? "－" : "＋"}</span>
             </button>
           </div>
 
@@ -462,20 +433,18 @@ export default function SearchFilterBox({
             <div className={styles.categoryPanelLabel} />
             <div className={styles.regionBox}>
               <div className={styles.subCategoryList}>
-                {STATE_CODES.map((state) => (
+                {states.map((state) => (
                   <button
-                    key={state.s_id}
+                    key={state.ID}
                     type="button"
                     className={`${styles.categoryButton} ${
-                      value.stateName === state.state_name && !value.cityName
+                      value.stateName === state.STATE && !value.cityName
                         ? styles.optionItemActive
                         : ""
                     }`}
-                    onClick={() =>
-                      handleSelectState(state.state_name, state.s_id)
-                    }
+                    onClick={() => handleSelectState(state.STATE)}
                   >
-                    {state.state_name}
+                    {state.STATE}
                   </button>
                 ))}
               </div>
@@ -484,16 +453,16 @@ export default function SearchFilterBox({
                 <div className={styles.subCategoryList}>
                   {filteredCities.map((city) => (
                     <button
-                      key={city.c_id}
+                      key={city.ID}
                       type="button"
                       className={`${styles.categoryButton} ${
-                        value.cityName === city.city_name
+                        value.cityName === city.CITY
                           ? styles.optionItemActive
                           : ""
                       }`}
-                      onClick={() => handleSelectCity(city.city_name)}
+                      onClick={() => handleSelectCity(city.CITY)}
                     >
-                      {city.city_name}
+                      {city.CITY}
                     </button>
                   ))}
                 </div>

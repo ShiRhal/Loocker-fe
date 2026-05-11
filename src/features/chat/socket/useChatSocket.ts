@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Client, IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import { API_BASE } from "../../../app/config/api";
+import { API_BASE } from "../../../shared/api/apiClient"; 
 import type { ChatMessage } from "../types/chat";
 
 type OnIncoming = (msg: ChatMessage) => void;
@@ -25,7 +25,7 @@ export function useChatSocket(roomId: number | null, onIncoming: OnIncoming) {
     }
 
     const base = API_BASE.replace(/\/+$/, "");
-    const wsUrl = `${base}/ws-chat`;
+    const wsUrl = `${base}/ws/web/chat`;
 
     const client = new Client({
       webSocketFactory: () => new SockJS(wsUrl) as unknown as WebSocket,
@@ -37,7 +37,7 @@ export function useChatSocket(roomId: number | null, onIncoming: OnIncoming) {
       heartbeatOutgoing: 4000,
       onConnect: () => {
         setConnected(true);
-        client.subscribe(`/topic/chat.${roomId}`, (message: IMessage) => {
+        client.subscribe(`/topic/web/chat.${roomId}`, (message: IMessage) => {
           try {
             const body = JSON.parse(message.body) as ChatMessage;
             onIncomingRef.current(body);
@@ -67,7 +67,8 @@ export function useChatSocket(roomId: number | null, onIncoming: OnIncoming) {
       const rid = roomId;
       if (!c?.connected || rid == null) return;
       c.publish({
-        destination: `/app/chat/${rid}/send`,
+        destination: `/app/web/chat/${rid}/send`,
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ MESSAGE: text }),
       });
     },

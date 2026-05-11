@@ -1,28 +1,9 @@
 export const API_BASE =
   import.meta.env.VITE_API_BASE_URL?.trim() || "http://localhost:8080";
 
-type ApiOptions = RequestInit & { json?: any };
-
-export function toApiAssetUrl(path?: string | null): string {
-  if (!path) return "";
-  const normalizedPath = path.trim();
-  if (!normalizedPath) return "";
-
-  if (
-    /^(https?:)?\/\//i.test(normalizedPath) ||
-    normalizedPath.startsWith("data:") ||
-    normalizedPath.startsWith("blob:")
-  ) {
-    return normalizedPath;
-  }
-
-  const base = API_BASE.replace(/\/+$/, "");
-  const relativePath = normalizedPath.startsWith("/")
-    ? normalizedPath
-    : `/${normalizedPath}`;
-
-  return `${base}${relativePath}`;
-}
+type ApiOptions = RequestInit & {
+  json?: any;
+};
 
 export async function api(path: string, options: ApiOptions = {}) {
   const { json, headers, ...rest } = options;

@@ -4,6 +4,7 @@ import AppLayout from "../../layout/AppLayout";
 import HomePage from "../../features/home/pages/HomePage";
 import SignInPage from "../../features/auth/pages/SignInPage";
 import ProductFormPage from "../../features/product/pages/ProductFormPage";
+import ProductDetailPage from "../../features/product/pages/ProductDetailPage";
 import MyPage from "../../features/my/pages/MyPage";
 import KioskLoginPage from "../../features/kiosk/pages/KioskLoginPage";
 import KioskHomePage from "../../features/kiosk/pages/KioskHomePage";
@@ -41,6 +42,7 @@ export default function AppRouter() {
         >
           <Route path="/" element={<HomePage />} />
           <Route path="/product/form" element={<ProductFormPage />} />
+          <Route path="/product/:productId" element={<ProductDetailPage />} />
           <Route path="/mypage" element={<MyPage />} />
         </Route>
 

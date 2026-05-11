@@ -1,4 +1,5 @@
 import type { ProductItem } from "../types/home.types";
+import { useNavigate } from "react-router-dom";
 import styles from "./ProductCard.module.css";
 
 type ProductCardProps = {
@@ -10,10 +11,19 @@ function formatPrice(price: number) {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const navigate = useNavigate();
   const hasImage = Boolean(product.imageUrl);
 
+  const handleCardClick = () => {
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleLikeClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+  };
+
   return (
-    <article className={styles.card}>
+    <article className={styles.card} onClick={handleCardClick}>
       <div className={styles.imageWrap}>
         {product.isLockerTrade && (
           <span className={styles.badge}>보관함 거래</span>
@@ -31,7 +41,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
         </button>
 
-        <button type="button" className={styles.likeButton} aria-label="찜하기">
+        <button
+          type="button"
+          className={styles.likeButton}
+          aria-label="찜하기"
+          onClick={handleLikeClick}
+        >
           ♡
         </button>
       </div>
