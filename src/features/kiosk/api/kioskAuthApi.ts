@@ -1,4 +1,4 @@
-import { kioskapi } from "../../../app/config/api";
+import { kioskapi } from "../../../shared/api/apiClient";
 
 export type KioskLoginRequest = {
   LOGIN_ID: string;
