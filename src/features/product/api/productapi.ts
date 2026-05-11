@@ -9,8 +9,8 @@ export const productApi = {
       body: formData,
       headers: accessToken
         ? {
-            Authorization: `Bearer ${accessToken}`,
-          }
+          Authorization: `Bearer ${accessToken}`,
+        }
         : undefined,
     });
   },
@@ -22,4 +22,30 @@ export const productApi = {
 
     return Array.isArray(res) ? res[0] : res;
   },
+
+  saveWishlist: async (productId: number) => {
+  const accessToken = localStorage.getItem("accessToken");
+  const userId = localStorage.getItem("userId");
+
+  if (!userId) {
+    console.error("찜하기 실패: userId가 없습니다.");
+    throw new Error("로그인이 필요한 기능입니다.");
+  }
+
+  return webapi("/user/wishlist/save", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken
+        ? {
+            Authorization: `Bearer ${accessToken}`,
+          }
+        : {}),
+    },
+    body: JSON.stringify({
+      PRODUCT_ID: productId,
+      USER_ID: Number(userId),
+    }),
+  });
+},
 };

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import RecentViewedBox from "../../home/components/RecentViewedBox";
 import { productApi } from "../api/productapi";
 import type { ProductDetail } from "../types/product.types";
@@ -14,10 +14,77 @@ import { addRecentViewedProduct } from "../../../shared/utils/recentViewedStorag
 
 export default function ProductDetailPage() {
   const { productId } = useParams<{ productId: string }>();
+  const navigate = useNavigate();
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const fetchProductDetail = async (
+    targetProductId: number,
+    options?: {
+      silent?: boolean;
+      saveRecentViewed?: boolean;
+    },
+  ) => {
+    const silent = options?.silent ?? false;
+    const saveRecentViewed = options?.saveRecentViewed ?? true;
+
+    try {
+      if (!silent) {
+        setLoading(true);
+        setProduct(null);
+      }
+
+      setError("");
+
+      const detail = await productApi.getProductDetail(targetProductId);
+
+      setProduct(detail);
+
+      if (saveRecentViewed) {
+        addRecentViewedProduct({
+          id: detail.PRODUCT_ID,
+          title: detail.TITLE,
+          price: detail.BASE_PRICE,
+          imageUrl: getPrimaryProductImageUrl(detail.IMAGE),
+        });
+      }
+    } catch (err) {
+      console.error(err);
+
+      if (!silent) {
+        setError("상품 상세 정보를 불러오지 못했습니다.");
+      }
+    } finally {
+      if (!silent) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleWishlistClick = async () => {
+    if (!product) return;
+
+    const accessToken = localStorage.getItem("accessToken");
+    const userId = localStorage.getItem("userId");
+
+    if (!accessToken || !userId) {
+      console.warn("찜하기는 로그인이 필요한 기능입니다.");
+      navigate("/signin");
+      return;
+    }
+
+    try {
+      await productApi.saveWishlist(product.PRODUCT_ID);
+      await fetchProductDetail(product.PRODUCT_ID, {
+        silent: true,
+        saveRecentViewed: false,
+      });
+    } catch (err) {
+      console.error("찜하기 처리에 실패했습니다.", err);
+    }
+  };
 
   useEffect(() => {
     window.scrollTo({
@@ -28,45 +95,21 @@ export default function ProductDetailPage() {
   }, [productId]);
 
   useEffect(() => {
-    const fetchProductDetail = async () => {
-      if (!productId) {
-        setError("상품 ID가 없습니다.");
-        setLoading(false);
-        return;
-      }
+    if (!productId) {
+      setError("상품 ID가 없습니다.");
+      setLoading(false);
+      return;
+    }
 
-      const parsedProductId = Number(productId);
+    const parsedProductId = Number(productId);
 
-      if (Number.isNaN(parsedProductId)) {
-        setError("올바르지 않은 상품 ID입니다.");
-        setLoading(false);
-        return;
-      }
+    if (Number.isNaN(parsedProductId)) {
+      setError("올바르지 않은 상품 ID입니다.");
+      setLoading(false);
+      return;
+    }
 
-      try {
-        setLoading(true);
-        setError("");
-        setProduct(null);
-
-        const detail = await productApi.getProductDetail(parsedProductId);
-
-        setProduct(detail);
-
-        addRecentViewedProduct({
-          id: detail.PRODUCT_ID,
-          title: detail.TITLE,
-          price: detail.BASE_PRICE,
-          imageUrl: getPrimaryProductImageUrl(detail.IMAGE),
-        });
-      } catch (err) {
-        console.error(err);
-        setError("상품 상세 정보를 불러오지 못했습니다.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProductDetail();
+    fetchProductDetail(parsedProductId);
   }, [productId]);
 
   if (loading) {
@@ -102,6 +145,7 @@ export default function ProductDetailPage() {
             state={product.STATE}
             city={product.CITY}
             accessoryStatus={product.ACCESSORY_STATUS}
+            onWishlistClick={handleWishlistClick}
           />
         </section>
 

@@ -19,6 +19,7 @@ type ProductSummaryProps = {
   state?: string | null;
   city?: string | null;
   accessoryStatus?: string;
+  onWishlistClick?: () => void;
 };
 
 export default function ProductSummary({
@@ -34,6 +35,7 @@ export default function ProductSummary({
   state,
   city,
   accessoryStatus,
+  onWishlistClick,
 }: ProductSummaryProps) {
   const createdAtText = formatProductCreatedAt(createdAt);
   const accessoryStatusText = getAccessoryStatusLabel(accessoryStatus);
@@ -56,21 +58,33 @@ export default function ProductSummary({
 
       <div className={styles.stats}>
         <span className={styles.statItem}>
-          <svg className={styles.statIcon} viewBox="0 0 24 24" aria-hidden="true">
+          <svg
+            className={styles.statIcon}
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
             <path d="M12 5C6.5 5 2.3 9.1 1 12c1.3 2.9 5.5 7 11 7s9.7-4.1 11-7c-1.3-2.9-5.5-7-11-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-1.8a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z" />
           </svg>
           {viewCount ?? 0}
         </span>
 
         <span className={styles.statItem}>
-          <svg className={styles.statIcon} viewBox="0 0 24 24" aria-hidden="true">
+          <svg
+            className={styles.statIcon}
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
             <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v7A2.5 2.5 0 0 1 17.5 15H9l-4.5 4v-4.5A2.5 2.5 0 0 1 4 12.5z" />
           </svg>
           {chatCount ?? 0}
         </span>
 
         <span className={styles.statItem}>
-          <svg className={styles.statIcon} viewBox="0 0 24 24" aria-hidden="true">
+          <svg
+            className={styles.statIcon}
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
             <path d="M12 21s-6.716-4.35-9.193-8.077C.91 10.064 1.37 5.97 4.59 4.09c2.02-1.18 4.57-.78 6.41.9l1 0 1-1c1.84-1.68 4.39-2.08 6.41-.9 3.22 1.88 3.68 5.974 1.783 8.833C18.716 16.65 12 21 12 21z" />
           </svg>
           {wishCount ?? 0}
@@ -85,7 +99,11 @@ export default function ProductSummary({
       </div>
 
       <div className={styles.actionBar}>
-        <button type="button" className={styles.wishButton}>
+        <button
+          type="button"
+          className={styles.wishButton}
+          onClick={onWishlistClick}
+        >
           ♡
         </button>
         <button type="button" className={styles.chatButton}>
