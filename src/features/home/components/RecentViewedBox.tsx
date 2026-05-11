@@ -63,11 +63,15 @@ export default function RecentViewedBox() {
                 className={styles.productButton}
                 onClick={() => handleItemClick(item.id)}
               >
-                <img
-                  src={item.imageUrl}
-                  alt={item.title}
-                  className={styles.image}
-                />
+                {item.imageUrl ? (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className={styles.image}
+                  />
+                ) : (
+                  <div className={styles.emptyImage}>이미지 없음</div>
+                )}
 
                 <div className={styles.overlay}>
                   <p className={styles.productTitle}>{item.title}</p>
