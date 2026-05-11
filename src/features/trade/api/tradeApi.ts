@@ -76,13 +76,34 @@ export const tradeApi = {
     });
   },
 
-  async updatePayment(accessToken: string, body: PaymentUpdateRequest) {
+  async updatePaymentPaid(accessToken: string, body: PaymentUpdateRequest) {
     return await webapi("/payment/paid/update", {
       method: "PUT",
       body: JSON.stringify(body),
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  },
+
+  async updatePaymentCancel(accessToken: string, body: PaymentUpdateRequest) {
+    return await webapi("/payment/cancel/update", {
+      method: "PUT",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  },
+
+  async updateTradeStatusWithoutAuth(body: TradeUpdateRequest) {
+    return await webapi("/trade/update", {
+      method: "PUT",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
       },
     });
   },
