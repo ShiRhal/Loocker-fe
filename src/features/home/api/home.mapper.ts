@@ -1,3 +1,4 @@
+import { toApiAssetUrl } from "../../../shared/utils/imageUrl";
 import type {
   HomePriceStatusResponse,
   HomeProductResponseItem,
@@ -8,9 +9,6 @@ import type {
   SearchFilterValue,
   SortType,
 } from "../types/home.types";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.trim() || "http://localhost:8080";
 
 function mapSortType(sort: SortType): HomeSortType {
   switch (sort) {
@@ -109,18 +107,6 @@ function formatCreatedText(createdAt: string): string {
   return formatAbsoluteDate(targetDate);
 }
 
-function toImageUrl(imageUrl: string | null): string {
-  if (!imageUrl) {
-    return "";
-  }
-
-  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
-    return imageUrl;
-  }
-
-  return `${API_BASE_URL}${imageUrl}`;
-}
-
 export function toHomeSearchRequest(
   filters: SearchFilterValue,
   page: number,
@@ -160,7 +146,7 @@ export function toProductItem(product: HomeProductResponseItem): ProductItem {
     likeCount: product.WISH_COUNT,
     chatCount: product.CHAT_COUNT,
     isLockerTrade: product.LOCKER_BADGE === "LOCKER",
-    imageUrl: toImageUrl(product.IMAGE_URL),
+    imageUrl: toApiAssetUrl(product.IMAGE_URL),
   };
 }
 

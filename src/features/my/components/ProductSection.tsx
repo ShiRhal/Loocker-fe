@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import styles from '../pages/MyPage.module.css';
 import { myPageApi, type UserInfoProduct } from '../api/userInfoApi';
-import { toApiAssetUrl } from '../../../app/config/api';
+import { toApiAssetUrl } from '../../../shared/utils/imageUrl';
 
 interface ProductSectionProps {
   products: UserInfoProduct[];
