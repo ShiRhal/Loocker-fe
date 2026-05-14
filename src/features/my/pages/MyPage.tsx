@@ -154,6 +154,7 @@ const MyPage: React.FC = () => {
           <ProductSection
             products={products}
             onRefreshProducts={refreshProducts}
+            userId={userId}
           />
         </div>
       </div>

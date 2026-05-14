@@ -8,6 +8,7 @@ import useDragScroll from "../hooks/useDragScroll";
 interface ProductSectionProps {
   products: UserInfoProduct[];
   onRefreshProducts: () => Promise<void>;
+  userId: number | null;
 }
 
 type SortOrder = "none" | "asc" | "desc";
@@ -37,6 +38,7 @@ const getNextSortOrder = (order: SortOrder): SortOrder => {
 const ProductSection: React.FC<ProductSectionProps> = ({
   products,
   onRefreshProducts,
+  userId,
 }) => {
   const navigate = useNavigate();
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -126,10 +128,11 @@ const ProductSection: React.FC<ProductSectionProps> = ({
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteTarget?.PRODUCT_ID) return;
+    if (!deleteTarget?.PRODUCT_ID || userId === null) return;
 
     try {
       await myPageApi.deleteProductDetail({
+        USER_ID: userId,
         PRODUCT_ID: deleteTarget.PRODUCT_ID,
       });
       await onRefreshProducts();
