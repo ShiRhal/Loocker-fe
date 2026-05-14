@@ -32,7 +32,7 @@ function getProductStatusUi(statusCode?: string) {
       return {
         noticeText: "거래 중인 상품입니다.",
         buyButtonText: "거래 중",
-        buyButtonDisabled: true,
+        buyButtonDisabled: false,
       };
 
     case "SOLD":
