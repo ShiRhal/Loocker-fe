@@ -80,7 +80,7 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
     try {
       const data = await searchApi.getPopularKeywords();
 
-      console.log("[NavBar] 인기 검색어 API 응답:", data);
+      //console.log("[NavBar] 인기 검색어 API 응답:", data);
 
       const mappedKeywords = data
         .filter((item) => item.KEYWORD && item.KEYWORD.trim().length > 0)
