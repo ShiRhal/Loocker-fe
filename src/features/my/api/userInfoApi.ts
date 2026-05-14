@@ -166,6 +166,7 @@ export interface SaveWishlistBody {
 }
 
 export interface DeleteProductBody {
+  USER_ID: number;
   PRODUCT_ID: number;
 }
 
