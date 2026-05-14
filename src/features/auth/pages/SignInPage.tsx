@@ -24,6 +24,7 @@ export default function SignInPage() {
 
   const [keepLogin, setKeepLogin] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [googleReady, setGoogleReady] = useState(false);
 
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const renderedRef = useRef(false);

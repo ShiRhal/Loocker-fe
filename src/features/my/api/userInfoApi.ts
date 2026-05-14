@@ -32,6 +32,26 @@ export interface UserInfoAddress {
   CREATED_AT: string;
 }
 
+export type UserTradeRole = "BUYER" | "SELLER";
+
+export type UserTradeTypeCode = "DIRECT" | "DELIVERY" | "LOCKER";
+
+export interface UserInfoTrade {
+  MY_ROLE: UserTradeRole;
+  TITLE: string;
+  BASE_PRICE: number;
+  CREATED_AT: string;
+  IMAGE_URL: string;
+  TRADE_ID: number;
+  VIEW_COUNT: number;
+  STATUS_CODE: string;
+  WISH_COUNT: number;
+  CHAT_COUNT: number;
+  TRADE_TYPE_CODE: UserTradeTypeCode;
+  SELLER_NICKNAME: string;
+  PRODUCT_ID: number;
+}
+
 export interface UserInfoResponse {
   USER: UserInfoUser | null;
   PRODUCT: UserInfoProduct[];
@@ -41,6 +61,7 @@ export interface UserInfoResponse {
   SALELIST: UserInfoSale[];
   BUYLIST: UserInfoBuy[];
   REVIEW: UserInfoReview[];
+  TRADE: UserInfoTrade[];
 }
 
 export interface UserInfoSale {
@@ -53,7 +74,6 @@ export interface UserInfoSale {
   CREATED_AT?: string;
   BUYER_NICKNAME: string;
   COMPLETED_AT: string;
-  // 백엔드 스펙에 따라 존재할 수 있는 값(목록/상세 이동에 필요할 가능성)
   TRADE_ID?: number;
 }
 
@@ -67,7 +87,6 @@ export interface UserInfoBuy {
   CREATED_AT?: string;
   SELLER_NICKNAME: string;
   COMPLETED_AT: string;
-  // 백엔드 스펙에 따라 존재할 수 있는 값(목록/상세 이동에 필요할 가능성)
   TRADE_ID?: number;
 }
 
