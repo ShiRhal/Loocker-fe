@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './FavoritesDrawer.module.css';
 import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import { myPageApi, type UserInfoProduct } from '../api/userInfoApi';
@@ -17,6 +18,14 @@ const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({
   wishlist,
   onRefreshWishlist,
 }) => {
+  const navigate = useNavigate();
+
+  const goToProductDetail = (productId?: number) => {
+    if (productId == null) return;
+    onClose();
+    navigate(`/product/${productId}`);
+  };
+
   const STATUS_LABEL_MAP: Record<'SALE' | 'SOLD' | 'TRADING', string> = {
     SALE: '판매중',
     SOLD: '판매 완료',
@@ -121,9 +130,7 @@ const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({
                     <tr
                       key={item.PRODUCT_ID ?? `${item.TITLE}-${index}`}
                       className={styles.listRow}
-                      onClick={() => {
-                        console.log('찜목록 상품 클릭', item);
-                      }}
+                      onClick={() => goToProductDetail(item.PRODUCT_ID)}
                     >
                       <td className={styles.titleCell}>
                         <div className={styles.productInfo}>

@@ -1,5 +1,8 @@
 import { useRef } from "react";
 
+const INTERACTIVE_SELECTOR =
+  'button, a, input, select, textarea, [role="button"], [contenteditable="true"]';
+
 export default function useDragScroll<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
   const isDraggingRef = useRef(false);
@@ -8,6 +11,11 @@ export default function useDragScroll<T extends HTMLElement>() {
 
   const onPointerDown = (event: React.PointerEvent<T>) => {
     if (!ref.current) return;
+
+    const target = event.target as HTMLElement | null;
+    if (target?.closest(INTERACTIVE_SELECTOR)) {
+      return;
+    }
 
     isDraggingRef.current = true;
     startYRef.current = event.clientY;

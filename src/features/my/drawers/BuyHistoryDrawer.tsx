@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './FavoritesDrawer.module.css';
 import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import type { UserInfoBuy } from '../api/userInfoApi';
@@ -10,6 +11,14 @@ interface BuyHistoryDrawerProps {
 }
 
 const BuyHistoryDrawer: React.FC<BuyHistoryDrawerProps> = ({ onClose, buyList }) => {
+  const navigate = useNavigate();
+
+  const goToProductDetail = (productId?: number) => {
+    if (productId == null) return;
+    onClose();
+    navigate(`/product/${productId}`);
+  };
+
   const STATUS_LABEL_MAP: Record<'SALE' | 'SOLD' | 'TRADING', string> = {
     SALE: '판매중',
     SOLD: '판매 완료',
@@ -98,9 +107,7 @@ const BuyHistoryDrawer: React.FC<BuyHistoryDrawerProps> = ({ onClose, buyList })
                     <tr
                       key={item.TRADE_ID ?? `${item.TITLE}-${index}`}
                       className={styles.listRow}
-                      onClick={() => {
-                        console.log('구매 내역 클릭', item);
-                      }}
+                      onClick={() => goToProductDetail(item.PRODUCT_ID)}
                     >
                       <td className={styles.titleCell}>
                         <div className={styles.productInfo}>

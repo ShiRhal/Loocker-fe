@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "../pages/MyPage.module.css";
 import { myPageApi, type UserInfoProduct } from "../api/userInfoApi";
 import MyPageProductCard from "./MyPageProductCard";
@@ -37,6 +38,7 @@ const ProductSection: React.FC<ProductSectionProps> = ({
   products,
   onRefreshProducts,
 }) => {
+  const navigate = useNavigate();
   const [searchKeyword, setSearchKeyword] = useState("");
   const [priceSort, setPriceSort] = useState<SortOrder>("none");
   const [dateSort, setDateSort] = useState<SortOrder>("none");
@@ -65,8 +67,8 @@ const ProductSection: React.FC<ProductSectionProps> = ({
   }, []);
 
   const handleSelectProduct = (product: UserInfoProduct) => {
-    if (!product.PRODUCT_ID) return;
-    window.location.href = `/product/${product.PRODUCT_ID}`;
+    if (product.PRODUCT_ID == null) return;
+    navigate(`/product/${product.PRODUCT_ID}`);
   };
 
   const visibleProducts = useMemo(() => {
@@ -119,8 +121,8 @@ const ProductSection: React.FC<ProductSectionProps> = ({
   };
 
   const handleEditProduct = (product: UserInfoProduct) => {
-    if (!product.PRODUCT_ID) return;
-    window.location.href = `/product/form?type=edit&productId=${product.PRODUCT_ID}`;
+    if (product.PRODUCT_ID == null) return;
+    navigate(`/product/form?type=edit&productId=${product.PRODUCT_ID}`);
   };
 
   const handleDeleteConfirm = async () => {
