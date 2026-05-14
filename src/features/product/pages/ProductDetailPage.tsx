@@ -118,6 +118,11 @@ export default function ProductDetailPage() {
   };
 
   const handleOpenTradeDrawer = () => {
+    if (!product) return;
+
+    if (product.STATUS_CODE !== "SALE") {
+      return;
+    }
     setInitialTradeId(null);
     setInitialPaid(false);
     setTradeDrawerOpen(true);
@@ -289,7 +294,7 @@ export default function ProductDetailPage() {
             state={product.STATE}
             city={product.CITY}
             accessoryStatus={product.ACCESSORY_STATUS}
-            //statusCode={product.STATUS_CODE}
+            statusCode={product.STATUS_CODE}
             isWished={product.IS_WISHED}
             onWishlistClick={handleWishlistClick}
             onBuyClick={handleOpenTradeDrawer}
