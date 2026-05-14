@@ -27,4 +27,5 @@ export type ProductDetail = {
   CHAT_COUNT?: number;
   CREATED_AT?: string;
   NICKNAME?: string;
+  IS_WISHED?: boolean | number;
 };

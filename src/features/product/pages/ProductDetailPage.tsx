@@ -77,9 +77,20 @@ export default function ProductDetailPage() {
 
     try {
       await productApi.saveWishlist(product.PRODUCT_ID);
-      await fetchProductDetail(product.PRODUCT_ID, {
-        silent: true,
-        saveRecentViewed: false,
+
+      setProduct((prev) => {
+        if (!prev) return prev;
+
+        const wasWished = prev.IS_WISHED === true || prev.IS_WISHED === 1;
+        const currentWishCount = prev.WISH_COUNT ?? 0;
+
+        return {
+          ...prev,
+          IS_WISHED: !wasWished,
+          WISH_COUNT: wasWished
+            ? Math.max(currentWishCount - 1, 0)
+            : currentWishCount + 1,
+        };
       });
     } catch (err) {
       console.error("찜하기 처리에 실패했습니다.", err);
@@ -145,6 +156,7 @@ export default function ProductDetailPage() {
             state={product.STATE}
             city={product.CITY}
             accessoryStatus={product.ACCESSORY_STATUS}
+            isWished={product.IS_WISHED}
             onWishlistClick={handleWishlistClick}
           />
         </section>

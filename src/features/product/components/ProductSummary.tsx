@@ -19,6 +19,7 @@ type ProductSummaryProps = {
   state?: string | null;
   city?: string | null;
   accessoryStatus?: string;
+  isWished?: boolean | number;
   onWishlistClick?: () => void;
 };
 
@@ -35,10 +36,12 @@ export default function ProductSummary({
   state,
   city,
   accessoryStatus,
+  isWished,
   onWishlistClick,
 }: ProductSummaryProps) {
   const createdAtText = formatProductCreatedAt(createdAt);
   const accessoryStatusText = getAccessoryStatusLabel(accessoryStatus);
+  const wished = isWished === true || isWished === 1;
 
   return (
     <section className={styles.summaryArea}>
@@ -101,10 +104,11 @@ export default function ProductSummary({
       <div className={styles.actionBar}>
         <button
           type="button"
-          className={styles.wishButton}
+          className={`${styles.wishButton} ${wished ? styles.wishButtonActive : ""}`}
           onClick={onWishlistClick}
+          aria-pressed={wished}
         >
-          ♡
+          {wished ? "♥" : "♡"}
         </button>
         <button type="button" className={styles.chatButton}>
           채팅하기

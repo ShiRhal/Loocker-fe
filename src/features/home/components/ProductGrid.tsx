@@ -9,6 +9,7 @@ type ProductGridProps = {
   pageSize: number;
   onPageChange: (nextPage: number) => void;
   loading: boolean;
+  onWishlistClick?: (productId: number) => void;
 };
 
 function getPageNumbers(totalCount: number, pageSize: number) {
@@ -23,6 +24,7 @@ export default function ProductGrid({
   pageSize,
   onPageChange,
   loading,
+  onWishlistClick,
 }: ProductGridProps) {
   const pageNumbers = getPageNumbers(totalCount, pageSize);
 
@@ -46,7 +48,11 @@ export default function ProductGrid({
     <section aria-label="상품 목록" className={styles.wrapper}>
       <div className={styles.grid}>
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard
+            key={product.id}
+            product={product}
+            onWishlistClick={onWishlistClick}
+          />
         ))}
       </div>
 

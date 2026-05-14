@@ -74,22 +74,18 @@ function formatCreatedText(createdAt: string): string {
   const diffHours = Math.floor(diffMs / hour);
   const diffDays = Math.floor(diffMs / day);
 
-  // 1시간 이내: N분 전
   if (diffMs < hour) {
     return `${Math.max(1, diffMinutes)}분 전`;
   }
 
-  // 하루 이내: N시간 전
   if (diffMs < day) {
     return `${Math.max(1, diffHours)}시간 전`;
   }
 
-  // 이틀 이내: 하루 전
   if (diffMs < day * 2) {
     return "하루 전";
   }
 
-  // 30일 미만: 일/주 단위 표시
   if (diffDays < 30) {
     if (
       diffDays === 7 ||
@@ -103,8 +99,11 @@ function formatCreatedText(createdAt: string): string {
     return `${diffDays}일 전`;
   }
 
-  // 30일 이상: 절대 날짜
   return formatAbsoluteDate(targetDate);
+}
+
+function isWishedValue(value?: boolean | number) {
+  return value === true || value === 1;
 }
 
 export function toHomeSearchRequest(
@@ -122,7 +121,6 @@ export function toHomeSearchRequest(
     YN_LOCKER: filters.isLocker,
     DS_TITLE: filters.keyword,
     SORT_TYPE: mapSortType(filters.sort),
-    USER_ID: 0,
     PAGE: page,
   };
 }
@@ -146,7 +144,8 @@ export function toProductItem(product: HomeProductResponseItem): ProductItem {
     likeCount: product.WISH_COUNT,
     chatCount: product.CHAT_COUNT,
     isLockerTrade: product.LOCKER_BADGE === "LOCKER",
-    imageUrl: toApiAssetUrl(product.IMAGE_URL),
+    imageUrl: product.IMAGE_URL ? toApiAssetUrl(product.IMAGE_URL) : "",
+    isWished: isWishedValue(product.IS_WISHED),
   };
 }
 

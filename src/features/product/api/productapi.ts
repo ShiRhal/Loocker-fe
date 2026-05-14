@@ -16,12 +16,20 @@ export const productApi = {
   },
 
   getProductDetail: async (productId: number) => {
-    const res = await webapi(`/product/detail/select?PRODUCT_ID=${productId}`, {
-      method: "GET",
-    });
+  const savedUserId = localStorage.getItem("userId");
+  const userId = savedUserId ? Number(savedUserId) : 0;
 
-    return Array.isArray(res) ? res[0] : res;
-  },
+  const safeUserId = Number.isNaN(userId) ? 0 : userId;
+
+  const res = await webapi(
+    `/product/detail/select?PRODUCT_ID=${productId}&USER_ID=${safeUserId}`,
+    {
+      method: "GET",
+    },
+  );
+
+  return Array.isArray(res) ? res[0] : res;
+},
 
   saveWishlist: async (productId: number) => {
   const accessToken = localStorage.getItem("accessToken");

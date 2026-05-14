@@ -1,16 +1,21 @@
+import type { MouseEvent } from "react";
 import type { ProductItem } from "../types/home.types";
 import { useNavigate } from "react-router-dom";
 import styles from "./ProductCard.module.css";
 
 type ProductCardProps = {
   product: ProductItem;
+  onWishlistClick?: (productId: number) => void;
 };
 
 function formatPrice(price: number) {
   return `${price.toLocaleString("ko-KR")}원`;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({
+  product,
+  onWishlistClick,
+}: ProductCardProps) {
   const navigate = useNavigate();
   const hasImage = Boolean(product.imageUrl);
 
@@ -18,8 +23,9 @@ export default function ProductCard({ product }: ProductCardProps) {
     navigate(`/product/${product.id}`);
   };
 
-  const handleLikeClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleLikeClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
+    onWishlistClick?.(product.id);
   };
 
   return (
@@ -43,11 +49,14 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         <button
           type="button"
-          className={styles.likeButton}
-          aria-label="찜하기"
+          className={`${styles.likeButton} ${
+            product.isWished ? styles.likeButtonActive : ""
+          }`}
+          aria-label={product.isWished ? "찜 취소" : "찜하기"}
+          aria-pressed={product.isWished}
           onClick={handleLikeClick}
         >
-          ♡
+          {product.isWished ? "♥" : "♡"}
         </button>
       </div>
 

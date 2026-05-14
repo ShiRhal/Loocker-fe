@@ -71,6 +71,10 @@
   cursor: pointer;
 }
 
+.likeButtonActive {
+  color: #ef4444;
+}
+
 .content {
   display: flex;
   flex-direction: column;
