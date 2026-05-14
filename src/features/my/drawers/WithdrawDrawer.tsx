@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../app/providers/auth/useAuth';
 import styles from './WithdrawDrawer.module.css';
 import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
 import { myPageApi } from '../api/userInfoApi';
@@ -19,6 +20,7 @@ const reasonsList = [
 
 const WithdrawDrawer: React.FC<WithdrawDrawerProps> = ({ onClose, userId }) => {
   const navigate = useNavigate();
+  const { refreshMe } = useAuth();
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
   const [etcContent, setEtcContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -39,9 +41,8 @@ const WithdrawDrawer: React.FC<WithdrawDrawerProps> = ({ onClose, userId }) => {
     setSubmitting(true);
     try {
       await myPageApi.deleteUser({ USER_ID: userId });
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('userId');
-      localStorage.removeItem('nickname');
+      localStorage.clear();
+      await refreshMe();
       onClose();
       navigate('/signin', { replace: true });
     } catch (e) {
