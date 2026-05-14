@@ -30,8 +30,4 @@ export const authApi = {
   loginGoogle: async (payload: { idToken: string }) => {
     return webapi("/auth/google", { method: "POST", json: payload });
   },
-
-  logout: async () => {
-    return webapi("/auth/logout", { method: "POST" });
-  },
 };

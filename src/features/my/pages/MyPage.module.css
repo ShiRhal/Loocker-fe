@@ -71,6 +71,27 @@
   font-size: 0.875rem;
 }
 
+.sidebarLogout {
+  display: block;
+  width: fit-content;
+  margin: -0.75rem 0 1.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #6b7280;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: currentColor;
+}
+
+.sidebarLogout:hover {
+  color: #374151;
+}
+
 .mainContent {
   margin: 0 auto;
   box-sizing: border-box;
