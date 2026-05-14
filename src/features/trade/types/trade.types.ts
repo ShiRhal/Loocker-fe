@@ -1,5 +1,7 @@
 export type TradeTab = "DELIVERY" | "DIRECT" | "LOCKER";
 
+export type TradeRole = "BUYER" | "SELLER";
+
 export type TradeMethodOption = {
   id: TradeTab;
   title: string;
@@ -49,7 +51,13 @@ export type NextTradeStatus =
   | "PAID"
   | "FAILED"
   | "COMPLETED"
-  | "CANCELED";
+  | "CANCELED"
+  | "ORDER_CHECK"
+  | "SHIPPING"
+  | "DELIVERED"
+  | "PICKEDUP"
+  | "DIRECT_IN_PROGRESS"
+  | "DIRECT_RECEIVED";
 
 export type TradeCreateRequest = {
   PRODUCT_ID: number;
@@ -62,10 +70,29 @@ export type TradeIdSelectResponse = {
   TRADE_ID: number;
 };
 
+export type TradeDetailResponse = {
+  TRADE_ID: number;
+  PRODUCT_ID: number;
+  TRADE_TYPE_CODE: TradeTab;
+  STATUS_CODE: string;
+  MY_ROLE: TradeRole;
+};
+
 export type TradeUpdateRequest = {
   TRADE_ID: number;
-  NEXT_STATUS_CODE: NextTradeStatus;
-  TRADE_TYPE_CODE: Exclude<TradeTab, "LOCKER">;
+  RESULT_STATUS_CODE?: string;
+  NEXT_STATUS_CODE: string;
+  TRADE_TYPE_CODE: TradeTab;
+  USER_ID?: number;
+};
+
+export type TradeUpdateResponse = {
+  RESULT_STATUS_CODE?: string;
+  STATUS_CODE?: string;
+  NEXT_STATUS_CODE?: string;
+  resultStatusCode?: string;
+  statusCode?: string;
+  nextStatusCode?: string;
 };
 
 export type PaymentCreateRequest = {

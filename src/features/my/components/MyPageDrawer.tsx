@@ -1,14 +1,14 @@
-import React from 'react';
-import { Drawer } from 'antd';
-import SellHistoryDrawer from '../drawers/SellHistoryDrawer';
-import BuyHistoryDrawer from '../drawers/BuyHistoryDrawer';
-import FavoritesDrawer from '../drawers/FavoritesDrawer';
-import TradeStatusDrawer from '../drawers/TradeStatusDrawer';
-import AccountManagementDrawer from '../drawers/AccountManagementDrawer';
-import AddressManagementDrawer from '../drawers/AddressManagementDrawer';
-import WithdrawDrawer from '../drawers/WithdrawDrawer';
-import ReviewsDrawer from '../drawers/ReviewsDrawer';
-import NicknameChangeDrawer from '../drawers/NicknameChangeDrawer';
+import React from "react";
+import { Drawer } from "antd";
+import SellHistoryDrawer from "../drawers/SellHistoryDrawer";
+import BuyHistoryDrawer from "../drawers/BuyHistoryDrawer";
+import FavoritesDrawer from "../drawers/FavoritesDrawer";
+import TradeStatusDrawer from "../drawers/TradeStatusDrawer";
+import AccountManagementDrawer from "../drawers/AccountManagementDrawer";
+import AddressManagementDrawer from "../drawers/AddressManagementDrawer";
+import WithdrawDrawer from "../drawers/WithdrawDrawer";
+import ReviewsDrawer from "../drawers/ReviewsDrawer";
+import NicknameChangeDrawer from "../drawers/NicknameChangeDrawer";
 import type {
   UserInfoAccount,
   UserInfoAddress,
@@ -16,7 +16,8 @@ import type {
   UserInfoBuy,
   UserInfoReview,
   UserInfoSale,
-} from '../api/userInfoApi';
+  UserInfoTrade,
+} from "../api/userInfoApi";
 
 interface MenuConfig {
   [section: string]: {
@@ -35,6 +36,7 @@ interface MyPageDrawerProps {
   sellList: UserInfoSale[];
   buyList: UserInfoBuy[];
   reviewList: UserInfoReview[];
+  tradeList: UserInfoTrade[];
   userId: number | null;
   nickname: string;
   setNickname: (nickname: string) => void;
@@ -43,7 +45,11 @@ interface MyPageDrawerProps {
   refreshWishlist: () => Promise<void>;
 }
 
-// type에 따라 다른 drawer를 렌더링하는 통합 컴포넌트입니다.
+const drawerStyles = {
+  body: { padding: 0 },
+  header: { display: "none" },
+};
+
 const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
   type,
   open,
@@ -55,6 +61,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
   sellList,
   buyList,
   reviewList,
+  tradeList,
   userId,
   nickname,
   setNickname,
@@ -68,10 +75,10 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         return section[type];
       }
     }
-    return '내역';
+    return "내역";
   };
 
-  if (type === 'sell') {
+  if (type === "sell") {
     return (
       <Drawer
         placement="right"
@@ -79,17 +86,14 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         closable={false}
         open={open}
         width={640}
-        styles={{ 
-          body: { padding: 0 }, 
-          header: { display: 'none' } 
-        }}            
+        styles={drawerStyles}
       >
         <SellHistoryDrawer onClose={onClose} sellList={sellList} />
       </Drawer>
     );
   }
 
-  if (type === 'buy') {
+  if (type === "buy") {
     return (
       <Drawer
         placement="right"
@@ -97,17 +101,14 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         closable={false}
         open={open}
         width={640}
-        styles={{ 
-          body: { padding: 0 }, 
-          header: { display: 'none' } 
-        }}            
+        styles={drawerStyles}
       >
         <BuyHistoryDrawer onClose={onClose} buyList={buyList} />
       </Drawer>
     );
   }
 
-  if (type === 'favorites') {
+  if (type === "favorites") {
     return (
       <Drawer
         title={getTitle(type)}
@@ -116,10 +117,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         closable={false}
         open={open}
         width={640}
-        styles={{ 
-          body: { padding: 0 }, 
-          header: { display: 'none' } 
-        }}            
+        styles={drawerStyles}
       >
         <FavoritesDrawer
           onClose={onClose}
@@ -130,7 +128,8 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
       </Drawer>
     );
   }
-  if (type === 'trade-status') {
+
+  if (type === "trade-status") {
     return (
       <Drawer
         placement="right"
@@ -138,16 +137,14 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         closable={false}
         open={open}
         width={640}
-        styles={{ 
-          body: { padding: 0 }, 
-          header: { display: 'none' } 
-        }}            
+        styles={drawerStyles}
       >
-        <TradeStatusDrawer onClose={onClose} />
+        <TradeStatusDrawer onClose={onClose} tradeList={tradeList} />
       </Drawer>
     );
   }
-  if (type === 'account') {
+
+  if (type === "account") {
     return (
       <Drawer
         placement="right"
@@ -155,10 +152,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         closable={false}
         open={open}
         width={640}
-        styles={{
-          body: { padding: 0 },
-          header: { display: 'none' },
-        }}
+        styles={drawerStyles}
       >
         <AccountManagementDrawer
           onClose={onClose}
@@ -170,7 +164,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
     );
   }
 
-  if (type === 'address') {
+  if (type === "address") {
     return (
       <Drawer
         placement="right"
@@ -178,10 +172,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         closable={false}
         open={open}
         width={640}
-        styles={{ 
-          body: { padding: 0 }, 
-          header: { display: 'none' } 
-        }}        
+        styles={drawerStyles}
       >
         <AddressManagementDrawer
           onClose={onClose}
@@ -193,7 +184,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
     );
   }
 
-  if (type === 'withdraw') {
+  if (type === "withdraw") {
     return (
       <Drawer
         title={getTitle(type)}
@@ -202,17 +193,14 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         closable={false}
         open={open}
         width={640}
-        styles={{ 
-          body: { padding: 0 }, 
-          header: { display: 'none' } 
-        }}            
+        styles={drawerStyles}
       >
         <WithdrawDrawer onClose={onClose} userId={userId} />
       </Drawer>
     );
   }
 
-  if (type === 'reviews') {
+  if (type === "reviews") {
     return (
       <Drawer
         placement="right"
@@ -220,17 +208,14 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         closable={false}
         open={open}
         width={640}
-        styles={{
-          body: { padding: 0 },
-          header: { display: 'none' },
-        }}
+        styles={drawerStyles}
       >
         <ReviewsDrawer onClose={onClose} reviewList={reviewList} />
       </Drawer>
     );
   }
 
-  if (type === 'nickname-change' && userId !== null) {
+  if (type === "nickname-change" && userId !== null) {
     return (
       <Drawer
         placement="right"
@@ -238,10 +223,7 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
         closable={false}
         open={open}
         width={640}
-        styles={{
-          body: { padding: 0 },
-          header: { display: 'none' },
-        }}
+        styles={drawerStyles}
       >
         <NicknameChangeDrawer
           onClose={onClose}
@@ -255,13 +237,12 @@ const MyPageDrawer: React.FC<MyPageDrawerProps> = ({
 
   return (
     <Drawer
-      title={type ? getTitle(type) : ''}
+      title={type ? getTitle(type) : ""}
       placement="right"
       onClose={onClose}
       open={open}
       width={640}
-    >
-    </Drawer>
+    />
   );
 };
 

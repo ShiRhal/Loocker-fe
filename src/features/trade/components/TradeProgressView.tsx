@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { message } from "antd";
 import { useNavigate } from "react-router-dom";
 import DrawerLayout from "../../../shared/components/DrawerLayout/DrawerLayout";
@@ -9,33 +9,41 @@ import styles from "./TradeProgressView.module.css";
 type Step = {
   title: string;
   description: string;
+  statusCode: string;
 };
 
 type Props = {
   tradeId: number;
-  tradeType: Exclude<TradeTab, "LOCKER">;
+  tradeType: TradeTab;
   product: ProductTradePreview;
   onBack: () => void;
   onClose: () => void;
-  initialPaid?: boolean;
+  initialStatusCode?: string | null;
+  onStatusChange?: (statusCode: string) => void;
 };
+
+const POLLING_INTERVAL_MS = 5500;
 
 const directSteps: Step[] = [
   {
     title: "주문 확인",
     description: "거래 요청이 완료되었습니다.",
+    statusCode: "TRADING",
   },
   {
     title: "직거래 진행중",
     description: "판매자와 약속한 장소에서 상품을 확인해주세요.",
+    statusCode: "DIRECT_IN_PROGRESS",
   },
   {
     title: "수령 완료",
     description: "상품을 정상적으로 수령했다면 완료 처리해주세요.",
+    statusCode: "DIRECT_RECEIVED",
   },
   {
     title: "거래 완료",
     description: "거래완료. 구매내역에 추가됩니다.",
+    statusCode: "COMPLETED",
   },
 ];
 
@@ -43,42 +51,107 @@ const deliverySteps: Step[] = [
   {
     title: "결제 완료",
     description: "결제가 정상적으로 완료되었습니다.",
+    statusCode: "PAID",
   },
   {
     title: "주문 확인",
     description: "판매자가 주문 내용을 확인 중입니다.",
+    statusCode: "ORDER_CHECK",
   },
   {
     title: "배송중",
     description: "상품이 배송 중입니다.",
+    statusCode: "SHIPPING",
   },
   {
     title: "배송 완료",
     description: "상품 배송이 완료되었습니다.",
+    statusCode: "DELIVERED",
   },
   {
-    title: "구매 완료",
+    title: "수령 완료",
     description: "상품 수령 후 구매완료를 진행해주세요.",
+    statusCode: "PICKEDUP",
   },
   {
     title: "거래 완료",
     description: "거래완료. 구매내역에 추가됩니다.",
+    statusCode: "COMPLETED",
   },
 ];
+
+const statusAliasMap: Record<string, string> = {
+  TR_01: "TRADING",
+  TR_02: "COMPLETED",
+  TR_03: "CANCELED",
+  TR_04: "PAID",
+  TR_05: "FAILED",
+  TR_08: "PICKEDUP",
+  TR_10: "ORDER_CHECK",
+  TR_11: "SHIPPING",
+  TR_12: "DELIVERED",
+  TR_13: "DIRECT_IN_PROGRESS",
+  TR_14: "DIRECT_RECEIVED",
+};
 
 function formatPrice(value: number) {
   return `${value.toLocaleString()}원`;
 }
 
-function getStatusCode(result: unknown) {
-  if (typeof result === "string") return result;
-  if (typeof result === "object" && result !== null) {
-    const obj = result as Record<string, unknown>;
-    return String(
-      obj.STATUS_CODE ?? obj.statusCode ?? obj.NEXT_STATUS_CODE ?? "",
-    );
+function normalizeStatusCode(statusCode?: string | null) {
+  if (!statusCode) return "";
+
+  const code = String(statusCode).trim();
+
+  return statusAliasMap[code] ?? code;
+}
+
+function getResponseStatusCode(result: unknown) {
+  if (!result) return "";
+
+  if (typeof result === "string") {
+    return normalizeStatusCode(result);
   }
-  return "";
+
+  const data = Array.isArray(result) ? result[0] : result;
+
+  if (typeof data !== "object" || data === null) {
+    return "";
+  }
+
+  const obj = data as Record<string, unknown>;
+
+  return normalizeStatusCode(
+    String(
+      obj.RESULT_STATUS_CODE ??
+        obj.STATUS_CODE ??
+        obj.NEXT_STATUS_CODE ??
+        obj.resultStatusCode ??
+        obj.statusCode ??
+        obj.nextStatusCode ??
+        "",
+    ),
+  );
+}
+
+function getStepIndexByStatusCode(steps: Step[], statusCode: string) {
+  const normalizedStatusCode = normalizeStatusCode(statusCode);
+
+  const index = steps.findIndex(
+    (step) => step.statusCode === normalizedStatusCode,
+  );
+
+  return index >= 0 ? index : 0;
+}
+
+function getNextStatusCode(steps: Step[], currentStatusCode: string) {
+  const currentIndex = getStepIndexByStatusCode(steps, currentStatusCode);
+
+  if (currentIndex >= steps.length - 1) {
+    return "";
+  }
+
+  return steps[currentIndex + 1].statusCode;
 }
 
 export default function TradeProgressView({
@@ -87,27 +160,84 @@ export default function TradeProgressView({
   product,
   onBack,
   onClose,
+  initialStatusCode,
+  onStatusChange,
 }: Props) {
   const nav = useNavigate();
+  const onStatusChangeRef = useRef(onStatusChange);
 
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const defaultStatusCode = tradeType === "DELIVERY" ? "PAID" : "TRADING";
+
+  const [currentStatusCode, setCurrentStatusCode] = useState(() =>
+    normalizeStatusCode(initialStatusCode ?? defaultStatusCode),
+  );
   const [submitting, setSubmitting] = useState(false);
 
   const steps = useMemo(() => {
     return tradeType === "DELIVERY" ? deliverySteps : directSteps;
   }, [tradeType]);
 
+  useEffect(() => {
+    onStatusChangeRef.current = onStatusChange;
+  }, [onStatusChange]);
+
+  useEffect(() => {
+    setCurrentStatusCode(
+      normalizeStatusCode(initialStatusCode ?? defaultStatusCode),
+    );
+  }, [initialStatusCode, defaultStatusCode]);
+
+  useEffect(() => {
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken || !tradeId || !product.productId) return;
+
+    let stopped = false;
+
+    const syncTradeStatus = async () => {
+      try {
+        const tradeDetail = await tradeApi.getTradeDetail(
+          accessToken,
+          product.productId,
+        );
+
+        if (stopped) return;
+        if (!tradeDetail || tradeDetail.TRADE_ID !== tradeId) return;
+
+        const latestStatusCode = normalizeStatusCode(tradeDetail.STATUS_CODE);
+
+        if (!latestStatusCode) return;
+
+        setCurrentStatusCode((prev) => {
+          if (prev === latestStatusCode) return prev;
+          return latestStatusCode;
+        });
+
+        onStatusChangeRef.current?.(latestStatusCode);
+      } catch (error) {
+        console.error("거래 상태 동기화 실패:", error);
+      }
+    };
+
+    syncTradeStatus();
+
+    const timerId = window.setInterval(syncTradeStatus, POLLING_INTERVAL_MS);
+
+    return () => {
+      stopped = true;
+      window.clearInterval(timerId);
+    };
+  }, [tradeId, product.productId]);
+
+  const currentStepIndex = useMemo(() => {
+    return getStepIndexByStatusCode(steps, currentStatusCode);
+  }, [steps, currentStatusCode]);
+
   const lastIndex = steps.length - 1;
-  const completeRequestIndex = steps.length - 2;
   const isCompleteStep = currentStepIndex === lastIndex;
-  const isCompleteRequestStep = currentStepIndex === completeRequestIndex;
 
   const currentStep = steps[currentStepIndex];
-
-  const handleNext = () => {
-    if (currentStepIndex >= completeRequestIndex) return;
-    setCurrentStepIndex((prev) => prev + 1);
-  };
+  const nextStatusCode = getNextStatusCode(steps, currentStatusCode);
 
   const handleCancel = async () => {
     const accessToken = localStorage.getItem("accessToken");
@@ -122,6 +252,7 @@ export default function TradeProgressView({
 
       await tradeApi.updateTradeStatus(accessToken, {
         TRADE_ID: tradeId,
+        RESULT_STATUS_CODE: currentStatusCode,
         NEXT_STATUS_CODE: "CANCELED",
         TRADE_TYPE_CODE: tradeType,
       });
@@ -137,11 +268,16 @@ export default function TradeProgressView({
     }
   };
 
-  const handleComplete = async () => {
+  const handleProgress = async () => {
     const accessToken = localStorage.getItem("accessToken");
 
     if (!accessToken) {
       message.error("로그인이 필요합니다.");
+      return;
+    }
+
+    if (!nextStatusCode) {
+      message.error("다음 거래 상태를 확인할 수 없습니다.");
       return;
     }
 
@@ -150,22 +286,30 @@ export default function TradeProgressView({
 
       const result = await tradeApi.updateTradeStatus(accessToken, {
         TRADE_ID: tradeId,
-        NEXT_STATUS_CODE: "COMPLETED",
+        RESULT_STATUS_CODE: currentStatusCode,
+        NEXT_STATUS_CODE: nextStatusCode,
         TRADE_TYPE_CODE: tradeType,
       });
 
-      const statusCode = getStatusCode(result);
+      const responseStatusCode = getResponseStatusCode(result);
 
-      if (statusCode === "COMPLETED" || statusCode === "TR_02" || !statusCode) {
-        setCurrentStepIndex(lastIndex);
+      if (!responseStatusCode) {
+        message.error("변경된 거래 상태를 확인할 수 없습니다.");
+        return;
+      }
+
+      setCurrentStatusCode(responseStatusCode);
+      onStatusChangeRef.current?.(responseStatusCode);
+
+      if (responseStatusCode === "COMPLETED") {
         message.success("거래가 완료되었습니다.");
         return;
       }
 
-      message.error("거래 완료 상태를 확인할 수 없습니다.");
+      message.success("거래 상태가 변경되었습니다.");
     } catch (error) {
       console.error(error);
-      message.error("거래 완료 처리에 실패했습니다.");
+      message.error("거래 상태 변경에 실패했습니다.");
     } finally {
       setSubmitting(false);
     }
@@ -178,21 +322,12 @@ export default function TradeProgressView({
       return;
     }
 
-    if (isCompleteRequestStep) {
-      handleComplete();
-      return;
-    }
-
-    handleNext();
+    handleProgress();
   };
 
   const buttonText = isCompleteStep
     ? "확인"
-    : isCompleteRequestStep
-      ? tradeType === "DIRECT"
-        ? "수령 완료"
-        : "구매 완료"
-      : "다음 단계";
+    : (steps[currentStepIndex + 1]?.title ?? "다음 단계");
 
   return (
     <DrawerLayout
@@ -232,7 +367,11 @@ export default function TradeProgressView({
 
         <div className={styles.productInfo}>
           <span className={styles.tradeBadge}>
-            {tradeType === "DIRECT" ? "직거래" : "택배거래"}
+            {tradeType === "DIRECT"
+              ? "직거래"
+              : tradeType === "DELIVERY"
+                ? "택배거래"
+                : "보관함거래"}
           </span>
           <h2>{product.title}</h2>
           <strong>{formatPrice(product.expectedPrice)}</strong>
@@ -255,7 +394,7 @@ export default function TradeProgressView({
 
             return (
               <li
-                key={`${step.title}-${index}`}
+                key={`${step.statusCode}-${index}`}
                 className={[
                   styles.stepItem,
                   isDone ? styles.done : "",

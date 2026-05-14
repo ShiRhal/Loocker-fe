@@ -18,16 +18,19 @@ declare global {
   }
 }
 
-type ProgressTradeType = Exclude<TradeTab, "LOCKER">;
-
 type Props = {
   open: boolean;
   onClose: () => void;
   product: ProductTradePreview;
+  initialTradeId?: number | null;
+  initialPaid?: boolean;
 };
 
 const TOSS_CLIENT_KEY = "test_ck_QbgMGZzorzzY5z652y7Krl5E1em4";
 const TOSS_SCRIPT_URL = "https://js.tosspayments.com/v1/payment";
+
+const FRONT_BASE_URL =
+  import.meta.env.VITE_FRONT_BASE_URL ?? window.location.origin;
 
 const OPTIONS: Record<TradeTab, TradeMethodOption[]> = {
   DELIVERY: [
@@ -48,10 +51,19 @@ const OPTIONS: Record<TradeTab, TradeMethodOption[]> = {
     {
       id: "LOCKER",
       title: "보관함거래",
-      description: "보관함 거래는 추후 지원 예정입니다.",
+      description: "스마트 보관함을 통해 비대면으로 거래합니다.",
     },
   ],
 };
+
+const PAID_OR_AFTER_STATUS_SET = new Set([
+  "PAID",
+  "ORDER_CHECK",
+  "SHIPPING",
+  "DELIVERED",
+  "PICKEDUP",
+  "COMPLETED",
+]);
 
 function formatPrice(value: number) {
   return `${value.toLocaleString()}원`;
@@ -65,6 +77,95 @@ function getNickname(me: unknown) {
       user?.nickname ?? user?.NICKNAME ?? user?.USER_NICKNAME ?? "구매자",
     ).trim() || "구매자"
   );
+}
+
+function normalizeStatusCode(statusCode?: string | null) {
+  if (!statusCode) return "";
+
+  const code = String(statusCode).trim();
+
+  const aliasMap: Record<string, string> = {
+    TR_01: "TRADING",
+    TR_02: "COMPLETED",
+    TR_03: "CANCELED",
+    TR_04: "PAID",
+    TR_05: "FAILED",
+    TR_08: "PICKEDUP",
+    TR_10: "ORDER_CHECK",
+    TR_11: "SHIPPING",
+    TR_12: "DELIVERED",
+    TR_13: "DIRECT_IN_PROGRESS",
+    TR_14: "DIRECT_RECEIVED",
+  };
+
+  return aliasMap[code] ?? code;
+}
+
+function isPaidOrAfterStatus(statusCode?: string | null) {
+  return PAID_OR_AFTER_STATUS_SET.has(normalizeStatusCode(statusCode));
+}
+
+function canOpenProgressDrawer(
+  tradeType: TradeTab,
+  statusCode?: string | null,
+) {
+  if (tradeType !== "DELIVERY") return true;
+
+  return isPaidOrAfterStatus(statusCode);
+}
+
+function getCreatedTradeId(result: unknown) {
+  if (typeof result === "number") return result;
+  if (typeof result === "string") return Number(result);
+
+  const data = Array.isArray(result) ? result[0] : result;
+
+  if (typeof data === "object" && data !== null) {
+    const obj = data as Record<string, unknown>;
+
+    return Number(obj.TRADE_ID ?? obj.tradeId ?? obj.NEW_ID ?? 0);
+  }
+
+  return 0;
+}
+
+function getStatusCodeFromResponse(result: unknown) {
+  if (typeof result === "string") {
+    return normalizeStatusCode(result);
+  }
+
+  const data = Array.isArray(result) ? result[0] : result;
+
+  if (typeof data === "object" && data !== null) {
+    const obj = data as Record<string, unknown>;
+
+    return normalizeStatusCode(
+      String(
+        obj.STATUS_CODE ??
+          obj.statusCode ??
+          obj.RESULT_STATUS_CODE ??
+          obj.resultStatusCode ??
+          obj.NEXT_STATUS_CODE ??
+          obj.nextStatusCode ??
+          "",
+      ),
+    );
+  }
+
+  return "";
+}
+
+function isTradeTab(value: string): value is TradeTab {
+  return ["DELIVERY", "DIRECT", "LOCKER"].includes(value);
+}
+
+function getAvailableTabs(tradeType: string): TradeTab[] {
+  const tabs = tradeType
+    .split("|")
+    .map((value) => value.trim())
+    .filter(isTradeTab);
+
+  return tabs.length > 0 ? tabs : ["DELIVERY", "DIRECT", "LOCKER"];
 }
 
 function loadTossScript() {
@@ -93,34 +194,173 @@ function loadTossScript() {
   });
 }
 
-export default function TradeMethodDrawer({ open, onClose, product }: Props) {
+export default function TradeMethodDrawer({
+  open,
+  onClose,
+  product,
+  initialTradeId,
+  initialPaid = false,
+}: Props) {
   const { me } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<TradeTab>("DELIVERY");
-  const [selectedOptionId, setSelectedOptionId] =
-    useState<TradeTab>("DELIVERY");
+  const availableTabs = useMemo(
+    () => getAvailableTabs(product.tradeType),
+    [product.tradeType],
+  );
+
+  const [activeTab, setActiveTab] = useState<TradeTab>(availableTabs[0]);
+  const [selectedOptionId, setSelectedOptionId] = useState<TradeTab>(
+    availableTabs[0],
+  );
   const [submitting, setSubmitting] = useState(false);
 
   const [progressMode, setProgressMode] = useState(false);
   const [currentTradeId, setCurrentTradeId] = useState<number | null>(null);
-  const [currentTradeType, setCurrentTradeType] =
-    useState<ProgressTradeType | null>(null);
+  const [currentTradeType, setCurrentTradeType] = useState<TradeTab | null>(
+    null,
+  );
+  const [currentStatusCode, setCurrentStatusCode] = useState<string | null>(
+    null,
+  );
 
   const options = useMemo(() => OPTIONS[activeTab], [activeTab]);
+
+  useEffect(() => {
+    const defaultTab = availableTabs[0];
+
+    setActiveTab(defaultTab);
+    setSelectedOptionId(defaultTab);
+  }, [availableTabs]);
 
   useEffect(() => {
     if (!open) {
       setProgressMode(false);
       setCurrentTradeId(null);
       setCurrentTradeType(null);
+      setCurrentStatusCode(null);
       setSubmitting(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !initialTradeId) return;
+
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+      message.error("로그인이 필요합니다.");
+      return;
+    }
+
+    const restoreTradeProgress = async () => {
+      try {
+        setSubmitting(true);
+
+        const tradeDetail = await tradeApi.getTradeDetail(
+          accessToken,
+          product.productId,
+        );
+
+        if (!tradeDetail || tradeDetail.TRADE_ID !== initialTradeId) {
+          message.error("거래 정보를 확인할 수 없습니다.");
+          return;
+        }
+
+        const normalizedStatusCode = normalizeStatusCode(
+          tradeDetail.STATUS_CODE,
+        );
+
+        const statusCodeForProgress =
+          initialPaid &&
+          tradeDetail.TRADE_TYPE_CODE === "DELIVERY" &&
+          !isPaidOrAfterStatus(normalizedStatusCode)
+            ? "PAID"
+            : normalizedStatusCode;
+
+        setCurrentTradeId(tradeDetail.TRADE_ID);
+        setCurrentTradeType(tradeDetail.TRADE_TYPE_CODE);
+        setCurrentStatusCode(statusCodeForProgress);
+
+        if (
+          initialPaid ||
+          canOpenProgressDrawer(
+            tradeDetail.TRADE_TYPE_CODE,
+            statusCodeForProgress,
+          )
+        ) {
+          setProgressMode(true);
+        }
+
+        if (initialPaid) {
+          message.success("결제가 완료되었습니다.");
+        }
+      } catch (error) {
+        console.error(error);
+        message.error("거래 정보를 불러오지 못했습니다.");
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+    restoreTradeProgress();
+  }, [open, initialTradeId, initialPaid, product.productId]);
+
+  useEffect(() => {
+    if (!open || initialTradeId) return;
+
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) return;
+
+    const checkExistingTrade = async () => {
+      try {
+        setSubmitting(true);
+
+        const tradeDetail = await tradeApi.getTradeDetail(
+          accessToken,
+          product.productId,
+        );
+
+        if (!tradeDetail) return;
+
+        const normalizedStatusCode = normalizeStatusCode(
+          tradeDetail.STATUS_CODE,
+        );
+
+        setCurrentTradeId(tradeDetail.TRADE_ID);
+        setCurrentTradeType(tradeDetail.TRADE_TYPE_CODE);
+        setCurrentStatusCode(normalizedStatusCode);
+
+        if (
+          canOpenProgressDrawer(
+            tradeDetail.TRADE_TYPE_CODE,
+            normalizedStatusCode,
+          )
+        ) {
+          setProgressMode(true);
+          return;
+        }
+
+        if (tradeDetail.TRADE_TYPE_CODE === "DELIVERY") {
+          setActiveTab("DELIVERY");
+          setSelectedOptionId("DELIVERY");
+          setProgressMode(false);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+    checkExistingTrade();
+  }, [open, initialTradeId, product.productId]);
 
   const handleClose = () => {
     setProgressMode(false);
     setCurrentTradeId(null);
     setCurrentTradeType(null);
+    setCurrentStatusCode(null);
     onClose();
   };
 
@@ -128,6 +368,7 @@ export default function TradeMethodDrawer({ open, onClose, product }: Props) {
     setProgressMode(false);
     setCurrentTradeId(null);
     setCurrentTradeType(null);
+    setCurrentStatusCode(null);
   };
 
   const handleChangeTab = (tab: TradeTab) => {
@@ -135,25 +376,49 @@ export default function TradeMethodDrawer({ open, onClose, product }: Props) {
     setSelectedOptionId(tab);
   };
 
-  const requestTossPayment = async (accessToken: string, tradeId: number) => {
-    await tradeApi.createPayment(accessToken, {
-      PRODUCT_ID: product.productId,
-      TRADE_ID: tradeId,
-    });
+  const requestTossPayment = async (
+    accessToken: string,
+    tradeId: number,
+    options?: {
+      skipCreatePayment?: boolean;
+    },
+  ) => {
+    if (!options?.skipCreatePayment) {
+      await tradeApi.createPayment(accessToken, {
+        PRODUCT_ID: product.productId,
+        TRADE_ID: tradeId,
+      });
+    }
 
     await loadTossScript();
 
     const orderId = nanoid();
     const tossPayments = window.TossPayments(TOSS_CLIENT_KEY);
 
-    await tossPayments.requestPayment("카드", {
-      amount: product.expectedPrice,
-      orderId,
-      orderName: product.title,
-      customerName: getNickname(me),
-      successUrl: `${window.location.origin}/product/${product.productId}`,
-      failUrl: `${window.location.origin}/product/${product.productId}`,
-    });
+    sessionStorage.setItem(
+      "pendingPayment",
+      JSON.stringify({
+        productId: product.productId,
+        tradeId,
+        amount: product.expectedPrice,
+        orderId,
+        createdAt: Date.now(),
+      }),
+    );
+
+    try {
+      await tossPayments.requestPayment("카드", {
+        amount: product.expectedPrice,
+        orderId,
+        orderName: product.title,
+        customerName: getNickname(me),
+        successUrl: `${FRONT_BASE_URL}/product/${product.productId}?payment=success&tradeId=${tradeId}`,
+        failUrl: `${FRONT_BASE_URL}/product/${product.productId}?payment=fail&tradeId=${tradeId}`,
+      });
+    } catch (error) {
+      console.error(error);
+      message.error("결제창이 닫혔거나 결제가 중단되었습니다.");
+    }
   };
 
   const handleBuyClick = async () => {
@@ -164,28 +429,37 @@ export default function TradeMethodDrawer({ open, onClose, product }: Props) {
       return;
     }
 
-    if (activeTab === "LOCKER") {
-      message.info("보관함 거래는 추후 지원 예정입니다.");
-      return;
-    }
-
     try {
       setSubmitting(true);
 
-      const tradeIdRes = await tradeApi.getTradeId(
+      const tradeDetail = await tradeApi.getTradeDetail(
         accessToken,
         product.productId,
       );
 
-      let tradeId = Array.isArray(tradeIdRes)
-        ? tradeIdRes[0]?.TRADE_ID
-        : tradeIdRes?.TRADE_ID;
+      if (tradeDetail) {
+        const normalizedStatusCode = normalizeStatusCode(
+          tradeDetail.STATUS_CODE,
+        );
 
-      if (tradeId) {
+        if (
+          tradeDetail.TRADE_TYPE_CODE === "DELIVERY" &&
+          !isPaidOrAfterStatus(normalizedStatusCode)
+        ) {
+          message.info("완료되지 않은 결제가 있어 결제를 다시 진행합니다.");
+
+          await requestTossPayment(accessToken, tradeDetail.TRADE_ID, {
+            skipCreatePayment: true,
+          });
+
+          return;
+        }
+
         message.info("이미 진행 중인 거래가 있습니다.");
 
-        setCurrentTradeId(Number(tradeId));
-        setCurrentTradeType(activeTab === "LOCKER" ? "DIRECT" : activeTab);
+        setCurrentTradeId(tradeDetail.TRADE_ID);
+        setCurrentTradeType(tradeDetail.TRADE_TYPE_CODE);
+        setCurrentStatusCode(normalizedStatusCode);
         setProgressMode(true);
         return;
       }
@@ -197,22 +471,21 @@ export default function TradeMethodDrawer({ open, onClose, product }: Props) {
         TRADE_ID: 0,
       });
 
-      tradeId = Number(createRes);
+      const tradeId = getCreatedTradeId(createRes);
 
-      if (!tradeId || Number.isNaN(Number(tradeId))) {
+      if (!tradeId || Number.isNaN(tradeId)) {
         message.error("거래 ID를 확인할 수 없습니다.");
         return;
       }
 
-      const numericTradeId = Number(tradeId);
-
       if (activeTab === "DELIVERY") {
-        await requestTossPayment(accessToken, numericTradeId);
+        await requestTossPayment(accessToken, tradeId);
         return;
       }
 
-      setCurrentTradeId(numericTradeId);
-      setCurrentTradeType("DIRECT");
+      setCurrentTradeId(tradeId);
+      setCurrentTradeType(activeTab);
+      setCurrentStatusCode(getStatusCodeFromResponse(createRes) || "TRADING");
       setProgressMode(true);
     } catch (error) {
       console.error(error);
@@ -238,6 +511,10 @@ export default function TradeMethodDrawer({ open, onClose, product }: Props) {
           tradeId={currentTradeId}
           tradeType={currentTradeType}
           product={product}
+          initialStatusCode={currentStatusCode}
+          onStatusChange={(statusCode) =>
+            setCurrentStatusCode(normalizeStatusCode(statusCode))
+          }
           onBack={handleBackToMethod}
           onClose={handleClose}
         />
@@ -283,24 +560,26 @@ export default function TradeMethodDrawer({ open, onClose, product }: Props) {
             </div>
           }
         >
-          <section className={styles.tabSection}>
-            {(["DELIVERY", "DIRECT", "LOCKER"] as TradeTab[]).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                className={`${styles.tabButton} ${
-                  activeTab === tab ? styles.tabButtonActive : ""
-                }`}
-                onClick={() => handleChangeTab(tab)}
-              >
-                {tab === "DELIVERY"
-                  ? "택배거래"
-                  : tab === "DIRECT"
-                    ? "직거래"
-                    : "보관함거래"}
-              </button>
-            ))}
-          </section>
+          {availableTabs.length > 1 && (
+            <section className={styles.tabSection}>
+              {availableTabs.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={`${styles.tabButton} ${
+                    activeTab === tab ? styles.tabButtonActive : ""
+                  }`}
+                  onClick={() => handleChangeTab(tab)}
+                >
+                  {tab === "DELIVERY"
+                    ? "택배거래"
+                    : tab === "DIRECT"
+                      ? "직거래"
+                      : "보관함거래"}
+                </button>
+              ))}
+            </section>
+          )}
 
           <section className={styles.optionList}>
             {options.map((option) => (

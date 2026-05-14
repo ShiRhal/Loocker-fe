@@ -1,58 +1,506 @@
-import React, { useState } from 'react';
-import styles from './TradeStatusDrawer.module.css';
-import DrawerLayout from '../../../shared/components/DrawerLayout/DrawerLayout';
+import React, { useEffect, useMemo, useState } from "react";
+import styles from "./TradeStatusDrawer.module.css";
+import DrawerLayout from "../../../shared/components/DrawerLayout/DrawerLayout";
+import TradeProgressView from "../../trade/components/TradeProgressView";
+import { tradeApi } from "../../trade/api/tradeApi";
+import { toApiAssetUrl } from "../../../shared/utils/imageUrl";
+import type {
+  ProductTradePreview,
+  TradeTab,
+} from "../../trade/types/trade.types";
+import type { UserInfoTrade, UserTradeRole } from "../api/userInfoApi";
 
 interface TradeStatusDrawerProps {
   onClose: () => void;
+  tradeList?: UserInfoTrade[];
 }
 
-const TradeStatusDrawer: React.FC<TradeStatusDrawerProps> = ({ onClose }) => {
-  const [keyword, setKeyword] = useState('');
+type Step = {
+  title: string;
+  statusCode: string;
+};
+
+const POLLING_INTERVAL_MS = 5500;
+
+const DIRECT_STEPS: Step[] = [
+  { title: "주문 확인", statusCode: "TRADING" },
+  { title: "직거래 진행중", statusCode: "DIRECT_IN_PROGRESS" },
+  { title: "수령 완료", statusCode: "DIRECT_RECEIVED" },
+  { title: "거래 완료", statusCode: "COMPLETED" },
+];
+
+const DELIVERY_STEPS: Step[] = [
+  { title: "결제 완료", statusCode: "PAID" },
+  { title: "주문 확인", statusCode: "ORDER_CHECK" },
+  { title: "배송중", statusCode: "SHIPPING" },
+  { title: "배송 완료", statusCode: "DELIVERED" },
+  { title: "수령 완료", statusCode: "PICKEDUP" },
+  { title: "거래 완료", statusCode: "COMPLETED" },
+];
+
+const LOCKER_STEPS: Step[] = [
+  { title: "보관함 선택", statusCode: "TRADING" },
+  { title: "입고 대기", statusCode: "PAID" },
+  { title: "입고 완료", statusCode: "DEPOSITED" },
+  { title: "수령 대기", statusCode: "PICKEDUP" },
+  { title: "거래 완료", statusCode: "COMPLETED" },
+];
+
+const statusAliasMap: Record<string, string> = {
+  TR_01: "TRADING",
+  TR_02: "COMPLETED",
+  TR_03: "CANCELED",
+  TR_04: "PAID",
+  TR_05: "FAILED",
+  TR_06: "DEPOSITED",
+  TR_08: "PICKEDUP",
+  TR_10: "ORDER_CHECK",
+  TR_11: "SHIPPING",
+  TR_12: "DELIVERED",
+  TR_13: "DIRECT_IN_PROGRESS",
+  TR_14: "DIRECT_RECEIVED",
+};
+
+function normalizeStatusCode(statusCode?: string | null) {
+  if (!statusCode) return "";
+
+  const code = String(statusCode).trim();
+
+  return statusAliasMap[code] ?? code;
+}
+
+function getTradeLabel(tradeType: TradeTab) {
+  if (tradeType === "DIRECT") return "직거래";
+  if (tradeType === "DELIVERY") return "택배거래";
+  return "보관함거래";
+}
+
+function getSteps(tradeType: TradeTab) {
+  if (tradeType === "DELIVERY") return DELIVERY_STEPS;
+  if (tradeType === "LOCKER") return LOCKER_STEPS;
+  return DIRECT_STEPS;
+}
+
+function getCurrentStepIndex(statusCode: string, tradeType: TradeTab) {
+  const steps = getSteps(tradeType);
+  const normalizedStatusCode = normalizeStatusCode(statusCode);
+
+  const index = steps.findIndex(
+    (step) => step.statusCode === normalizedStatusCode,
+  );
+
+  return index >= 0 ? index : 0;
+}
+
+function formatPrice(value: number) {
+  return `${Number(value ?? 0).toLocaleString()}원`;
+}
+
+function formatDate(value?: string) {
+  if (!value) return "-";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}. ${String(date.getDate()).padStart(2, "0")}.`;
+}
+
+function toProductTradePreview(item: UserInfoTrade): ProductTradePreview {
+  return {
+    productId: item.PRODUCT_ID,
+    title: item.TITLE,
+    imageUrl: item.IMAGE_URL ? toApiAssetUrl(item.IMAGE_URL) : "",
+    expectedPrice: item.BASE_PRICE,
+    tradeType: item.TRADE_TYPE_CODE,
+  };
+}
+
+const TradeStatusDrawer: React.FC<TradeStatusDrawerProps> = ({
+  onClose,
+  tradeList = [],
+}) => {
+  const [keyword, setKeyword] = useState("");
+  const [activeRole, setActiveRole] = useState<UserTradeRole>("BUYER");
+  const [selectedTrade, setSelectedTrade] = useState<UserInfoTrade | null>(
+    null,
+  );
+  const [statusMap, setStatusMap] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    setStatusMap((prev) => {
+      const next = { ...prev };
+      let changed = false;
+
+      tradeList.forEach((item) => {
+        const statusCode = normalizeStatusCode(item.STATUS_CODE);
+
+        if (!statusCode) return;
+
+        if (next[item.TRADE_ID] !== statusCode) {
+          next[item.TRADE_ID] = statusCode;
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [tradeList]);
+
+  useEffect(() => {
+    if (!tradeList || tradeList.length === 0) return;
+
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) return;
+
+    let stopped = false;
+
+    const syncTradeStatuses = async () => {
+      try {
+        const results = await Promise.all(
+          tradeList.map(async (item) => {
+            try {
+              const tradeDetail = await tradeApi.getTradeDetail(
+                accessToken,
+                item.PRODUCT_ID,
+              );
+
+              if (!tradeDetail || tradeDetail.TRADE_ID !== item.TRADE_ID) {
+                return null;
+              }
+
+              const statusCode = normalizeStatusCode(tradeDetail.STATUS_CODE);
+
+              if (!statusCode) return null;
+
+              return {
+                tradeId: item.TRADE_ID,
+                statusCode,
+              };
+            } catch (error) {
+              console.error(
+                `거래 상태 동기화 실패. tradeId=${item.TRADE_ID}`,
+                error,
+              );
+
+              return null;
+            }
+          }),
+        );
+
+        if (stopped) return;
+
+        setStatusMap((prev) => {
+          const next = { ...prev };
+          let changed = false;
+
+          results.forEach((result) => {
+            if (!result) return;
+
+            if (next[result.tradeId] !== result.statusCode) {
+              next[result.tradeId] = result.statusCode;
+              changed = true;
+            }
+          });
+
+          return changed ? next : prev;
+        });
+
+        setSelectedTrade((prev) => {
+          if (!prev) return prev;
+
+          const latest = results.find(
+            (result) => result?.tradeId === prev.TRADE_ID,
+          );
+
+          if (!latest) return prev;
+
+          if (normalizeStatusCode(prev.STATUS_CODE) === latest.statusCode) {
+            return prev;
+          }
+
+          return {
+            ...prev,
+            STATUS_CODE: latest.statusCode,
+          };
+        });
+      } catch (error) {
+        console.error("거래 목록 상태 동기화 실패:", error);
+      }
+    };
+
+    syncTradeStatuses();
+
+    const timerId = window.setInterval(syncTradeStatuses, POLLING_INTERVAL_MS);
+
+    return () => {
+      stopped = true;
+      window.clearInterval(timerId);
+    };
+  }, [tradeList]);
+
+  const filteredTradeList = useMemo(() => {
+    const normalizedKeyword = keyword.trim().toLowerCase();
+
+    return (tradeList ?? [])
+      .filter((item) => item.MY_ROLE === activeRole)
+      .filter((item) => {
+        if (!normalizedKeyword) return true;
+        return item.TITLE.toLowerCase().includes(normalizedKeyword);
+      });
+  }, [tradeList, activeRole, keyword]);
+
+  const handleSelectedTradeStatusChange = (statusCode: string) => {
+    if (!selectedTrade) return;
+
+    const normalizedStatusCode = normalizeStatusCode(statusCode);
+
+    if (!normalizedStatusCode) return;
+
+    setStatusMap((prev) => ({
+      ...prev,
+      [selectedTrade.TRADE_ID]: normalizedStatusCode,
+    }));
+
+    setSelectedTrade((prev) => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        STATUS_CODE: normalizedStatusCode,
+      };
+    });
+  };
+
+  if (selectedTrade) {
+    const selectedStatusCode =
+      statusMap[selectedTrade.TRADE_ID] ??
+      normalizeStatusCode(selectedTrade.STATUS_CODE);
+
+    return (
+      <TradeProgressView
+        tradeId={selectedTrade.TRADE_ID}
+        tradeType={selectedTrade.TRADE_TYPE_CODE}
+        product={toProductTradePreview(selectedTrade)}
+        initialStatusCode={selectedStatusCode}
+        onStatusChange={handleSelectedTradeStatusChange}
+        onBack={() => setSelectedTrade(null)}
+        onClose={onClose}
+      />
+    );
+  }
 
   return (
-    <DrawerLayout title="거래 상태" onBack={onClose} mainClassName={styles.content}>
-        <div className={styles.scrollArea}>
-          <div className={styles.searchSection}>
-            <form className={styles.search}>
-              <button type="submit">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M10.0278 19.0556C14.3233 19.0556 17.8056 15.5733 17.8056 11.2778C17.8056 6.98223 14.3233 3.5 10.0278 3.5C5.73223 3.5 2.25 6.98223 2.25 11.2778C2.25 15.5733 5.73223 19.0556 10.0278 19.0556Z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="transparent"
-                  />
-                  <path
-                    d="M21 21.8999L15.5 16.8999"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-              <input
-                id="keyword"
-                type="search"
-                autoComplete="off"
-                className={styles.searchInput}
-                placeholder="상품명을 입력해주세요"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-              />
-            </form>
-          </div>
+    <DrawerLayout
+      title="거래 상태"
+      onBack={onClose}
+      mainClassName={styles.content}
+    >
+      <div className={styles.tabSection}>
+        <button
+          type="button"
+          className={`${styles.tabButton} ${
+            activeRole === "BUYER" ? styles.tabButtonActive : ""
+          }`}
+          onClick={() => setActiveRole("BUYER")}
+        >
+          구매중
+        </button>
 
-          <div className={styles.listContainer}>
-            <ul className={styles.productList}></ul>
-            <div id="observer" className={styles.observer} aria-hidden="true"></div>
+        <button
+          type="button"
+          className={`${styles.tabButton} ${
+            activeRole === "SELLER" ? styles.tabButtonActive : ""
+          }`}
+          onClick={() => setActiveRole("SELLER")}
+        >
+          판매중
+        </button>
+      </div>
+
+      <div className={styles.scrollArea}>
+        <div className={styles.searchSection}>
+          <form className={styles.search} onSubmit={(e) => e.preventDefault()}>
+            <button type="submit" aria-label="검색">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M10.0278 19.0556C14.3233 19.0556 17.8056 15.5733 17.8056 11.2778C17.8056 6.98223 14.3233 3.5 10.0278 3.5C5.73223 3.5 2.25 6.98223 2.25 11.2778C2.25 15.5733 5.73223 19.0556 10.0278 19.0556Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="transparent"
+                />
+                <path
+                  d="M21 21.8999L15.5 16.8999"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+
+            <input
+              id="keyword"
+              type="search"
+              autoComplete="off"
+              className={styles.searchInput}
+              placeholder="상품명을 입력해주세요"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+          </form>
+        </div>
+
+        <div className={styles.listContainer}>
+          {filteredTradeList.length > 0 ? (
+            <ul className={styles.productList}>
+              {filteredTradeList.map((item) => {
+                const imageUrl = item.IMAGE_URL
+                  ? toApiAssetUrl(item.IMAGE_URL)
+                  : "";
+
+                const steps = getSteps(item.TRADE_TYPE_CODE);
+
+                const currentStatusCode =
+                  statusMap[item.TRADE_ID] ??
+                  normalizeStatusCode(item.STATUS_CODE);
+
+                const currentStepIndex = getCurrentStepIndex(
+                  currentStatusCode,
+                  item.TRADE_TYPE_CODE,
+                );
+
+                return (
+                  <li key={item.TRADE_ID}>
+                    <button
+                      type="button"
+                      className={styles.tradeCard}
+                      onClick={() => setSelectedTrade(item)}
+                    >
+                      <div className={styles.productHeader}>
+                        <div className={styles.imageBox}>
+                          {imageUrl ? (
+                            <img src={imageUrl} alt={item.TITLE} />
+                          ) : (
+                            <span>이미지 없음</span>
+                          )}
+                        </div>
+
+                        <div className={styles.infoBox}>
+                          <div className={styles.badgeRow}>
+                            <span className={styles.roleBadge}>
+                              {item.MY_ROLE === "BUYER" ? "구매" : "판매"}
+                            </span>
+                            <span className={styles.tradeBadge}>
+                              {getTradeLabel(item.TRADE_TYPE_CODE)}
+                            </span>
+                          </div>
+
+                          <strong className={styles.productTitle}>
+                            {item.TITLE}
+                          </strong>
+                          <span className={styles.nickname}>
+                            {item.SELLER_NICKNAME}
+                          </span>
+                          <strong className={styles.price}>
+                            {formatPrice(item.BASE_PRICE)}
+                          </strong>
+                        </div>
+
+                        <div className={styles.sideInfo}>
+                          <div className={styles.stats}>
+                            <span className={styles.statItem}>
+                              <svg
+                                className={styles.statIcon}
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                              >
+                                <path d="M12 5C6.5 5 2.3 9.1 1 12c1.3 2.9 5.5 7 11 7s9.7-4.1 11-7c-1.3-2.9-5.5-7-11-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-1.8a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z" />
+                              </svg>
+                              {item.VIEW_COUNT ?? 0}
+                            </span>
+
+                            <span className={styles.statItem}>
+                              <svg
+                                className={styles.statIcon}
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                              >
+                                <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v7A2.5 2.5 0 0 1 17.5 15H9l-4.5 4v-4.5A2.5 2.5 0 0 1 4 12.5z" />
+                              </svg>
+                              {item.CHAT_COUNT ?? 0}
+                            </span>
+
+                            <span className={styles.statItem}>
+                              <svg
+                                className={styles.statIcon}
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                              >
+                                <path d="M12 21s-6.716-4.35-9.193-8.077C.91 10.064 1.37 5.97 4.59 4.09c2.02-1.18 4.57-.78 6.41.9l1 0 1-1c1.84-1.68 4.39-2.08 6.41-.9 3.22 1.88 3.68 5.974 1.783 8.833C18.716 16.65 12 21 12 21z" />
+                              </svg>
+                              {item.WISH_COUNT ?? 0}
+                            </span>
+                          </div>
+
+                          <span className={styles.createdAt}>
+                            {formatDate(item.CREATED_AT)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className={styles.progressBox}>
+                        <div className={styles.progressHeader}>
+                          <strong>거래 진행 상황</strong>
+                          <span>
+                            {currentStepIndex + 1} / {steps.length}
+                          </span>
+                        </div>
+
+                        <ol className={styles.stepBar}>
+                          {steps.map((step, index) => {
+                            const isDone = index < currentStepIndex;
+                            const isCurrent = index === currentStepIndex;
+                            const isActive = index <= currentStepIndex;
+
+                            return (
+                              <li
+                                key={`${item.TRADE_ID}-${step.statusCode}`}
+                                className={[
+                                  styles.stepItem,
+                                  isDone ? styles.stepDone : "",
+                                  isCurrent ? styles.stepCurrent : "",
+                                  isActive ? styles.stepActive : "",
+                                ].join(" ")}
+                              >
+                                <div className={styles.stepCircle}>
+                                  {isCurrent ? "✓" : index + 1}
+                                </div>
+                                <span className={styles.stepLabel}>
+                                  {step.title}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
             <div className={styles.emptyState}>
               <svg
                 width="26"
@@ -97,10 +545,15 @@ const TradeStatusDrawer: React.FC<TradeStatusDrawerProps> = ({ onClose }) => {
                   strokeLinejoin="round"
                 />
               </svg>
-              <p>거래 중인 상품이 없습니다.</p>
+              <p>
+                {activeRole === "BUYER"
+                  ? "구매중인 거래가 없습니다."
+                  : "판매중인 거래가 없습니다."}
+              </p>
             </div>
-          </div>
+          )}
         </div>
+      </div>
     </DrawerLayout>
   );
 };

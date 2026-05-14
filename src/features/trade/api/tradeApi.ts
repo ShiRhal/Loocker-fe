@@ -1,11 +1,13 @@
-import { webapi } from "../../../app/config/api";
+import { webapi } from "../../../shared/api/apiClient";
 import type {
   PaymentCreateRequest,
   PaymentUpdateRequest,
   ProductDetailResponse,
   ProductTradePreview,
   TradeCreateRequest,
+  TradeDetailResponse,
   TradeUpdateRequest,
+  TradeUpdateResponse,
 } from "../types/trade.types";
 
 function getPrimaryImage(images: ProductDetailResponse["IMAGE"]) {
@@ -54,7 +56,30 @@ export const tradeApi = {
     });
   },
 
-  async updateTradeStatus(accessToken: string, body: TradeUpdateRequest) {
+  async getTradeDetail(
+    accessToken: string,
+    productId: number,
+  ): Promise<TradeDetailResponse | null> {
+    const res = await webapi(`/trade/select?PRODUCT_ID=${productId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!res) return null;
+
+    const detail = Array.isArray(res) ? res[0] : res;
+
+    if (!detail || !detail.TRADE_ID) return null;
+
+    return detail as TradeDetailResponse;
+  },
+
+  async updateTradeStatus(
+    accessToken: string,
+    body: TradeUpdateRequest,
+  ): Promise<TradeUpdateResponse> {
     return await webapi("/trade/update", {
       method: "PUT",
       body: JSON.stringify(body),
@@ -98,7 +123,9 @@ export const tradeApi = {
     });
   },
 
-  async updateTradeStatusWithoutAuth(body: TradeUpdateRequest) {
+  async updateTradeStatusWithoutAuth(
+    body: TradeUpdateRequest,
+  ): Promise<TradeUpdateResponse> {
     return await webapi("/trade/update", {
       method: "PUT",
       body: JSON.stringify(body),
