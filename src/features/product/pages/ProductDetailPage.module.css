@@ -90,11 +90,20 @@
   padding-top: 6px;
 }
 
+.summaryTopRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  width: 100%;
+}
+
 .breadcrumb {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 18px;
+  min-width: 0;
+  margin: 0;
   font-size: 14px;
   color: #8b95a1;
 }
@@ -121,6 +130,15 @@
   color: #555;
 }
 
+.summaryMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  margin-bottom: 18px;
+  width: 100%;
+}
+
 .stats {
   display: flex;
   justify-content: flex-end;
@@ -128,6 +146,11 @@
   margin: 0 0 22px;
   font-size: 14px;
   color: #7b8794;
+}
+
+.summaryMetaRow .stats {
+  margin: 0 0 0 auto;
+  font-size: 13px;
 }
 
 .statItem {
@@ -140,6 +163,51 @@
   width: 16px;
   height: 16px;
   fill: #b8c6d8;
+}
+
+.ownerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.ownerActionButton {
+  height: 24px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.ownerEditButton {
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  color: #374151;
+}
+
+.ownerEditButton:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.ownerDeleteButton {
+  border: 1px solid #ef4444;
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+.ownerDeleteButton:hover {
+  border-color: #dc2626;
+  background-color: #dc2626;
 }
 
 .tradeBox {
@@ -221,6 +289,10 @@
   font-size: 15px;
 }
 
+.statusBox:has(+ .productStatusNotice) {
+  margin-bottom: 8px;
+}
+
 .statusBox span {
   color: #555;
 }
@@ -232,7 +304,7 @@
 }
 
 .productStatusNotice {
-  margin: 8px 0 8px;
+  margin: 0 0 12px;
   padding: 0 10px;
   font-size: 13px;
   font-weight: 600;

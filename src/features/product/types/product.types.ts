@@ -1,31 +1,32 @@
 export type ProductFormMode = "create" | "edit";
 
 export type ProductImage = {
-  IMAGE_ID: number;
   PRODUCT_ID: number;
+  CREATED_AT: string;
+  SORT_ORDER: number;
   IMAGE_URL: string;
   IS_PRIMARY: boolean | number;
-  SORT_ORDER: number;
-  CREATED_AT: string;
+  IMAGE_ID: number;
 };
 
 export type ProductDetail = {
   PRODUCT_ID: number;
-  TITLE: string;
-  DESCRIPTION: string;
-  BASE_PRICE: number;
+  CREATED_AT?: string;
+  SELLER_ID: number,
   IMAGE?: ProductImage[];
   ACCESSORY_STATUS?: string;
-  TRADE_TYPE?: string;
   STATE?: string | null;
   CITY?: string | null;
-  MAIN_CATEGORY?: string;
+  TITLE: string;
+  BASE_PRICE: number;
   SUB_CATEGORY?: string;
+  MAIN_CATEGORY?: string;
+  DESCRIPTION: string;
+  NICKNAME?: string;
+  TRADE_TYPE?: string;
+  CHAT_COUNT?: number;
   STATUS_CODE?: string;
   VIEW_COUNT?: number;
   WISH_COUNT?: number;
-  CHAT_COUNT?: number;
-  CREATED_AT?: string;
-  NICKNAME?: string;
   IS_WISHED?: boolean | number;
 };

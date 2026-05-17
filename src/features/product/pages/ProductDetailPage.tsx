@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { message } from "antd";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { getOrCreateChatRoomForProduct } from "../../chat/api/chatApi";
-import { useChatDrawer } from "../../chat/context/ChatDrawerContext";
 import RecentViewedBox from "../../home/components/RecentViewedBox";
 import { productApi } from "../api/productapi";
 import type { ProductDetail } from "../types/product.types";
@@ -28,11 +26,17 @@ function toProductTradePreview(product: ProductDetail): ProductTradePreview {
   };
 }
 
+function getLoginUserId() {
+  const savedUserId = localStorage.getItem("userId");
+  const parsedUserId = savedUserId ? Number(savedUserId) : NaN;
+
+  return Number.isNaN(parsedUserId) ? null : parsedUserId;
+}
+
 export default function ProductDetailPage() {
   const { productId } = useParams<{ productId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { openChatRoom } = useChatDrawer();
 
   const paymentHandledRef = useRef(false);
 
@@ -126,45 +130,28 @@ export default function ProductDetailPage() {
     if (product.STATUS_CODE === "SOLD") {
       return;
     }
+
     setInitialTradeId(null);
     setInitialPaid(false);
     setTradeDrawerOpen(true);
-  };
-
-  const handleChatClick = async () => {
-    if (!product) return;
-
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) {
-      const redirect = encodeURIComponent(
-        `${location.pathname}${location.search}`,
-      );
-      navigate(`/signin?redirect=${redirect}`);
-      return;
-    }
-
-    try {
-      const baseRoom = await getOrCreateChatRoomForProduct(product.PRODUCT_ID);
-      const thumb = getPrimaryProductImageUrl(product.IMAGE);
-      openChatRoom({
-        ...baseRoom,
-        TITLE: baseRoom.TITLE ?? product.TITLE,
-        TARGET_NICKNAME:
-          baseRoom.TARGET_NICKNAME ?? product.NICKNAME ?? "판매자",
-        IMAGE_URL: baseRoom.IMAGE_URL ?? thumb ?? null,
-      });
-    } catch (err) {
-      console.error(err);
-      message.error(
-        err instanceof Error ? err.message : "채팅을 시작할 수 없습니다.",
-      );
-    }
   };
 
   const handleCloseTradeDrawer = () => {
     setTradeDrawerOpen(false);
     setInitialTradeId(null);
     setInitialPaid(false);
+  };
+
+  const handleEditProductClick = () => {
+    if (!product) return;
+
+    console.log("판매글 수정 클릭:", product.PRODUCT_ID);
+  };
+
+  const handleDeleteProductClick = () => {
+    if (!product) return;
+
+    console.log("판매글 삭제 클릭:", product.PRODUCT_ID);
   };
 
   useEffect(() => {
@@ -306,6 +293,12 @@ export default function ProductDetailPage() {
     return <main className={styles.message}>상품 정보가 없습니다.</main>;
   }
 
+  const loginUserId = getLoginUserId();
+  const isOwner =
+    loginUserId !== null &&
+    product.SELLER_ID != null &&
+    loginUserId === product.SELLER_ID;
+
   const tradePreview = toProductTradePreview(product);
 
   return (
@@ -329,9 +322,11 @@ export default function ProductDetailPage() {
             accessoryStatus={product.ACCESSORY_STATUS}
             statusCode={product.STATUS_CODE}
             isWished={product.IS_WISHED}
+            isOwner={isOwner}
             onWishlistClick={handleWishlistClick}
-            onChatClick={() => void handleChatClick()}
             onBuyClick={handleOpenTradeDrawer}
+            onEditClick={handleEditProductClick}
+            onDeleteClick={handleDeleteProductClick}
           />
         </section>
 
