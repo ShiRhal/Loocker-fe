@@ -11,7 +11,10 @@ import ProductImageGallery, {
 import ProductSummary from "../components/ProductSummary";
 import ProductDescriptionSection from "../components/ProductDescriptionSection";
 import SellerInfoSection from "../components/SellerInfoSection";
-import { addRecentViewedProduct } from "../../../shared/utils/recentViewedStorage";
+import {
+  addRecentViewedProduct,
+  removeRecentViewedProduct,
+} from "../../../shared/utils/recentViewedStorage";
 import TradeMethodDrawer from "../../trade/drawers/TradeMethodDrawer";
 import { tradeApi } from "../../trade/api/tradeApi";
 import type { ProductTradePreview } from "../../trade/types/trade.types";
@@ -94,7 +97,6 @@ export default function ProductDetailPage() {
 
   const showDeleteSuccessMessage = () => {
     message.open({
-      type: "success",
       duration: 2.6,
       className: styles.deleteSuccessToast,
       content: (
@@ -203,6 +205,8 @@ export default function ProductDetailPage() {
       setDeleteLoading(true);
 
       await productApi.deleteProductDetail(product.PRODUCT_ID, loginUserId);
+
+      removeRecentViewedProduct(product.PRODUCT_ID);
 
       setDeleteModalOpen(false);
       showDeleteSuccessMessage();
