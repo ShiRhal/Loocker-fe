@@ -123,7 +123,7 @@ export default function ProductDetailPage() {
   const handleOpenTradeDrawer = () => {
     if (!product) return;
 
-    if (product.STATUS_CODE !== "SALE") {
+    if (product.STATUS_CODE === "SOLD") {
       return;
     }
     setInitialTradeId(null);
