@@ -143,10 +143,10 @@ export default function ProductDetailPage() {
   };
 
   const handleEditProductClick = () => {
-    if (!product) return;
+  if (!product) return;
 
-    console.log("판매글 수정 클릭:", product.PRODUCT_ID);
-  };
+  navigate(`/product/form?type=edit&productId=${product.PRODUCT_ID}`);
+};
 
   const handleDeleteProductClick = () => {
     if (!product) return;
