@@ -3,6 +3,7 @@ export type RecentViewedItem = {
   title: string;
   price: number;
   imageUrl: string;
+  isSold: boolean;
   viewedAt: number;
 };
 
@@ -19,15 +20,24 @@ function safeParseRecentViewed(value: string | null): RecentViewedItem[] {
       return [];
     }
 
-    return parsed.filter((item) => {
-      return (
-        typeof item.id === "number" &&
-        typeof item.title === "string" &&
-        typeof item.price === "number" &&
-        typeof item.imageUrl === "string" &&
-        typeof item.viewedAt === "number"
-      );
-    });
+    return parsed
+      .filter((item) => {
+        return (
+          typeof item.id === "number" &&
+          typeof item.title === "string" &&
+          typeof item.price === "number" &&
+          typeof item.imageUrl === "string" &&
+          typeof item.viewedAt === "number"
+        );
+      })
+      .map((item) => ({
+        id: item.id,
+        title: item.title,
+        price: item.price,
+        imageUrl: item.imageUrl,
+        isSold: typeof item.isSold === "boolean" ? item.isSold : false,
+        viewedAt: item.viewedAt,
+      }));
   } catch {
     return [];
   }
@@ -42,13 +52,16 @@ export function getRecentViewedProducts(): RecentViewedItem[] {
 }
 
 export function addRecentViewedProduct(
-  item: Omit<RecentViewedItem, "viewedAt">,
+  item: Omit<RecentViewedItem, "viewedAt" | "isSold"> & {
+    isSold?: boolean;
+  },
 ) {
   const currentItems = getRecentViewedProducts();
 
   const nextItems: RecentViewedItem[] = [
     {
       ...item,
+      isSold: item.isSold ?? false,
       viewedAt: Date.now(),
     },
     ...currentItems.filter((currentItem) => currentItem.id !== item.id),

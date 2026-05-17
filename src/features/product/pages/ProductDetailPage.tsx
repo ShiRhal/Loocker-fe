@@ -71,6 +71,7 @@ export default function ProductDetailPage() {
           title: detail.TITLE,
           price: detail.BASE_PRICE,
           imageUrl: getPrimaryProductImageUrl(detail.IMAGE),
+          isSold: detail.STATUS_CODE === "SOLD",
         });
       }
     } catch (err) {
