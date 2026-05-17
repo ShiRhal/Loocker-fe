@@ -24,6 +24,7 @@ export type ProductItem = {
   isLockerTrade: boolean;
   imageUrl?: string;
   isWished?: boolean;
+  statusCode?: string;
 };
 
 export type PriceStats = {
@@ -61,6 +62,7 @@ export type HomeProductResponseItem = {
   CREATED_AT: string;
   LOCKER_BADGE: string | null;
   IS_WISHED?: boolean | number;
+  STATUS_CODE?: string;
 };
 
 export type HomePriceStatusResponse = {

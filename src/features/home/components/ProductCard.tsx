@@ -18,6 +18,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const navigate = useNavigate();
   const hasImage = Boolean(product.imageUrl);
+  const isSold = product.statusCode === "SOLD";
 
   const handleCardClick = () => {
     navigate(`/product/${product.id}`);
@@ -40,11 +41,19 @@ export default function ProductCard({
             <img
               src={product.imageUrl}
               alt={product.title}
-              className={styles.image}
+              className={`${styles.image} ${isSold ? styles.soldImage : ""}`}
             />
           ) : (
-            <div className={styles.imageFallback}>이미지 없음</div>
+            <div
+              className={`${styles.imageFallback} ${
+                isSold ? styles.soldImage : ""
+              }`}
+            >
+              이미지 없음
+            </div>
           )}
+
+          {isSold && <span className={styles.soldOverlay}>판매완료</span>}
         </button>
 
         <button
