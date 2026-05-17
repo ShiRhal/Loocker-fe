@@ -44,11 +44,22 @@ const MyPageProductCard: React.FC<MyPageProductCardProps> = ({
   rightSlot,
   onClick,
 }) => {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!onClick) return;
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onClick();
+    }
+  };
+
   return (
-    <button
-      type="button"
+    <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
       className={`${styles.card} ${compact ? styles.compact : ""}`}
       onClick={onClick}
+      onKeyDown={handleKeyDown}
     >
       <div className={styles.imageBox}>
         <img
@@ -123,7 +134,7 @@ const MyPageProductCard: React.FC<MyPageProductCardProps> = ({
 
         <span className={styles.createdAt}>{createdAt || "-"}</span>
       </div>
-    </button>
+    </div>
   );
 };
 
