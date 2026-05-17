@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import styles from "./ProductTradeSection.module.css";
 import DirectLocationDrawer from "./DirectLocationDrawer";
 import LockerTradeDrawer from "./LockerTradeDrawer";
@@ -17,8 +16,6 @@ export default function ProductTradeSection({
   onTradeTypeChange,
   onCityChange,
 }: ProductTradeSectionProps) {
-  const [searchParams, setSearchParams] = useSearchParams();
-
   const [activeDrawer, setActiveDrawer] = useState<
     "direct-location" | "locker" | null
   >(null);
@@ -28,21 +25,10 @@ export default function ProductTradeSection({
   const isDeliveryChecked = tradeType.includes("DELIVERY");
 
   const openDrawer = (drawer: "direct-location" | "locker") => {
-    const nextParams = new URLSearchParams(searchParams);
-
-    nextParams.set("type", "regist");
-    nextParams.set("drawer", drawer);
-
-    setSearchParams(nextParams);
     setActiveDrawer(drawer);
   };
 
   const closeDrawer = () => {
-    const nextParams = new URLSearchParams(searchParams);
-
-    nextParams.delete("drawer");
-
-    setSearchParams(nextParams);
     setActiveDrawer(null);
   };
 
