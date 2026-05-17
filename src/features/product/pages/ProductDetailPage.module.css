@@ -421,3 +421,160 @@
   font-weight: 700;
   color: #111;
 }
+
+.deleteConfirmModal :global(.ant-modal-content) {
+  width: 320px;
+  padding: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.22);
+}
+
+.deleteConfirmModal :global(.ant-modal-body) {
+  padding: 0;
+}
+
+.deleteModalContent {
+  padding: 24px 22px 22px;
+  text-align: center;
+  background: #ffffff;
+}
+
+.deleteModalIconBox {
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 13px;
+  border-radius: 50%;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.deleteModalTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: #111827;
+}
+
+.deleteModalDescription {
+  margin: 9px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #6b7280;
+}
+
+.deleteModalButtonRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.deleteModalCancelButton,
+.deleteModalDeleteButton {
+  height: 38px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease,
+    opacity 0.16s ease;
+}
+
+.deleteModalCancelButton {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+}
+
+.deleteModalCancelButton:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.deleteModalDeleteButton {
+  border: 1px solid #ef4444;
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(239, 68, 68, 0.22);
+}
+
+.deleteModalDeleteButton:hover:not(:disabled) {
+  border-color: #dc2626;
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.deleteModalCancelButton:disabled,
+.deleteModalDeleteButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none;
+}
+
+.deleteSuccessToast {
+  margin-top: 18px;
+}
+
+.deleteSuccessToast :global(.ant-message-notice-content) {
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 16px 38px rgba(17, 24, 39, 0.2);
+}
+
+.deleteSuccessToast :global(.anticon) {
+  display: none !important;
+}
+
+.deleteSuccessContent {
+  min-width: 260px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: #111827;
+  color: #ffffff;
+}
+
+.deleteSuccessIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.deleteSuccessContent strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.deleteSuccessContent p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #d1d5db;
+}
