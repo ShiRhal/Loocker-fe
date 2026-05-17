@@ -132,10 +132,7 @@ export default function DirectLocationDrawer({
     <DrawerLayout title="지역 검색" onBack={onBack}>
       <div className={styles.container}>
         <div className={styles.searchBox}>
-          <form
-            className={styles.searchForm}
-            onSubmit={(event) => event.preventDefault()}
-          >
+          <div className={styles.searchForm} role="search">
             <label htmlFor="location-search" className={styles.searchLabel}>
               <input
                 id="location-search"
@@ -171,7 +168,7 @@ export default function DirectLocationDrawer({
                 strokeLinejoin="round"
               />
             </svg>
-          </form>
+          </div>
         </div>
 
         {!keyword.trim() && (
