@@ -31,7 +31,7 @@ function getProductStatusUi(statusCode?: string) {
     case "TRADING":
       return {
         noticeText: "거래 중인 상품입니다.",
-        buyButtonText: "거래 중",
+        buyButtonText: "구매하기",
         buyButtonDisabled: false,
       };
 

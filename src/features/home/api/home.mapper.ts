@@ -146,6 +146,7 @@ export function toProductItem(product: HomeProductResponseItem): ProductItem {
     isLockerTrade: product.LOCKER_BADGE === "LOCKER",
     imageUrl: product.IMAGE_URL ? toApiAssetUrl(product.IMAGE_URL) : "",
     isWished: isWishedValue(product.IS_WISHED),
+    statusCode: product.STATUS_CODE,
   };
 }
 
