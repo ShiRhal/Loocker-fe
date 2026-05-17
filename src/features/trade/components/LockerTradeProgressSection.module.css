@@ -1,0 +1,550 @@
+.main {
+  padding: 16px 20px 24px;
+  gap: 14px;
+  background: #f5f6f8;
+}
+
+.productCard {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #eceef1;
+}
+
+.imageBox {
+  width: 84px;
+  height: 84px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #eef0f3;
+  flex-shrink: 0;
+}
+
+.imageBox img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.noImage {
+  width: 100%;
+  height: 100%;
+  font-size: 12px;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.productInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.tradeBadge {
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f1f3f5;
+  color: #555;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.productInfo h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  line-height: 1.35;
+  color: #222;
+  font-weight: 800;
+}
+
+.productInfo strong {
+  font-size: 17px;
+  color: #111;
+}
+
+.progressCard {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #eceef1;
+  padding: 20px 18px;
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 28px;
+}
+
+.progressHeader h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #111;
+  font-weight: 800;
+}
+
+.progressHeader p {
+  margin: 0;
+  font-size: 13px;
+  color: #777;
+}
+
+.stepBar {
+  display: flex;
+  align-items: flex-start;
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0 6px;
+}
+
+.stepItem {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.stepItem:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: calc(50% + 18px);
+  width: calc(100% - 36px);
+  height: 3px;
+  background: #d7dbe2;
+  z-index: 0;
+}
+
+.stepItem.done::after,
+.stepItem.current::after {
+  background: #3182f6;
+}
+
+.stepCircle {
+  position: relative;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid #cfd4dc;
+  background: #fff;
+  color: #a0a6b0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.stepItem.active .stepCircle {
+  border-color: #3182f6;
+  color: #3182f6;
+}
+
+.stepItem.current .stepCircle {
+  background: #3182f6;
+  color: #fff;
+  border-color: #3182f6;
+}
+
+.stepLabel {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #8b929c;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.stepItem.active .stepLabel {
+  color: #3182f6;
+}
+
+.statusBadge {
+  margin-top: 8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #3182f6;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.descriptionBox {
+  display: flex;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #e2e6ec;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.descriptionIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #3182f6;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.descriptionBox h4 {
+  margin: 2px 0 8px;
+  font-size: 17px;
+  line-height: 1.4;
+  color: #111;
+  font-weight: 800;
+}
+
+.descriptionBox p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #666;
+}
+
+.footerButtonRow {
+  display: flex;
+  gap: 10px;
+}
+
+.subButton,
+.mainButton {
+  height: 50px;
+  border-radius: 12px;
+  border: 0;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.subButton {
+  flex: 0 0 110px;
+  background: #fff;
+  color: #333;
+  border: 1px solid #dfe2e6;
+}
+
+.mainButton {
+  flex: 1;
+  background: #111;
+  color: #fff;
+}
+
+.mainButton:disabled,
+.subButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lockerActionBox {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid #e2e6ec;
+  background: #fff;
+}
+
+.lockerActionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.lockerActionTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 900;
+  color: #111;
+}
+
+.lockerActionDesc {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #666;
+}
+
+.lockerActionButtonRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.lockerSubActionButton {
+  height: 46px;
+  border: 0;
+  border-radius: 12px;
+  background: #111;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.lockerSubActionButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.lockerNoticeBox {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f5f6f8;
+  color: #555;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.selectedBranchCard {
+  margin-top: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.selectedBranchSummary {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 12px;
+}
+
+.selectedBranchImage {
+  width: 110px;
+  height: 88px;
+  border-radius: 2px;
+  object-fit: cover;
+  background: #eef0f3;
+  flex-shrink: 0;
+}
+
+.selectedBranchImageEmpty {
+  width: 110px;
+  height: 88px;
+  border-radius: 2px;
+  background: #333;
+  color: #fff;
+  font-size: 34px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.selectedBranchInfoWrap {
+  min-width: 0;
+  flex: 1;
+}
+
+.selectedBranchTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.selectedBranchInfoText {
+  min-width: 0;
+  flex: 1;
+}
+
+.selectedBranchName {
+  font-size: 15px;
+  font-weight: 900;
+  color: #111;
+  line-height: 1.35;
+}
+
+.selectedBranchAddress {
+  margin-top: 5px;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.35;
+}
+
+.selectedBranchStatus {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e8f3ff;
+  color: #3182f6;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.branchMiniMap {
+  width: 100%;
+  height: 132px;
+  margin-top: 12px;
+  border-radius: 0;
+  overflow: hidden;
+  border: 1px solid #e2e6ec;
+  background: #eef0f3;
+}
+
+.branchMiniMapEmpty {
+  width: 100%;
+  height: 132px;
+  margin-top: 12px;
+  border-radius: 0;
+  border: 1px solid #e2e6ec;
+  background: #f1f3f5;
+  color: #777;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.selectedBranchLockerSection {
+  margin-top: 14px;
+}
+
+.selectedBranchLockerTitle {
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 900;
+  color: #111;
+}
+
+.selectedBranchLockerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.selectedBranchLockerItem {
+  min-height: 84px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e2e6ec;
+  background: #fff;
+}
+
+.selectedBranchLockerIcon {
+  font-size: 17px;
+  line-height: 1;
+  color: #3182f6;
+}
+
+.selectedBranchLockerNo {
+  margin-top: 9px;
+  font-size: 14px;
+  font-weight: 900;
+  color: #111;
+}
+
+.selectedBranchLockerStatus {
+  margin-top: 5px;
+  font-size: 13px;
+  color: #666;
+}
+
+.lockerStateHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 18px 0 10px;
+}
+
+.lockerStateTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: #111;
+}
+
+.refreshButton {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #dfe2e6;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.leftDrawer {
+  position: fixed;
+  top: 0;
+  right: 640.5px;
+  width: 560px;
+  height: 100vh;
+  background: #fff;
+  z-index: 1300;
+  border-right: 1px solid #e2e6ec;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+}
+
+.mapDrawerHeader {
+  padding: 24px 26px 20px;
+  border-bottom: 1px solid #eceef1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.mapDrawerTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  color: #111;
+}
+
+.mapCloseButton {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: #f5f6f8;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chatPlaceholder {
+  flex: 1;
+  margin: 16px;
+  border-radius: 16px;
+  border: 1px dashed #d7dbe2;
+  background: #f8f9fb;
+  color: #777;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
