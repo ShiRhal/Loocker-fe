@@ -52,7 +52,7 @@
   background: #f1f3f5;
   color: #555;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 8px;
 }
 
@@ -61,7 +61,7 @@
   font-size: 16px;
   line-height: 1.35;
   color: #222;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .productInfo strong {
@@ -87,6 +87,7 @@
   margin: 0;
   font-size: 18px;
   color: #111;
+  font-weight: 800;
 }
 
 .progressHeader p {
@@ -209,10 +210,6 @@
   font-weight: 800;
 }
 
-.descriptionBox h4::first-letter {
-  color: inherit;
-}
-
 .descriptionBox p {
   margin: 0;
   font-size: 14px;
@@ -231,7 +228,7 @@
   border-radius: 12px;
   border: 0;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
 }
 
@@ -252,4 +249,602 @@
 .subButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.lockerActionBox {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid #e2e6ec;
+  background: #fff;
+}
+
+.lockerActionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.lockerActionTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #111;
+}
+
+.lockerActionDesc {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #666;
+}
+
+.lockerActionButtonRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.lockerSubActionButton {
+  height: 46px;
+  border: 0;
+  border-radius: 12px;
+  background: #111;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.lockerSubActionButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.lockerSelectButton {
+  flex-shrink: 0;
+  height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: #3182f6;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.lockerSelectButton:disabled,
+.lockerSubActionButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lockerNoticeBox {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f5f6f8;
+  color: #555;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* 지점 선택 / 지점 확정 카드 */
+.selectedBranchCard {
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.selectedBranchSummary {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 16px;
+}
+
+.selectedBranchImage {
+  width: 110px;
+  height: 110px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: #eef0f3;
+  flex-shrink: 0;
+}
+
+.selectedBranchImageEmpty {
+  width: 110px;
+  height: 110px;
+  border-radius: 4px;
+  background: #f1f3f5;
+  color: #999;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.selectedBranchInfoWrap {
+  min-width: 0;
+  flex: 1;
+}
+
+.selectedBranchTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.selectedBranchInfoText {
+  min-width: 0;
+  flex: 1;
+}
+
+.selectedBranchName {
+  font-size: 16px;
+  font-weight: 900;
+  color: #111;
+  line-height: 1.35;
+}
+
+.selectedBranchAddress {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.35;
+}
+
+.selectedBranchStatus {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #e8f3ff;
+  color: #3182f6;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.selectedBranchLockerSection {
+  margin-top: 18px;
+}
+
+.selectedBranchLockerTitle {
+  margin-bottom: 10px;
+  font-size: 15px;
+  font-weight: 900;
+  color: #111;
+}
+
+.selectedBranchLockerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.selectedBranchLockerItem {
+  min-height: 90px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid #e2e6ec;
+  background: #fff;
+}
+
+.selectedBranchLockerIcon {
+  font-size: 18px;
+  line-height: 1;
+  color: #3182f6;
+}
+
+.selectedBranchLockerNo {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 900;
+  color: #111;
+}
+
+.selectedBranchLockerStatus {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* 입고 대기 이후 보관함 상태 */
+.lockerStateHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 18px 0 10px;
+}
+
+.lockerStateTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: #111;
+}
+
+.refreshButton {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #dfe2e6;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lockerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.lockerItem {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #e2e6ec;
+  background: #fff;
+}
+
+.lockerIcon {
+  font-size: 22px;
+  line-height: 1;
+  color: #3182f6;
+}
+
+.lockerNo {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #111;
+}
+
+.lockerStatus {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* 왼쪽 지도 / 채팅 Drawer */
+.leftDrawer {
+  position: fixed;
+  top: 0;
+  right: 640.5px;
+  width: 560px;
+  height: 100vh;
+  background: #fff;
+  z-index: 1300;
+  border-right: 1px solid #e2e6ec;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+}
+
+.mapDrawerHeader {
+  padding: 24px 26px 20px;
+  border-bottom: 1px solid #eceef1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.mapDrawerTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  color: #111;
+}
+
+.mapDrawerDesc {
+  margin: 8px 0 0;
+  font-size: 15px;
+  color: #666;
+}
+
+.mapCloseButton {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: #f5f6f8;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mapDrawerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 26px;
+  background: #fff;
+}
+
+.kakaoMap {
+  width: 100%;
+  height: 420px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #eef0f3;
+  border: 1px solid #e2e6ec;
+}
+
+.branchInfoPanel {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid #e2e6ec;
+  background: #fff;
+}
+
+.branchEmptyText {
+  height: 130px;
+  border-radius: 16px;
+  background: #f5f6f8;
+  color: #777;
+  font-size: 15px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.branchImage {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 14px;
+  background: #eef0f3;
+  margin-bottom: 14px;
+}
+
+.branchImageEmpty {
+  width: 100%;
+  height: 150px;
+  border-radius: 14px;
+  background: #f1f3f5;
+  color: #999;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.branchTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.branchName {
+  font-size: 17px;
+  font-weight: 800;
+  color: #111;
+}
+
+.branchAddress {
+  margin-top: 5px;
+  font-size: 14px;
+  color: #666;
+}
+
+.branchStatus {
+  flex-shrink: 0;
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #e8f3ff;
+  color: #3182f6;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mapDrawerFooter {
+  padding: 18px 26px 22px;
+  border-top: 1px solid #eceef1;
+  background: #fff;
+}
+
+.mapSelectButton {
+  width: 100%;
+  height: 54px;
+  border: 0;
+  border-radius: 14px;
+  background: #111;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.mapSelectButton:disabled {
+  background: #9b9b9b;
+  cursor: not-allowed;
+}
+
+.chatPlaceholder {
+  flex: 1;
+  margin: 16px;
+  border-radius: 16px;
+  border: 1px dashed #d7dbe2;
+  background: #f8f9fb;
+  color: #777;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mapHeaderTextArea {
+  flex: 1;
+  min-width: 0;
+  padding-right: 16px;
+}
+
+.branchSearchInput {
+  width: 100%;
+  height: 42px;
+  margin-top: 14px;
+  padding: 0 14px;
+  border: 1px solid #dfe2e6;
+  border-radius: 12px;
+  background: #fff;
+  color: #111;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.branchSearchInput::placeholder {
+  color: #9ca3af;
+}
+
+.branchSearchInput:focus {
+  border-color: #3182f6;
+  box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.12);
+}
+
+/* 카카오맵 커스텀 오버레이 */
+.branchOverlay {
+  position: relative;
+  transform: translateY(-10px);
+  pointer-events: auto;
+}
+
+.branchOverlayCard {
+  position: relative;
+  width: 235px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #dfe6f3;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.2);
+}
+
+.branchOverlayInner {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.branchOverlayImage {
+  width: 76px;
+  height: 96px;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+  background: #eef0f3;
+}
+
+.branchOverlayImageEmpty {
+  width: 76px;
+  height: 96px;
+  background: #f1f3f5;
+  color: #9aa1aa;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.branchOverlayBody {
+  min-width: 0;
+  flex: 1;
+  padding: 10px 11px;
+  display: flex;
+  flex-direction: column;
+}
+
+.branchOverlayTitle {
+  font-size: 16px;
+  line-height: 1.3;
+  color: #111;
+  font-weight: 800;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.branchOverlayAddress {
+  font-size: 13px;
+  line-height: 1.35;
+  color: #555;
+  font-weight: 500;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.branchOverlayBottomRow {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.branchOverlayStatus {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eaf3ff;
+  color: #2276f2;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.branchOverlaySelectButton {
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.branchOverlaySelectButton:hover {
+  background: #2f7df6;
+}
+
+.branchOverlayArrow {
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-right: 1px solid #dfe6f3;
+  border-bottom: 1px solid #dfe6f3;
+  transform: translateX(-50%) rotate(45deg);
 }

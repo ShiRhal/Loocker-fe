@@ -39,10 +39,12 @@ const DELIVERY_STEPS: Step[] = [
 ];
 
 const LOCKER_STEPS: Step[] = [
-  { title: "보관함 선택", statusCode: "TRADING" },
-  { title: "입고 대기", statusCode: "PAID" },
-  { title: "입고 완료", statusCode: "DEPOSITED" },
-  { title: "수령 대기", statusCode: "PICKEDUP" },
+  { title: "지점 선택", statusCode: "BRANCH_SELECT" },
+  { title: "지점 확정", statusCode: "BRANCH_SELECTED" },
+  { title: "입고 대기", statusCode: "DEPOSIT_WAITING" },
+  { title: "입고 완료", statusCode: "SELLER_DEPOSITED" },
+  { title: "결제 완료", statusCode: "PAID" },
+  { title: "수령 완료", statusCode: "PICKEDUP" },
   { title: "거래 완료", statusCode: "COMPLETED" },
 ];
 
@@ -52,7 +54,7 @@ const statusAliasMap: Record<string, string> = {
   TR_03: "CANCELED",
   TR_04: "PAID",
   TR_05: "FAILED",
-  TR_06: "DEPOSITED",
+  TR_06: "BRANCH_SELECTED",
   TR_08: "PICKEDUP",
   TR_10: "ORDER_CHECK",
   TR_11: "SHIPPING",
@@ -61,12 +63,17 @@ const statusAliasMap: Record<string, string> = {
   TR_14: "DIRECT_RECEIVED",
 };
 
-function normalizeStatusCode(statusCode?: string | null) {
+function normalizeStatusCode(statusCode?: string | null, tradeType?: TradeTab) {
   if (!statusCode) return "";
 
   const code = String(statusCode).trim();
+  const normalized = statusAliasMap[code] ?? code;
 
-  return statusAliasMap[code] ?? code;
+  if (tradeType === "LOCKER" && normalized === "TRADING") {
+    return "BRANCH_SELECT";
+  }
+
+  return normalized;
 }
 
 function getTradeLabel(tradeType: TradeTab) {
@@ -83,13 +90,58 @@ function getSteps(tradeType: TradeTab) {
 
 function getCurrentStepIndex(statusCode: string, tradeType: TradeTab) {
   const steps = getSteps(tradeType);
-  const normalizedStatusCode = normalizeStatusCode(statusCode);
+  const normalizedStatusCode = normalizeStatusCode(statusCode, tradeType);
 
   const index = steps.findIndex(
     (step) => step.statusCode === normalizedStatusCode,
   );
 
   return index >= 0 ? index : 0;
+}
+
+function getTradeDetailStatusCode(result: unknown, tradeType: TradeTab) {
+  if (!result) return "";
+
+  const data = Array.isArray(result) ? result[0] : result;
+
+  if (!data || typeof data !== "object") return "";
+
+  const obj = data as Record<string, unknown>;
+
+  return normalizeStatusCode(
+    String(
+      obj.STATUS_CODE ??
+        obj.RESULT_STATUS_CODE ??
+        obj.NEXT_STATUS_CODE ??
+        obj.statusCode ??
+        "",
+    ),
+    tradeType,
+  );
+}
+
+function getTradeDetailTradeId(result: unknown) {
+  if (!result) return 0;
+
+  const data = Array.isArray(result) ? result[0] : result;
+
+  if (!data || typeof data !== "object") return 0;
+
+  const obj = data as Record<string, unknown>;
+
+  return Number(obj.TRADE_ID ?? obj.tradeId ?? 0);
+}
+
+function getTradeDetailMyRole(result: unknown) {
+  if (!result) return "";
+
+  const data = Array.isArray(result) ? result[0] : result;
+
+  if (!data || typeof data !== "object") return "";
+
+  const obj = data as Record<string, unknown>;
+
+  return String(obj.MY_ROLE ?? obj.myRole ?? "");
 }
 
 function formatPrice(value: number) {
@@ -136,7 +188,10 @@ const TradeStatusDrawer: React.FC<TradeStatusDrawerProps> = ({
       let changed = false;
 
       tradeList.forEach((item) => {
-        const statusCode = normalizeStatusCode(item.STATUS_CODE);
+        const statusCode = normalizeStatusCode(
+          item.STATUS_CODE,
+          item.TRADE_TYPE_CODE,
+        );
 
         if (!statusCode) return;
 
@@ -150,8 +205,23 @@ const TradeStatusDrawer: React.FC<TradeStatusDrawerProps> = ({
     });
   }, [tradeList]);
 
+  /**
+   * 택배거래 목록 전용 polling
+   *
+   * DELIVERY는 백엔드 스케줄러가 상태를 자동으로 바꾸므로 목록에서도 polling 합니다.
+   * DIRECT / LOCKER는 여기서 polling 하지 않습니다.
+   * 상세 화면에 들어간 경우에는 TradeProgressView가 필요한 동작을 담당하므로 목록 polling을 멈춥니다.
+   */
   useEffect(() => {
+    if (selectedTrade) return;
+
     if (!tradeList || tradeList.length === 0) return;
+
+    const deliveryTradeList = tradeList.filter(
+      (item) => item.TRADE_TYPE_CODE === "DELIVERY",
+    );
+
+    if (deliveryTradeList.length === 0) return;
 
     const accessToken = localStorage.getItem("accessToken");
 
@@ -159,31 +229,39 @@ const TradeStatusDrawer: React.FC<TradeStatusDrawerProps> = ({
 
     let stopped = false;
 
-    const syncTradeStatuses = async () => {
+    const syncDeliveryTradeStatuses = async () => {
       try {
         const results = await Promise.all(
-          tradeList.map(async (item) => {
+          deliveryTradeList.map(async (item) => {
             try {
               const tradeDetail = await tradeApi.getTradeDetail(
                 accessToken,
                 item.PRODUCT_ID,
               );
 
-              if (!tradeDetail || tradeDetail.TRADE_ID !== item.TRADE_ID) {
+              const tradeId = getTradeDetailTradeId(tradeDetail);
+
+              if (tradeId !== item.TRADE_ID) {
                 return null;
               }
 
-              const statusCode = normalizeStatusCode(tradeDetail.STATUS_CODE);
+              const statusCode = getTradeDetailStatusCode(
+                tradeDetail,
+                item.TRADE_TYPE_CODE,
+              );
 
               if (!statusCode) return null;
+
+              const myRole = getTradeDetailMyRole(tradeDetail);
 
               return {
                 tradeId: item.TRADE_ID,
                 statusCode,
+                myRole,
               };
             } catch (error) {
               console.error(
-                `거래 상태 동기화 실패. tradeId=${item.TRADE_ID}`,
+                `택배거래 상태 동기화 실패. tradeId=${item.TRADE_ID}`,
                 error,
               );
 
@@ -209,39 +287,23 @@ const TradeStatusDrawer: React.FC<TradeStatusDrawerProps> = ({
 
           return changed ? next : prev;
         });
-
-        setSelectedTrade((prev) => {
-          if (!prev) return prev;
-
-          const latest = results.find(
-            (result) => result?.tradeId === prev.TRADE_ID,
-          );
-
-          if (!latest) return prev;
-
-          if (normalizeStatusCode(prev.STATUS_CODE) === latest.statusCode) {
-            return prev;
-          }
-
-          return {
-            ...prev,
-            STATUS_CODE: latest.statusCode,
-          };
-        });
       } catch (error) {
-        console.error("거래 목록 상태 동기화 실패:", error);
+        console.error("택배거래 목록 상태 동기화 실패:", error);
       }
     };
 
-    syncTradeStatuses();
+    syncDeliveryTradeStatuses();
 
-    const timerId = window.setInterval(syncTradeStatuses, POLLING_INTERVAL_MS);
+    const timerId = window.setInterval(
+      syncDeliveryTradeStatuses,
+      POLLING_INTERVAL_MS,
+    );
 
     return () => {
       stopped = true;
       window.clearInterval(timerId);
     };
-  }, [tradeList]);
+  }, [tradeList, selectedTrade]);
 
   const filteredTradeList = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
@@ -257,7 +319,10 @@ const TradeStatusDrawer: React.FC<TradeStatusDrawerProps> = ({
   const handleSelectedTradeStatusChange = (statusCode: string) => {
     if (!selectedTrade) return;
 
-    const normalizedStatusCode = normalizeStatusCode(statusCode);
+    const normalizedStatusCode = normalizeStatusCode(
+      statusCode,
+      selectedTrade.TRADE_TYPE_CODE,
+    );
 
     if (!normalizedStatusCode) return;
 
@@ -279,7 +344,10 @@ const TradeStatusDrawer: React.FC<TradeStatusDrawerProps> = ({
   if (selectedTrade) {
     const selectedStatusCode =
       statusMap[selectedTrade.TRADE_ID] ??
-      normalizeStatusCode(selectedTrade.STATUS_CODE);
+      normalizeStatusCode(
+        selectedTrade.STATUS_CODE,
+        selectedTrade.TRADE_TYPE_CODE,
+      );
 
     return (
       <TradeProgressView
@@ -374,7 +442,7 @@ const TradeStatusDrawer: React.FC<TradeStatusDrawerProps> = ({
 
                 const currentStatusCode =
                   statusMap[item.TRADE_ID] ??
-                  normalizeStatusCode(item.STATUS_CODE);
+                  normalizeStatusCode(item.STATUS_CODE, item.TRADE_TYPE_CODE);
 
                 const currentStepIndex = getCurrentStepIndex(
                   currentStatusCode,
