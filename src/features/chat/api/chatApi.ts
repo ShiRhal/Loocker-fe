@@ -105,6 +105,50 @@ export async function getChatRooms(): Promise<ChatRoomListItem[]> {
     .filter((item): item is ChatRoomListItem => item !== null);
 }
 
+/** 내 채팅방 목록에서 해당 상품 방만 찾습니다. */
+export async function findChatRoomByProductId(
+  productId: number,
+): Promise<ChatRoomListItem | null> {
+  const rooms = await getChatRooms();
+  return rooms.find((r) => r.PRODUCT_ID === productId) ?? null;
+}
+
+/** 방 생성 API만 호출합니다 (목록 조회는 하지 않음). */
+export async function createChatRoom(
+  productId: number,
+): Promise<ChatRoomListItem> {
+  const data = (await webapi("/chat/rooms", {
+    method: "POST",
+    json: { PRODUCT_ID: productId },
+  })) as unknown;
+  if (!data || typeof data !== "object") {
+    throw new Error("채팅방을 만들 수 없습니다.");
+  }
+  const raw = { ...(data as RawRecord) };
+  if (raw.CREATED_AT == null || raw.CREATED_AT === "") {
+    raw.CREATED_AT = new Date().toISOString();
+  }
+  const room = normalizeRoom(raw);
+  if (!room) {
+    throw new Error("채팅방을 만들 수 없습니다.");
+  }
+  return room;
+}
+
+/**
+ * 1) 참가 중인 방 목록에서 상품별 방 검색
+ * 2) 없으면 생성 API 호출 후 응답으로 방 정보 확보
+ */
+export async function getOrCreateChatRoomForProduct(
+  productId: number,
+): Promise<ChatRoomListItem> {
+  const existing = await findChatRoomByProductId(productId);
+  if (existing) {
+    return existing;
+  }
+  return createChatRoom(productId);
+}
+
 export async function getChatMessages(roomId: number): Promise<ChatMessage[]> {
   const data = (await webapi(`/chat/rooms/${roomId}/messages`)) as unknown;
   if (!Array.isArray(data)) return [];

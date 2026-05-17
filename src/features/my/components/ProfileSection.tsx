@@ -38,7 +38,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ nickname, onOpenNicknam
           </div>
         </div>
       </div>
-      <div className={styles.trustScore}>
+      {/* <div className={styles.trustScore}>
         <div className={styles.trustScoreContainer}>
           <div className={styles.trustScoreHeader}>
             <span>
@@ -51,7 +51,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ nickname, onOpenNicknam
             <div className={styles.progressFill}></div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

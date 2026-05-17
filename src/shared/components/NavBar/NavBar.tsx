@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../app/providers/auth/useAuth";
+import { searchApi } from "../../api/searchApi";
 import styles from "./NavBar.module.css";
 import loockerLogo from "../../../assets/images/Loocker.png";
 import chatIcon from "../../../assets/icons/chat.svg";
@@ -20,6 +21,29 @@ type NavBarProps = {
   onOpenChat?: () => void;
 };
 
+const fallbackPopularKeywords: PopularKeyword[] = [
+  { rank: 1, keyword: "레고" },
+  { rank: 2, keyword: "ps5" },
+  { rank: 3, keyword: "노트북" },
+  { rank: 4, keyword: "라이카" },
+  { rank: 5, keyword: "실버바" },
+  { rank: 6, keyword: "줌바" },
+  { rank: 7, keyword: "메가커피" },
+  { rank: 8, keyword: "5070" },
+  { rank: 9, keyword: "타임" },
+  { rank: 10, keyword: "스타벅스" },
+  { rank: 11, keyword: "레고 커스텀" },
+  { rank: 12, keyword: "s25" },
+  { rank: 13, keyword: "5090" },
+  { rank: 14, keyword: "갤럭시탭" },
+  { rank: 15, keyword: "레고 스타워즈" },
+  { rank: 16, keyword: "핫토이" },
+  { rank: 17, keyword: "건담" },
+  { rank: 18, keyword: "아이패드" },
+  { rank: 19, keyword: "메가박스" },
+  { rank: 20, keyword: "폴드7" },
+];
+
 export default function NavBar({ onOpenChat }: NavBarProps) {
   const { me } = useAuth();
   const nav = useNavigate();
@@ -27,41 +51,22 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
   const [searchParams] = useSearchParams();
 
   const [pageIndex, setPageIndex] = useState(0);
+  const [popularKeywords, setPopularKeywords] =
+  useState<PopularKeyword[]>(fallbackPopularKeywords);
   const [searchKeyword, setSearchKeyword] = useState(
     searchParams.get("keyword") ?? ""
   );
 
-  const popularKeywords: PopularKeyword[] = [
-    { rank: 1, keyword: "레고" },
-    { rank: 2, keyword: "ps5" },
-    { rank: 3, keyword: "노트북" },
-    { rank: 4, keyword: "라이카" },
-    { rank: 5, keyword: "실버바" },
-    { rank: 6, keyword: "줌바" },
-    { rank: 7, keyword: "메가커피" },
-    { rank: 8, keyword: "5070" },
-    { rank: 9, keyword: "타임" },
-    { rank: 10, keyword: "스타벅스" },
-    { rank: 11, keyword: "레고 커스텀" },
-    { rank: 12, keyword: "s25" },
-    { rank: 13, keyword: "5090" },
-    { rank: 14, keyword: "갤럭시탭" },
-    { rank: 15, keyword: "레고 스타워즈" },
-    { rank: 16, keyword: "핫토이" },
-    { rank: 17, keyword: "건담" },
-    { rank: 18, keyword: "아이패드" },
-    { rank: 19, keyword: "메가박스" },
-    { rank: 20, keyword: "폴드7" },
-  ];
-
   const keywordPages = useMemo(() => {
     const pageSize = 5;
     const pages: PopularKeyword[][] = [];
+
     for (let i = 0; i < popularKeywords.length; i += pageSize) {
       pages.push(popularKeywords.slice(i, i + pageSize));
     }
+
     return pages;
-  }, []);
+  }, [popularKeywords]);
 
   const hasKeywords = keywordPages.length > 0;
   const currentKeywords = hasKeywords ? keywordPages[pageIndex] : [];
@@ -69,6 +74,32 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
   useEffect(() => {
     setSearchKeyword(searchParams.get("keyword") ?? "");
   }, [searchParams]);
+
+  useEffect(() => {
+  const fetchPopularKeywords = async () => {
+    try {
+      const data = await searchApi.getPopularKeywords();
+
+      //console.log("[NavBar] 인기 검색어 API 응답:", data);
+
+      const mappedKeywords = data
+        .filter((item) => item.KEYWORD && item.KEYWORD.trim().length > 0)
+        .map((item, index) => ({
+          rank: index + 1,
+          keyword: item.KEYWORD.trim(),
+        }));
+
+      if (mappedKeywords.length > 0) {
+        setPopularKeywords(mappedKeywords);
+        setPageIndex(0);
+      }
+    } catch (error) {
+      console.error("[NavBar] 인기 검색어 API 호출 실패:", error);
+    }
+  };
+
+  fetchPopularKeywords();
+}, []);
 
   useEffect(() => {
     if (keywordPages.length <= 1) return;
@@ -82,11 +113,13 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
 
   const handlePrevKeywords = () => {
     if (!keywordPages.length) return;
+
     setPageIndex((prev) => (prev - 1 + keywordPages.length) % keywordPages.length);
   };
 
   const handleNextKeywords = () => {
     if (!keywordPages.length) return;
+
     setPageIndex((prev) => (prev + 1) % keywordPages.length);
   };
 
@@ -108,11 +141,11 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
   };
 
   const goIfAuthedOrSignin = (to: string) => {
-    // 클릭시 로그인 상태면 이동, 로그인 상태가 아니면 로그인 페이지로 이동
     if (me) {
       nav(to);
       return;
     }
+
     const redirect = encodeURIComponent(loc.pathname + loc.search);
     nav(`/signin?redirect=${redirect}`);
   };
@@ -122,6 +155,7 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
       onOpenChat?.();
       return;
     }
+
     const redirect = encodeURIComponent(loc.pathname + loc.search);
     nav(`/signin?redirect=${redirect}`);
   };
@@ -154,6 +188,7 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
                   className={styles.searchIcon}
                 />
               </span>
+
               <input
                 id="search-box"
                 className={styles.searchInput}
@@ -210,7 +245,6 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
               onClick={openChatDrawerOrSignin}
             >
               <img src={chatIcon} alt="채팅" className={styles.chatIcon} />
-              {/* <span className={styles.badge}>0</span> */}
               <span className={styles.OptionText}>채팅하기</span>
             </button>
 

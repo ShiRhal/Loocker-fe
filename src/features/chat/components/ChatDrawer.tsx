@@ -1,5 +1,5 @@
 import { Drawer } from "antd";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ChatListDrawer from "../drawers/ChatListDrawer";
 import ChatRoomDrawer from "../drawers/ChatRoomDrawer";
 import type { ChatRoomListItem } from "../types/chat";
@@ -7,19 +7,23 @@ import type { ChatRoomListItem } from "../types/chat";
 type Props = {
   open: boolean;
   onClose: () => void;
-  selectedChatRoom: ChatRoomListItem | null;
+  /** 드로어가 닫혔다가 열릴 때만 적용. null이면 채팅 목록부터 표시. */
+  initialRoom: ChatRoomListItem | null;
 };
 
-export default function ChatDrawer({ open, onClose, selectedChatRoom }: Props) {
+export default function ChatDrawer({ open, onClose, initialRoom }: Props) {
   const [selectedRoom, setSelectedRoom] = useState<ChatRoomListItem | null>(null);
+  const prevOpenRef = useRef(false);
 
   useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      setSelectedRoom(initialRoom);
+    }
     if (!open) {
-      setSelectedRoom(selectedChatRoom);
-    } else {
       setSelectedRoom(null);
     }
-  }, [open, selectedChatRoom]);
+    prevOpenRef.current = open;
+  }, [open, initialRoom]);
 
   const handleClose = () => {
     setSelectedRoom(null);

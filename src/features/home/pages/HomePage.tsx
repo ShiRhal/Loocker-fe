@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import RecentViewedBox from "../components/RecentViewedBox";
 import SearchFilterBox from "../components/SearchFilterBox";
 import PriceStatsBox from "../components/PriceStatsBox";
@@ -18,6 +18,7 @@ import {
   toPriceStats,
   toProductItems,
 } from "../api/home.mapper";
+import { productApi } from "../../product/api/productapi";
 
 const initialFilters: SearchFilterValue = {
   keyword: "",
@@ -40,6 +41,7 @@ const initialPriceStats: PriceStats = {
 };
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const keywordFromNav = (searchParams.get("keyword") ?? "").trim();
 
@@ -153,6 +155,42 @@ export default function HomePage() {
     setPage(nextPage);
   };
 
+  const handleWishlistClick = async (productId: number) => {
+    const accessToken = localStorage.getItem("accessToken");
+    const userId = localStorage.getItem("userId");
+
+    if (!accessToken || !userId || Number.isNaN(Number(userId))) {
+      console.warn("찜하기는 로그인이 필요한 기능입니다.");
+      navigate("/signin");
+      return;
+    }
+
+    try {
+      await productApi.saveWishlist(productId);
+
+      setProducts((prevProducts) =>
+        prevProducts.map((product) => {
+          if (product.id !== productId) {
+            return product;
+          }
+
+          const wasWished = product.isWished === true;
+          const currentLikeCount = product.likeCount ?? 0;
+
+          return {
+            ...product,
+            isWished: !wasWished,
+            likeCount: wasWished
+              ? Math.max(currentLikeCount - 1, 0)
+              : currentLikeCount + 1,
+          };
+        }),
+      );
+    } catch (err) {
+      console.error("찜하기 처리에 실패했습니다.", err);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -219,10 +257,13 @@ export default function HomePage() {
           pageSize={40}
           onPageChange={handlePageChange}
           loading={loading}
+          onWishlistClick={handleWishlistClick}
         />
       </section>
 
-      <RecentViewedBox items={[]} />
+      <div className={styles.recentViewedArea}>
+  <RecentViewedBox />
+</div>
     </div>
   );
 }

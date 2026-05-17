@@ -20,6 +20,25 @@
   gap: 88px;
 }
 
+.detailStateBox {
+  width: 920px;
+  margin: 0 auto;
+  padding: 48px 0;
+  text-align: center;
+  font-size: 15px;
+  color: #6b7280;
+}
+
+.detailErrorBox {
+  width: 920px;
+  margin: 0 auto;
+  padding: 16px 20px;
+  border-radius: 8px;
+  background-color: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
 .submitBar {
   position: fixed;
   left: 0;

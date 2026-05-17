@@ -22,7 +22,8 @@ export type ProductItem = {
   likeCount: number;
   chatCount: number;
   isLockerTrade: boolean;
-  imageUrl: string;
+  imageUrl?: string;
+  isWished?: boolean;
 };
 
 export type PriceStats = {
@@ -45,7 +46,7 @@ export type HomeSearchRequest = {
   YN_LOCKER: boolean;
   DS_TITLE: string;
   SORT_TYPE: HomeSortType;
-  USER_ID: number;
+  USER_ID?: number;
   PAGE: number;
 };
 
@@ -59,6 +60,7 @@ export type HomeProductResponseItem = {
   WISH_COUNT: number;
   CREATED_AT: string;
   LOCKER_BADGE: string | null;
+  IS_WISHED?: boolean | number;
 };
 
 export type HomePriceStatusResponse = {

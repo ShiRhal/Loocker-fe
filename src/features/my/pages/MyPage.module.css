@@ -71,6 +71,27 @@
   font-size: 0.875rem;
 }
 
+.sidebarLogout {
+  display: block;
+  width: fit-content;
+  margin: -0.75rem 0 1.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #6b7280;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: currentColor;
+}
+
+.sidebarLogout:hover {
+  color: #374151;
+}
+
 .mainContent {
   margin: 0 auto;
   box-sizing: border-box;
@@ -505,7 +526,7 @@
 }
 
 .statsList div::before {
-  content: '';
+  content: "";
   position: absolute;
   right: 0;
   top: 50%;
@@ -694,7 +715,9 @@
   border: none;
   border-radius: 0;
   outline: none;
-  transition: color 0.2s ease-in-out, opacity 0.2s ease-in-out;
+  transition:
+    color 0.2s ease-in-out,
+    opacity 0.2s ease-in-out;
 }
 
 @media (min-width: 1024px) {
@@ -772,11 +795,6 @@
   text-align: center;
 }
 
-/* Drawer styles */
-.drawer {
-  /* Ant Design Drawer will handle most styles, but custom overrides if needed */
-}
-
 /* Custom color variables */
 :root {
   --jnBlack: #000000;
@@ -812,10 +830,6 @@
   font-weight: 500;
   color: #374151;
   border-bottom: 1px solid #dadee5;
-}
-
-.tableBody {
-  /* Additional styles if needed */
 }
 
 .tableRow {
@@ -1132,4 +1146,74 @@
   text-align: center;
   font-size: 0.875rem;
   color: #6b7280;
+}
+
+.cardTableCell {
+  padding: 10px 0 0px;
+}
+
+.productCardList {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.productCardListItem {
+  margin: 0;
+}
+
+.productCardWrap {
+  position: relative;
+}
+
+.cardMoreButton {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 999px;
+}
+
+.cardMoreButton:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.cardRowMenu {
+  position: absolute;
+  right: 22px;
+  top: 56px;
+  min-width: 104px;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
+  z-index: 20;
+}
+
+.productCardScrollArea {
+  max-height: 900px;
+  overflow-y: auto;
+  cursor: grab;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-right: 4px;
+  user-select: none;
+}
+
+.productCardScrollArea:active {
+  cursor: grabbing;
+}
+
+.productCardScrollArea::-webkit-scrollbar {
+  display: none;
 }

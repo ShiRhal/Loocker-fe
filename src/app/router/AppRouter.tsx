@@ -8,6 +8,7 @@ import ProductDetailPage from "../../features/product/pages/ProductDetailPage";
 import MyPage from "../../features/my/pages/MyPage";
 import KioskLoginPage from "../../features/kiosk/pages/KioskLoginPage";
 import KioskHomePage from "../../features/kiosk/pages/KioskHomePage";
+import ProductTradePage from "../../features/trade/pages/ProductTradePage";
 
 function RequireKioskAuth({ children }: { children: ReactNode }) {
   const kioskAccessToken = localStorage.getItem("kioskAccessToken");
@@ -47,7 +48,6 @@ export default function AppRouter() {
         </Route>
 
         <Route path="/signin" element={<SignInPage />} />
-
         <Route path="/kiosk/login" element={<KioskLoginPage />} />
 
         <Route

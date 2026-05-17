@@ -1,0 +1,38 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f5f7fb;
+  padding: 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.06);
+}
+
+.productId {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 12px;
+}
+
+.description {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #4b5563;
+  margin: 0 0 20px;
+}

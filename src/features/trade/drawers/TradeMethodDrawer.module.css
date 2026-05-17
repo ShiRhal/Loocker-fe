@@ -1,0 +1,134 @@
+.drawer {
+}
+
+.layoutMain {
+  padding: 0;
+}
+
+.tabSection {
+  display: flex;
+  padding: 16px 20px 8px;
+  gap: 8px;
+}
+
+.tabButton {
+  flex: 1;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tabButtonActive {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}
+
+.optionList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 20px 24px;
+}
+
+.optionCard {
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 16px;
+  cursor: pointer;
+}
+
+.optionCardSelected {
+  border-color: #111827;
+  background: #fafafa;
+}
+
+.optionTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.optionDescription {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.bottomArea {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summarySection {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.productImage,
+.productImageEmpty {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #f3f4f6;
+  flex-shrink: 0;
+}
+
+.productImageEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.summaryTextArea {
+  flex: 1;
+  min-width: 0;
+}
+
+.productTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.priceRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.priceLabel {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.priceValue {
+  font-size: 15px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.buyButton {
+  width: 100%;
+  height: 50px;
+  border-radius: 12px;
+  font-weight: 700;
+}

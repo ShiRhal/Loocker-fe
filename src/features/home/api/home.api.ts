@@ -4,6 +4,17 @@ import type {
   HomeSearchResponse,
 } from "../types/home.types";
 
+function getSafeUserId(userId?: number | null): number {
+  if (typeof userId === "number" && !Number.isNaN(userId)) {
+    return userId;
+  }
+
+  const savedUserId = localStorage.getItem("userId");
+  const parsedUserId = savedUserId ? Number(savedUserId) : 0;
+
+  return Number.isNaN(parsedUserId) ? 0 : parsedUserId;
+}
+
 function toQueryString(params: HomeSearchRequest): string {
   const searchParams = new URLSearchParams();
 
@@ -23,7 +34,7 @@ function toQueryString(params: HomeSearchRequest): string {
   searchParams.set("YN_LOCKER", String(params.YN_LOCKER));
   searchParams.set("DS_TITLE", params.DS_TITLE ?? "");
   searchParams.set("SORT_TYPE", params.SORT_TYPE);
-  searchParams.set("USER_ID", String(params.USER_ID));
+  searchParams.set("USER_ID", String(getSafeUserId(params.USER_ID)));
   searchParams.set("PAGE", String(params.PAGE));
 
   return searchParams.toString();
@@ -35,13 +46,9 @@ export async function searchHomeProducts(
   const queryString = toQueryString(request);
   const path = `/product/select?${queryString}`;
 
-  //console.log("home api path =", path);
-
   const data = await webapi(path, {
     method: "GET",
   });
-
-  //console.log("home api raw data =", data);
 
   return data as HomeSearchResponse;
 }

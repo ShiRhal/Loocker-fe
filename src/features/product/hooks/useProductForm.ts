@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { toApiAssetUrl } from "../../../shared/utils/imageUrl";
+import type { ProductDetail, ProductImage } from "../types/product.types";
 
 export type ProductImageItem = {
   id: string;
-  file: File;
   previewUrl: string;
+  file?: File;
+  /** 서버에 이미 있는 이미지 — 수정 저장 시 fetch 후 재업로드 */
+  sourceUrl?: string;
 };
 
 export type ProductFormErrors = {
@@ -30,6 +34,40 @@ type ValidateResult = {
 
 const MAX_IMAGE_COUNT = 10;
 
+function isPrimaryImage(image: ProductImage) {
+  return image.IS_PRIMARY === true || image.IS_PRIMARY === 1;
+}
+
+function sortProductImages(images: ProductImage[]) {
+  return [...images].sort((a, b) => {
+    const aPrimary = isPrimaryImage(a);
+    const bPrimary = isPrimaryImage(b);
+
+    if (aPrimary !== bPrimary) {
+      return aPrimary ? -1 : 1;
+    }
+
+    return (a.SORT_ORDER ?? 0) - (b.SORT_ORDER ?? 0);
+  });
+}
+
+function parseTradeTypes(raw: string | undefined): string[] {
+  if (!raw?.trim()) return [];
+
+  return raw
+    .split("|")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function normalizeAccessoryStatus(raw: string | undefined): string {
+  if (raw === "NONE" || raw === "PARTIAL" || raw === "ALL") {
+    return raw;
+  }
+
+  return "NONE";
+}
+
 export default function useProductForm() {
   const [form, setForm] = useState<ProductFormState>({
     TITLE: "",
@@ -49,18 +87,20 @@ export default function useProductForm() {
   useEffect(() => {
     return () => {
       images.forEach((image) => {
-        URL.revokeObjectURL(image.previewUrl);
+        if (image.previewUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(image.previewUrl);
+        }
       });
     };
   }, [images]);
 
-  const showToast = (message: string) => {
+  const showToast = useCallback((message: string) => {
     setToastMessage(message);
 
     window.setTimeout(() => {
       setToastMessage("");
     }, 1800);
-  };
+  }, []);
 
   const setTitle = (value: string) => {
     setForm((prev) => ({
@@ -160,7 +200,7 @@ export default function useProductForm() {
     setImages((prev) => {
       const targetImage = prev.find((image) => image.id === id);
 
-      if (targetImage) {
+      if (targetImage?.previewUrl.startsWith("blob:")) {
         URL.revokeObjectURL(targetImage.previewUrl);
       }
 
@@ -168,7 +208,9 @@ export default function useProductForm() {
 
       setForm((prevForm) => ({
         ...prevForm,
-        FILES: nextImages.map((image) => image.file),
+        FILES: nextImages
+          .map((image) => image.file)
+          .filter((f): f is File => f != null),
       }));
 
       return nextImages;
@@ -225,6 +267,69 @@ export default function useProductForm() {
     };
   };
 
+  const hydrateFromProductDetail = useCallback((detail: ProductDetail) => {
+    setImages((prev) => {
+      prev.forEach((image) => {
+        if (image.previewUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(image.previewUrl);
+        }
+      });
+
+      const sorted = sortProductImages(detail.IMAGE ?? []);
+
+      return sorted.map((img, idx) => {
+        const url = toApiAssetUrl(img.IMAGE_URL);
+
+        return {
+          id: `existing-${img.IMAGE_ID}-${idx}`,
+          previewUrl: url,
+          sourceUrl: url,
+        };
+      });
+    });
+
+    setForm({
+      TITLE: detail.TITLE ?? "",
+      SUB_CATEGORY: detail.SUB_CATEGORY ?? "",
+      BASE_PRICE:
+        typeof detail.BASE_PRICE === "number" && !Number.isNaN(detail.BASE_PRICE)
+          ? detail.BASE_PRICE
+          : "",
+      DESCRIPTION: detail.DESCRIPTION ?? "",
+      ACCESSORY_STATUS: normalizeAccessoryStatus(detail.ACCESSORY_STATUS),
+      TRADE_TYPE: parseTradeTypes(detail.TRADE_TYPE),
+      CITY: detail.CITY ?? null,
+      FILES: [],
+    });
+
+    setErrors({});
+  }, []);
+
+  const resetForm = useCallback(() => {
+    setImages((prev) => {
+      prev.forEach((image) => {
+        if (image.previewUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(image.previewUrl);
+        }
+      });
+
+      return [];
+    });
+
+    setForm({
+      TITLE: "",
+      SUB_CATEGORY: "",
+      BASE_PRICE: "",
+      DESCRIPTION: "",
+      ACCESSORY_STATUS: "NONE",
+      TRADE_TYPE: [],
+      CITY: null,
+      FILES: [],
+    });
+
+    setErrors({});
+  }, []);
+
   return {
     form,
     errors,
@@ -241,5 +346,7 @@ export default function useProductForm() {
     setTradeType,
     setCity,
     validateBeforeSubmit,
+    hydrateFromProductDetail,
+    resetForm,
   };
 }

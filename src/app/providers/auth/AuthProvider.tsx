@@ -50,15 +50,11 @@ export default function AuthProvider({ children }: Props) {
   };
 
   const logout = async () => {
-    try {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("me");
-      localStorage.removeItem("nickname");
-
-      await authApi.logout();
-    } finally {
-      setMe(null);
-    }
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("me");
+    localStorage.removeItem("nickname");
+    localStorage.removeItem("userId");
+    setMe(null);
   };
 
   useEffect(() => {
