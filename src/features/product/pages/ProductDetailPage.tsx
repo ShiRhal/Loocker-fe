@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { message } from "antd";
+import { message, Modal } from "antd";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { getOrCreateChatRoomForProduct } from "../../chat/api/chatApi";
-import { useChatDrawer } from "../../chat/context/ChatDrawerContext";
 import RecentViewedBox from "../../home/components/RecentViewedBox";
 import { productApi } from "../api/productapi";
 import type { ProductDetail } from "../types/product.types";
@@ -13,7 +11,10 @@ import ProductImageGallery, {
 import ProductSummary from "../components/ProductSummary";
 import ProductDescriptionSection from "../components/ProductDescriptionSection";
 import SellerInfoSection from "../components/SellerInfoSection";
-import { addRecentViewedProduct } from "../../../shared/utils/recentViewedStorage";
+import {
+  addRecentViewedProduct,
+  removeRecentViewedProduct,
+} from "../../../shared/utils/recentViewedStorage";
 import TradeMethodDrawer from "../../trade/drawers/TradeMethodDrawer";
 import { tradeApi } from "../../trade/api/tradeApi";
 import type { ProductTradePreview } from "../../trade/types/trade.types";
@@ -28,11 +29,17 @@ function toProductTradePreview(product: ProductDetail): ProductTradePreview {
   };
 }
 
+function getLoginUserId() {
+  const savedUserId = localStorage.getItem("userId");
+  const parsedUserId = savedUserId ? Number(savedUserId) : NaN;
+
+  return Number.isNaN(parsedUserId) ? null : parsedUserId;
+}
+
 export default function ProductDetailPage() {
   const { productId } = useParams<{ productId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { openChatRoom } = useChatDrawer();
 
   const paymentHandledRef = useRef(false);
 
@@ -41,6 +48,8 @@ export default function ProductDetailPage() {
   const [initialTradeId, setInitialTradeId] = useState<number | null>(null);
   const [initialPaid, setInitialPaid] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [error, setError] = useState("");
 
   const fetchProductDetail = async (
@@ -86,6 +95,22 @@ export default function ProductDetailPage() {
     }
   };
 
+  const showDeleteSuccessMessage = () => {
+    message.open({
+      duration: 2.6,
+      className: styles.deleteSuccessToast,
+      content: (
+        <div className={styles.deleteSuccessContent}>
+          <span className={styles.deleteSuccessIcon}>✓</span>
+          <div>
+            <strong>판매글이 삭제되었습니다.</strong>
+            <p>메인 페이지로 이동합니다.</p>
+          </div>
+        </div>
+      ),
+    });
+  };
+
   const handleWishlistClick = async () => {
     if (!product) return;
 
@@ -126,45 +151,75 @@ export default function ProductDetailPage() {
     if (product.STATUS_CODE === "SOLD") {
       return;
     }
+
     setInitialTradeId(null);
     setInitialPaid(false);
     setTradeDrawerOpen(true);
-  };
-
-  const handleChatClick = async () => {
-    if (!product) return;
-
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) {
-      const redirect = encodeURIComponent(
-        `${location.pathname}${location.search}`,
-      );
-      navigate(`/signin?redirect=${redirect}`);
-      return;
-    }
-
-    try {
-      const baseRoom = await getOrCreateChatRoomForProduct(product.PRODUCT_ID);
-      const thumb = getPrimaryProductImageUrl(product.IMAGE);
-      openChatRoom({
-        ...baseRoom,
-        TITLE: baseRoom.TITLE ?? product.TITLE,
-        TARGET_NICKNAME:
-          baseRoom.TARGET_NICKNAME ?? product.NICKNAME ?? "판매자",
-        IMAGE_URL: baseRoom.IMAGE_URL ?? thumb ?? null,
-      });
-    } catch (err) {
-      console.error(err);
-      message.error(
-        err instanceof Error ? err.message : "채팅을 시작할 수 없습니다.",
-      );
-    }
   };
 
   const handleCloseTradeDrawer = () => {
     setTradeDrawerOpen(false);
     setInitialTradeId(null);
     setInitialPaid(false);
+  };
+
+  const handleEditProductClick = () => {
+    if (!product) return;
+
+    navigate(`/product/form?type=edit&productId=${product.PRODUCT_ID}`);
+  };
+
+  const handleDeleteProductClick = () => {
+    if (!product || deleteLoading) return;
+
+    const loginUserId = getLoginUserId();
+
+    if (loginUserId === null) {
+      message.error("로그인이 필요합니다.");
+      navigate("/signin");
+      return;
+    }
+
+    setDeleteModalOpen(true);
+  };
+
+  const handleCancelDeleteProduct = () => {
+    if (deleteLoading) return;
+
+    setDeleteModalOpen(false);
+  };
+
+  const handleConfirmDeleteProduct = async () => {
+    if (!product || deleteLoading) return;
+
+    const loginUserId = getLoginUserId();
+
+    if (loginUserId === null) {
+      setDeleteModalOpen(false);
+      message.error("로그인이 필요합니다.");
+      navigate("/signin");
+      return;
+    }
+
+    try {
+      setDeleteLoading(true);
+
+      await productApi.deleteProductDetail(product.PRODUCT_ID, loginUserId);
+
+      removeRecentViewedProduct(product.PRODUCT_ID);
+
+      setDeleteModalOpen(false);
+      showDeleteSuccessMessage();
+
+      window.setTimeout(() => {
+        navigate("/");
+      }, 700);
+    } catch (err) {
+      console.error("판매글 삭제 실패", err);
+      message.error("판매글 삭제에 실패했습니다.");
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -306,6 +361,12 @@ export default function ProductDetailPage() {
     return <main className={styles.message}>상품 정보가 없습니다.</main>;
   }
 
+  const loginUserId = getLoginUserId();
+  const isOwner =
+    loginUserId !== null &&
+    product.SELLER_ID != null &&
+    loginUserId === product.SELLER_ID;
+
   const tradePreview = toProductTradePreview(product);
 
   return (
@@ -329,9 +390,11 @@ export default function ProductDetailPage() {
             accessoryStatus={product.ACCESSORY_STATUS}
             statusCode={product.STATUS_CODE}
             isWished={product.IS_WISHED}
+            isOwner={isOwner}
             onWishlistClick={handleWishlistClick}
-            onChatClick={() => void handleChatClick()}
             onBuyClick={handleOpenTradeDrawer}
+            onEditClick={handleEditProductClick}
+            onDeleteClick={handleDeleteProductClick}
           />
         </section>
 
@@ -352,6 +415,49 @@ export default function ProductDetailPage() {
         initialTradeId={initialTradeId}
         initialPaid={initialPaid}
       />
+
+      <Modal
+        open={deleteModalOpen}
+        width={320}
+        centered
+        footer={null}
+        closable={!deleteLoading}
+        maskClosable={!deleteLoading}
+        className={styles.deleteConfirmModal}
+        onCancel={handleCancelDeleteProduct}
+      >
+        <div className={styles.deleteModalContent}>
+          <div className={styles.deleteModalIconBox}>!</div>
+
+          <h2 className={styles.deleteModalTitle}>판매글을 삭제할까요?</h2>
+
+          <p className={styles.deleteModalDescription}>
+            삭제된 판매글과 이미지는 복구할 수 없습니다.
+            <br />
+            계속 진행하려면 아래 삭제 버튼을 눌러주세요.
+          </p>
+
+          <div className={styles.deleteModalButtonRow}>
+            <button
+              type="button"
+              className={styles.deleteModalCancelButton}
+              onClick={handleCancelDeleteProduct}
+              disabled={deleteLoading}
+            >
+              취소
+            </button>
+
+            <button
+              type="button"
+              className={styles.deleteModalDeleteButton}
+              onClick={() => void handleConfirmDeleteProduct()}
+              disabled={deleteLoading}
+            >
+              {deleteLoading ? "삭제 중..." : "삭제하기"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

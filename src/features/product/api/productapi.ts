@@ -29,6 +29,26 @@ export const productApi = {
     });
   },
 
+  deleteProductDetail: async (productId: number, userId: number): Promise<void> => {
+    const accessToken = localStorage.getItem("accessToken");
+
+    await webapi("/product/detail/delete", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`,
+            }
+          : {}),
+      },
+      body: JSON.stringify({
+        PRODUCT_ID: productId,
+        USER_ID: userId,
+      }),
+    });
+  },
+
   getProductDetail: async (productId: number) => {
     const savedUserId = localStorage.getItem("userId");
     const userId = savedUserId ? Number(savedUserId) : 0;
