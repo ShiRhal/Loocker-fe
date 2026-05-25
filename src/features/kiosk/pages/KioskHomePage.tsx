@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import logoImage from "../../../assets/images/Loocker.png";
-import styles from "../styles/Kiosk.module.css";
+import styles from "../styles/kiosk.module.css";
 
 const menuItems = [
   {
     title: "물품 보관",
-    path: "/kiosk/deposit",
+    path: "/kiosk/seller/deposit/auth",
     icon: (
       <svg viewBox="0 0 64 64" aria-hidden="true">
         <rect x="14" y="22" width="36" height="30" rx="4" />

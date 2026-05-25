@@ -90,12 +90,6 @@ const statusAliasMap: Record<string, string> = {
   SELLER_DEPOSITED: "DEPOSITED",
 };
 
-declare global {
-  interface Window {
-    kakao?: any;
-  }
-}
-
 function formatPrice(value: number) {
   return `${Number(value ?? 0).toLocaleString()}원`;
 }
@@ -262,11 +256,17 @@ function loadKakaoMapScript() {
 
     if (existingScript) {
       existingScript.addEventListener("load", () => {
-        window.kakao.maps.load(() => resolve());
+        if (window.kakao?.maps) {
+          window.kakao.maps.load(() => resolve());
+        } else {
+          reject(new Error("카카오맵 스크립트 로딩 실패"));
+        }
       });
+
       existingScript.addEventListener("error", () => {
         reject(new Error("카카오맵 스크립트 로딩 실패"));
       });
+
       return;
     }
 
@@ -277,7 +277,11 @@ function loadKakaoMapScript() {
     script.async = true;
 
     script.onload = () => {
-      window.kakao.maps.load(() => resolve());
+      if (window.kakao?.maps) {
+        window.kakao.maps.load(() => resolve());
+      } else {
+        reject(new Error("카카오맵 스크립트 로딩 실패"));
+      }
     };
 
     script.onerror = () => {
@@ -512,6 +516,36 @@ export default function LockerTradeProgressSection({
     }
   }, [resolveTradeId]);
 
+  const refreshLockerStates = async () => {
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+      message.error("로그인이 필요합니다.");
+      return;
+    }
+
+    if (!selectedLocation?.KIOSK_ID) {
+      message.error("선택된 지점 정보가 없습니다.");
+      return;
+    }
+
+    try {
+      setLockerStateLoading(true);
+
+      const states = await tradeApi.getTradeLockerStateList(accessToken, {
+        KIOSK_ID: selectedLocation.KIOSK_ID,
+      });
+
+      setLockerStates(Array.isArray(states) ? states : []);
+      message.success("보관함 상태를 새로고침했습니다.");
+    } catch (error) {
+      console.error(error);
+      message.error("보관함 상태를 불러오지 못했습니다.");
+    } finally {
+      setLockerStateLoading(false);
+    }
+  };
+
   useEffect(() => {
     const accessToken = localStorage.getItem("accessToken");
 
@@ -590,41 +624,16 @@ export default function LockerTradeProgressSection({
   const currentStep = lockerSteps[currentStepIndex];
   const nextStatusCode = getNextStatusCode(lockerSteps, currentStatusCode);
 
-  const isSeller = myRole === "SELLER" || myRole === null;
+  const isSeller = myRole === "SELLER";
+  const isBuyer = myRole === "BUYER";
 
   const isLockerBranchSelectStep = currentStatusCode === "BRANCH_SELECT";
   const isLockerBranchConfirmStep = currentStatusCode === "BRANCH_SELECTED";
   const isLockerDepositWaitingStep = currentStatusCode === "DEPOSIT_WAITING";
 
-  const refreshLockerStates = async () => {
-    const accessToken = localStorage.getItem("accessToken");
-
-    if (!accessToken) {
-      message.error("로그인이 필요합니다.");
-      return;
-    }
-
-    if (!selectedLocation?.KIOSK_ID) {
-      message.error("선택된 보관함 지점이 없습니다.");
-      return;
-    }
-
-    try {
-      setLockerStateLoading(true);
-
-      const states = await tradeApi.getTradeLockerStateList(accessToken, {
-        KIOSK_ID: selectedLocation.KIOSK_ID,
-      });
-
-      setLockerStates(Array.isArray(states) ? states : []);
-      message.success("보관함 상태를 새로고침했습니다.");
-    } catch (error) {
-      console.error(error);
-      message.error("보관함 상태 새로고침에 실패했습니다.");
-    } finally {
-      setLockerStateLoading(false);
-    }
-  };
+  const shouldHideDescriptionBox =
+    currentStatusCode === "BRANCH_SELECTED" ||
+    currentStatusCode === "DEPOSIT_WAITING";
 
   const saveLockerLocation = async (
     accessToken: string,
@@ -796,19 +805,12 @@ export default function LockerTradeProgressSection({
       return;
     }
 
-    if (!selectedLocation?.KIOSK_ID) {
-      message.error("먼저 보관함 지점을 선택해주세요.");
-      return;
-    }
-
     const targetTradeId = await resolveTradeId();
 
     if (!targetTradeId) return;
 
     try {
       setSubmitting(true);
-
-      await saveLockerLocation(accessToken, targetTradeId, "update");
 
       const result = await tradeApi.updateTradeStatus(accessToken, {
         TRADE_ID: targetTradeId,
@@ -827,7 +829,6 @@ export default function LockerTradeProgressSection({
           ? responseStatusCode
           : "DEPOSIT_WAITING";
 
-      setHasSavedLockerLocation(true);
       setCurrentStatusCode(nextUiStatusCode);
       onStatusChangeRef.current?.(nextUiStatusCode);
 
@@ -849,7 +850,7 @@ export default function LockerTradeProgressSection({
     setChatDrawerOpen(false);
   };
 
-  const handleMapLocationSelected = (
+  const handleMapLocationSelected = async (
     location: TradeLockerLocationResponse,
     states: TradeLockerStateResponse[],
   ) => {
@@ -858,9 +859,32 @@ export default function LockerTradeProgressSection({
 
     if (currentStatusCode === "BRANCH_SELECT") {
       setHasSavedLockerLocation(false);
+      setMapDrawerOpen(false);
+      return;
     }
 
-    setMapDrawerOpen(false);
+    if (currentStatusCode === "BRANCH_SELECTED") {
+      const accessToken = localStorage.getItem("accessToken");
+
+      if (!accessToken) {
+        message.error("로그인이 필요합니다.");
+        return;
+      }
+
+      const targetTradeId = await resolveTradeId();
+
+      if (!targetTradeId) return;
+
+      await tradeApi.updateTradeLockerLocation(accessToken, {
+        TRADE_ID: targetTradeId,
+        KIOSK_ID: location.KIOSK_ID,
+        USER_ID: 0,
+      });
+
+      setHasSavedLockerLocation(true);
+      setMapDrawerOpen(false);
+      message.success("지점이 재선택되었습니다.");
+    }
   };
 
   const handleMainButtonClick = () => {
@@ -946,7 +970,19 @@ export default function LockerTradeProgressSection({
         />
 
         <div className={styles.selectedBranchLockerSection}>
-          <div className={styles.selectedBranchLockerTitle}>보관함 상태</div>
+          <div className={styles.selectedBranchLockerHeader}>
+            <div className={styles.selectedBranchLockerTitle}>보관함 상태</div>
+
+            <button
+              type="button"
+              className={styles.lockerRefreshIconButton}
+              onClick={refreshLockerStates}
+              disabled={lockerStateLoading}
+              aria-label="보관함 상태 새로고침"
+            >
+              ↻
+            </button>
+          </div>
 
           <div className={styles.selectedBranchLockerGrid}>
             {lockerStates.map((locker) => (
@@ -972,6 +1008,11 @@ export default function LockerTradeProgressSection({
   };
 
   const renderBranchActionButtons = () => {
+    const locationButtonText =
+      currentStatusCode === "BRANCH_SELECTED" && isSeller
+        ? "지점 재선택"
+        : "위치 확인";
+
     return (
       <div className={styles.lockerActionButtonRow}>
         <button
@@ -989,9 +1030,8 @@ export default function LockerTradeProgressSection({
           type="button"
           className={styles.lockerSubActionButton}
           onClick={handleOpenMapDrawer}
-          disabled={!isSeller}
         >
-          {selectedLocation ? "지점 재선택" : "지점 선택"}
+          {locationButtonText}
         </button>
       </div>
     );
@@ -1106,13 +1146,15 @@ export default function LockerTradeProgressSection({
             })}
           </ol>
 
-          <div className={styles.descriptionBox}>
-            <div className={styles.descriptionIcon}>✓</div>
-            <div>
-              <h4>{currentStep.title}</h4>
-              <p>{currentStep.description}</p>
+          {!shouldHideDescriptionBox && (
+            <div className={styles.descriptionBox}>
+              <div className={styles.descriptionIcon}>✓</div>
+              <div>
+                <h4>{currentStep.title}</h4>
+                <p>{currentStep.description}</p>
+              </div>
             </div>
-          </div>
+          )}
 
           {isLockerBranchSelectStep && (
             <div className={styles.lockerActionBox}>
@@ -1168,19 +1210,7 @@ export default function LockerTradeProgressSection({
               </div>
 
               {renderBranchSelectCard()}
-
-              <div className={styles.lockerStateHeader}>
-                <div className={styles.lockerStateTitle}>보관함 상태</div>
-
-                <button
-                  type="button"
-                  className={styles.refreshButton}
-                  onClick={refreshLockerStates}
-                  disabled={lockerStateLoading}
-                >
-                  {lockerStateLoading ? "새로고침 중" : "새로고침"}
-                </button>
-              </div>
+              {renderBranchActionButtons()}
             </div>
           )}
         </section>
@@ -1190,6 +1220,17 @@ export default function LockerTradeProgressSection({
         open={mapDrawerOpen}
         accessToken={localStorage.getItem("accessToken") ?? ""}
         initialSelectedLocation={selectedLocation}
+        readonly={
+          isBuyer ||
+          currentStatusCode === "DEPOSIT_WAITING" ||
+          currentStatusCode === "DEPOSITED" ||
+          currentStatusCode === "PAID" ||
+          currentStatusCode === "PICKEDUP" ||
+          currentStatusCode === "COMPLETED"
+        }
+        selectButtonText={
+          currentStatusCode === "BRANCH_SELECTED" ? "지점 재선택" : "선택하기"
+        }
         onClose={() => setMapDrawerOpen(false)}
         onLocationSelected={handleMapLocationSelected}
       />

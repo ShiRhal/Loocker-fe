@@ -6,23 +6,19 @@ import type {
   TradeLockerLocationResponse,
   TradeLockerStateResponse,
 } from "../types/trade.types";
-import styles from "./TradeProgressView.module.css";
-
-declare global {
-  interface Window {
-    kakao: any;
-  }
-}
+import styles from "./LockerTradeProgressSection.module.css";
 
 type LockerMapDrawerProps = {
   open: boolean;
   accessToken: string;
   initialSelectedLocation: TradeLockerLocationResponse | null;
+  readonly?: boolean;
+  selectButtonText?: string;
   onClose: () => void;
-  onLocationSelected: (
+  onLocationSelected?: (
     location: TradeLockerLocationResponse,
     lockerStates: TradeLockerStateResponse[],
-  ) => void;
+  ) => void | Promise<void>;
 };
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
@@ -64,7 +60,7 @@ function loadKakaoMapSDK() {
       return;
     }
 
-    if (window.kakao && window.kakao.maps) {
+    if (window.kakao?.maps) {
       window.kakao.maps.load(() => resolve());
       return;
     }
@@ -75,7 +71,7 @@ function loadKakaoMapSDK() {
 
     if (existed) {
       existed.addEventListener("load", () => {
-        if (window.kakao && window.kakao.maps) {
+        if (window.kakao?.maps) {
           window.kakao.maps.load(() => resolve());
         } else {
           reject(new Error("Kakao Map SDK 로드 실패"));
@@ -95,7 +91,7 @@ function loadKakaoMapSDK() {
     script.async = true;
 
     script.onload = () => {
-      if (window.kakao && window.kakao.maps) {
+      if (window.kakao?.maps) {
         window.kakao.maps.load(() => resolve());
       } else {
         reject(new Error("Kakao Map SDK 로드 실패"));
@@ -114,6 +110,8 @@ export default function LockerMapDrawer({
   open,
   accessToken,
   initialSelectedLocation,
+  readonly = false,
+  selectButtonText = "선택하기",
   onClose,
   onLocationSelected,
 }: LockerMapDrawerProps) {
@@ -153,11 +151,14 @@ export default function LockerMapDrawer({
       });
 
       const nextStates = Array.isArray(states) ? states : [];
-      setLockerStates(nextStates);
+
+      if (!readonly) {
+        setLockerStates(nextStates);
+      }
 
       return nextStates;
     },
-    [accessToken],
+    [accessToken, readonly],
   );
 
   const isSameSelectedLocation = useCallback(
@@ -169,6 +170,8 @@ export default function LockerMapDrawer({
 
   const handleOverlaySelect = useCallback(
     async (location: TradeLockerLocationResponse) => {
+      if (readonly) return;
+
       try {
         if (selectedLocation?.KIOSK_ID === location.KIOSK_ID) {
           setSelectedLocation(null);
@@ -191,7 +194,7 @@ export default function LockerMapDrawer({
         message.error("보관함 상태를 불러오지 못했습니다.");
       }
     },
-    [fetchLockerStates, selectedLocation],
+    [fetchLockerStates, readonly, selectedLocation],
   );
 
   useEffect(() => {
@@ -201,13 +204,13 @@ export default function LockerMapDrawer({
     setLockerStates([]);
     setSearchKeyword("");
 
-    if (initialSelectedLocation?.KIOSK_ID) {
+    if (!readonly && initialSelectedLocation?.KIOSK_ID) {
       fetchLockerStates(initialSelectedLocation.KIOSK_ID).catch((error) => {
         console.error(error);
         message.error("보관함 상태를 불러오지 못했습니다.");
       });
     }
-  }, [open, initialSelectedLocation, fetchLockerStates]);
+  }, [open, readonly, initialSelectedLocation, fetchLockerStates]);
 
   useEffect(() => {
     if (!open) return;
@@ -249,12 +252,18 @@ export default function LockerMapDrawer({
       try {
         await loadKakaoMapSDK();
 
-        if (!mounted || !mapContainerRef.current) return;
+        if (!mounted || !mapContainerRef.current || !window.kakao?.maps) {
+          return;
+        }
 
-        const container = mapContainerRef.current;
-        const center = new window.kakao.maps.LatLng(37.320641, 126.948067);
+        const center = initialSelectedLocation?.LATITUDE
+          ? new window.kakao.maps.LatLng(
+              Number(initialSelectedLocation.LATITUDE),
+              Number(initialSelectedLocation.LONGITUDE),
+            )
+          : new window.kakao.maps.LatLng(37.320641, 126.948067);
 
-        const map = new window.kakao.maps.Map(container, {
+        const map = new window.kakao.maps.Map(mapContainerRef.current, {
           center,
           level: 3,
         });
@@ -285,10 +294,10 @@ export default function LockerMapDrawer({
     return () => {
       mounted = false;
     };
-  }, [open]);
+  }, [open, initialSelectedLocation]);
 
   useEffect(() => {
-    if (!open || !window.kakao || !window.kakao.maps || !mapRef.current) return;
+    if (!open || !window.kakao?.maps || !mapRef.current) return;
 
     markersRef.current.forEach((marker) => marker.setMap(null));
     markersRef.current = [];
@@ -340,9 +349,13 @@ export default function LockerMapDrawer({
                   ${getBranchStatusLabel(location.STATUS_CODE)}
                 </div>
 
-                <button type="button" class="${styles.branchOverlaySelectButton}">
-                  ${selected ? "해제" : "선택"}
-                </button>
+                ${
+                  readonly
+                    ? ""
+                    : `<button type="button" class="${styles.branchOverlaySelectButton}">
+                        ${selected ? "해제" : "선택"}
+                      </button>`
+                }
               </div>
             </div>
           </div>
@@ -351,13 +364,15 @@ export default function LockerMapDrawer({
         </div>
       `;
 
-      const selectButton = overlayContent.querySelector("button");
+      if (!readonly) {
+        const selectButton = overlayContent.querySelector("button");
 
-      selectButton?.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        handleOverlaySelect(location);
-      });
+        selectButton?.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          handleOverlaySelect(location);
+        });
+      }
 
       const overlay = new window.kakao.maps.CustomOverlay({
         content: overlayContent,
@@ -375,9 +390,14 @@ export default function LockerMapDrawer({
 
       markersRef.current.push(marker);
       overlaysRef.current.push(overlay);
+
+      if (initialSelectedLocation?.KIOSK_ID === location.KIOSK_ID) {
+        overlay.setMap(mapRef.current);
+        mapRef.current.panTo(pos);
+      }
     });
 
-    if (filteredLocations.length > 0) {
+    if (filteredLocations.length > 0 && !initialSelectedLocation?.KIOSK_ID) {
       const first = filteredLocations[0];
 
       const lat = Number(first.LATITUDE);
@@ -396,14 +416,16 @@ export default function LockerMapDrawer({
     }
   }, [
     open,
+    readonly,
     filteredLocations,
     handleOverlaySelect,
     isSameSelectedLocation,
     selectedLocation,
+    initialSelectedLocation,
   ]);
 
   const handleSelectLocationOnly = async () => {
-    if (!selectedLocation) return;
+    if (!selectedLocation || !onLocationSelected) return;
 
     try {
       setSelecting(true);
@@ -413,7 +435,7 @@ export default function LockerMapDrawer({
           ? lockerStates
           : await fetchLockerStates(selectedLocation.KIOSK_ID);
 
-      onLocationSelected(selectedLocation, states);
+      await onLocationSelected(selectedLocation, states);
       message.success("지점이 선택되었습니다.");
     } catch (error) {
       console.error(error);
@@ -429,7 +451,9 @@ export default function LockerMapDrawer({
     <aside className={styles.leftDrawer}>
       <div className={styles.mapDrawerHeader}>
         <div className={styles.mapHeaderTextArea}>
-          <h2 className={styles.mapDrawerTitle}>보관함 지점 선택</h2>
+          <h2 className={styles.mapDrawerTitle}>
+            {readonly ? "보관함 위치 확인" : "보관함 지점 선택"}
+          </h2>
 
           <input
             type="text"
@@ -452,7 +476,7 @@ export default function LockerMapDrawer({
       <div className={styles.mapDrawerBody}>
         <div ref={mapContainerRef} className={styles.kakaoMap} />
 
-        {loading && (
+        {loading && !readonly && (
           <div className={styles.branchInfoPanel}>
             <div className={styles.branchEmptyText}>
               보관함 지점 정보를 불러오는 중입니다.
@@ -460,7 +484,7 @@ export default function LockerMapDrawer({
           </div>
         )}
 
-        {!loading && selectedLocation && (
+        {!readonly && !loading && selectedLocation && (
           <div ref={branchPanelRef} className={styles.branchInfoPanel}>
             {selectedLocation.LOCATION_IMG ? (
               <img
@@ -511,16 +535,18 @@ export default function LockerMapDrawer({
         )}
       </div>
 
-      <div className={styles.mapDrawerFooter}>
-        <button
-          type="button"
-          className={styles.mapSelectButton}
-          disabled={!selectedLocation || selecting}
-          onClick={handleSelectLocationOnly}
-        >
-          {selecting ? "선택 중..." : "선택하기"}
-        </button>
-      </div>
+      {!readonly && (
+        <div className={styles.mapDrawerFooter}>
+          <button
+            type="button"
+            className={styles.mapSelectButton}
+            disabled={!selectedLocation || selecting}
+            onClick={handleSelectLocationOnly}
+          >
+            {selecting ? "처리 중..." : selectButtonText}
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

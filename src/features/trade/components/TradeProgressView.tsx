@@ -4,11 +4,7 @@ import { useNavigate } from "react-router-dom";
 import DrawerLayout from "../../../shared/components/DrawerLayout/DrawerLayout";
 import { tradeApi } from "../api/tradeApi";
 import LockerTradeProgressSection from "./LockerTradeProgressSection";
-import type {
-  ProductTradePreview,
-  TradeRole,
-  TradeTab,
-} from "../types/trade.types";
+import type { ProductTradePreview, TradeTab } from "../types/trade.types";
 import styles from "./TradeProgressView.module.css";
 
 type Step = {
@@ -91,15 +87,22 @@ const statusAliasMap: Record<string, string> = {
   TR_03: "CANCELED",
   TR_04: "PAID",
   TR_05: "FAILED",
+  TR_06: "DEPOSITED",
+  TR_07: "RETURED",
   TR_08: "PICKEDUP",
+  TR_09: "DISPUTED",
   TR_10: "ORDER_CHECK",
   TR_11: "SHIPPING",
   TR_12: "DELIVERED",
   TR_13: "DIRECT_IN_PROGRESS",
   TR_14: "DIRECT_RECEIVED",
+  TR_15: "BRANCH_SELECTED",
+  TR_16: "DEPOSIT_WAITING",
 
   CANCELD: "CANCELED",
   CANCELED: "CANCELED",
+  RETURNED: "RETURED",
+  RETURED: "RETURED",
 };
 
 function formatPrice(value: number) {
@@ -142,6 +145,25 @@ function getResponseStatusCode(result: unknown) {
   );
 }
 
+function getTradeIdValue(result: unknown) {
+  if (!result) return 0;
+
+  if (typeof result === "number") return result;
+
+  if (typeof result === "string") {
+    const value = Number(result);
+    return Number.isNaN(value) ? 0 : value;
+  }
+
+  const data = Array.isArray(result) ? result[0] : result;
+
+  if (typeof data !== "object" || data === null) return 0;
+
+  const obj = data as Record<string, unknown>;
+
+  return Number(obj.TRADE_ID ?? obj.tradeId ?? obj.TRADE_ID_OUT ?? 0);
+}
+
 function getStepIndexByStatusCode(steps: Step[], statusCode: string) {
   const index = steps.findIndex((step) => step.statusCode === statusCode);
 
@@ -173,22 +195,22 @@ export default function TradeProgressView({
   initialStatusCode,
   onStatusChange,
 }: Props) {
+  const nav = useNavigate();
+  const onStatusChangeRef = useRef(onStatusChange);
+
   if (tradeType === "LOCKER") {
     return (
       <LockerTradeProgressSection
         tradeId={tradeId}
         tradeType={tradeType}
         product={product}
-        onBack={onBack}
-        onClose={onClose}
         initialStatusCode={initialStatusCode}
         onStatusChange={onStatusChange}
+        onBack={onBack}
+        onClose={onClose}
       />
     );
   }
-
-  const nav = useNavigate();
-  const onStatusChangeRef = useRef(onStatusChange);
 
   const defaultStatusCode = tradeType === "DELIVERY" ? "PAID" : "TRADING";
 
@@ -196,7 +218,6 @@ export default function TradeProgressView({
   const [currentStatusCode, setCurrentStatusCode] = useState(() =>
     normalizeStatusCode(initialStatusCode ?? defaultStatusCode),
   );
-  const [myRole, setMyRole] = useState<TradeRole | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const steps = useMemo(() => {
@@ -234,7 +255,8 @@ export default function TradeProgressView({
           product.productId,
         );
 
-        if (stopped || !tradeDetail) return;
+        if (stopped) return;
+        if (!tradeDetail) return;
 
         const detail = Array.isArray(tradeDetail)
           ? tradeDetail[0]
@@ -244,10 +266,8 @@ export default function TradeProgressView({
 
         if (resolvedTradeId && detail.TRADE_ID !== resolvedTradeId) return;
 
-        setResolvedTradeId(detail.TRADE_ID);
-
-        if (detail.MY_ROLE) {
-          setMyRole(detail.MY_ROLE);
+        if (detail.TRADE_ID) {
+          setResolvedTradeId(Number(detail.TRADE_ID));
         }
 
         const latestStatusCode = normalizeStatusCode(
@@ -291,6 +311,37 @@ export default function TradeProgressView({
   const currentStep = steps[currentStepIndex];
   const nextStatusCode = getNextStatusCode(steps, currentStatusCode);
 
+  const resolveTradeId = async () => {
+    if (resolvedTradeId && resolvedTradeId > 0) {
+      return resolvedTradeId;
+    }
+
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+      message.error("로그인이 필요합니다.");
+      return 0;
+    }
+
+    try {
+      const result = await tradeApi.getTradeId(accessToken, product.productId);
+      const nextTradeId = getTradeIdValue(result);
+
+      if (!nextTradeId) {
+        message.error("거래 ID를 확인할 수 없습니다.");
+        return 0;
+      }
+
+      setResolvedTradeId(nextTradeId);
+
+      return nextTradeId;
+    } catch (error) {
+      console.error(error);
+      message.error("거래 ID 조회에 실패했습니다.");
+      return 0;
+    }
+  };
+
   const handleCancel = async () => {
     const accessToken = localStorage.getItem("accessToken");
 
@@ -299,11 +350,15 @@ export default function TradeProgressView({
       return;
     }
 
+    const targetTradeId = await resolveTradeId();
+
+    if (!targetTradeId) return;
+
     try {
       setSubmitting(true);
 
       await tradeApi.updateTradeStatus(accessToken, {
-        TRADE_ID: resolvedTradeId,
+        TRADE_ID: targetTradeId,
         RESULT_STATUS_CODE: currentStatusCode,
         NEXT_STATUS_CODE: "CANCELED",
         TRADE_TYPE_CODE: tradeType,
@@ -333,11 +388,15 @@ export default function TradeProgressView({
       return;
     }
 
+    const targetTradeId = await resolveTradeId();
+
+    if (!targetTradeId) return;
+
     try {
       setSubmitting(true);
 
       const result = await tradeApi.updateTradeStatus(accessToken, {
-        TRADE_ID: resolvedTradeId,
+        TRADE_ID: targetTradeId,
         RESULT_STATUS_CODE: currentStatusCode,
         NEXT_STATUS_CODE: nextStatusCode,
         TRADE_TYPE_CODE: tradeType,
@@ -442,7 +501,7 @@ export default function TradeProgressView({
 
             return (
               <li
-                key={step.statusCode}
+                key={`${step.statusCode}-${index}`}
                 className={[
                   styles.stepItem,
                   isDone ? styles.done : "",
