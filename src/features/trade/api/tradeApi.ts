@@ -6,6 +6,11 @@ import type {
   ProductTradePreview,
   TradeCreateRequest,
   TradeDetailResponse,
+  TradeLockerLocationRequest,
+  TradeLockerLocationResponse,
+  TradeLockerLocationSelectRequest,
+  TradeLockerStateRequest,
+  TradeLockerStateResponse,
   TradeUpdateRequest,
   TradeUpdateResponse,
 } from "../types/trade.types";
@@ -15,6 +20,17 @@ function getPrimaryImage(images: ProductDetailResponse["IMAGE"]) {
 
   const primaryImage = images.find((image) => image.IS_PRIMARY);
   return primaryImage?.IMAGE_URL ?? images[0].IMAGE_URL ?? "";
+}
+
+function makeQuery(params: Record<string, string | number | null | undefined>) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === null || value === undefined) return;
+    searchParams.set(key, String(value));
+  });
+
+  return searchParams.toString();
 }
 
 export const tradeApi = {
@@ -48,7 +64,12 @@ export const tradeApi = {
   },
 
   async getTradeId(accessToken: string, productId: number) {
-    return await webapi(`/trade/id/select?PRODUCT_ID=${productId}`, {
+    const query = makeQuery({
+      PRODUCT_ID: productId,
+      USER_ID: 0,
+    });
+
+    return await webapi(`/trade/id/select?${query}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -131,6 +152,95 @@ export const tradeApi = {
       body: JSON.stringify(body),
       headers: {
         "Content-Type": "application/json",
+      },
+    });
+  },
+
+  /**
+   * 지도에서 처음 지점 선택할 때 사용하는 전체 지점 목록 조회 API
+   * 선택 이력이 없어도 호출 가능해야 하는 API
+   */
+  async getTradeLockerLocationList(
+    accessToken: string,
+  ): Promise<TradeLockerLocationResponse[]> {
+    return await webapi("/trade/locker/location/list/select", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  },
+
+  /**
+   * 이미 선택된 보관함 지점 조회 API
+   * 지점 선택 이후, 입고대기 화면에서 사용
+   * 선택 이력이 없으면 백에서 "지점을 선택한 이력이 없는 거래입니다." 발생 가능
+   */
+  async getTradeLockerLocation(
+    accessToken: string,
+    body: TradeLockerLocationSelectRequest,
+  ): Promise<TradeLockerLocationResponse[]> {
+    const query = makeQuery({
+      TRADE_ID: body.TRADE_ID,
+      USER_ID: body.USER_ID ?? 0,
+    });
+
+    return await webapi(`/trade/locker/location/select?${query}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  },
+
+  async createTradeLockerLocation(
+    accessToken: string,
+    body: TradeLockerLocationRequest,
+  ): Promise<TradeLockerLocationResponse[]> {
+    return await webapi("/trade/locker/location/create", {
+      method: "POST",
+      body: JSON.stringify({
+        TRADE_ID: body.TRADE_ID,
+        KIOSK_ID: body.KIOSK_ID,
+        USER_ID: body.USER_ID ?? 0,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  },
+
+  async updateTradeLockerLocation(
+    accessToken: string,
+    body: TradeLockerLocationRequest,
+  ): Promise<TradeLockerLocationResponse[]> {
+    return await webapi("/trade/locker/location/update", {
+      method: "POST",
+      body: JSON.stringify({
+        TRADE_ID: body.TRADE_ID,
+        KIOSK_ID: body.KIOSK_ID,
+        USER_ID: body.USER_ID ?? 0,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  },
+
+  async getTradeLockerStateList(
+    accessToken: string,
+    body: TradeLockerStateRequest,
+  ): Promise<TradeLockerStateResponse[]> {
+    const query = makeQuery({
+      KIOSK_ID: body.KIOSK_ID,
+    });
+
+    return await webapi(`/trade/locker/state/select?${query}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
       },
     });
   },

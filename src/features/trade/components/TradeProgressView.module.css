@@ -52,7 +52,7 @@
   background: #f1f3f5;
   color: #555;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 8px;
 }
 
@@ -61,7 +61,7 @@
   font-size: 16px;
   line-height: 1.35;
   color: #222;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .productInfo strong {
@@ -87,6 +87,7 @@
   margin: 0;
   font-size: 18px;
   color: #111;
+  font-weight: 800;
 }
 
 .progressHeader p {
@@ -209,10 +210,6 @@
   font-weight: 800;
 }
 
-.descriptionBox h4::first-letter {
-  color: inherit;
-}
-
 .descriptionBox p {
   margin: 0;
   font-size: 14px;
@@ -231,7 +228,7 @@
   border-radius: 12px;
   border: 0;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
 }
 

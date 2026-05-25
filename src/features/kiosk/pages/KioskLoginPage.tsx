@@ -66,11 +66,11 @@ export default function KioskLoginPage() {
       });
 
       localStorage.setItem("kioskAccessToken", result.KIOSK_ACCESS_TOKEN);
+      localStorage.setItem("kioskId", String(result.KIOSK_ID));
+      localStorage.setItem("kioskCode", result.KIOSK_CODE);
       localStorage.setItem("kioskLoginId", result.LOGIN_ID);
       localStorage.setItem("kioskBranchName", result.BRANCH_NAME);
       localStorage.setItem("kioskLockerCount", String(result.LOCKER_COUNT));
-
-      localStorage.removeItem("kioskCode");
 
       navigate("/kiosk", { replace: true });
     } catch (error) {

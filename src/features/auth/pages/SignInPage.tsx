@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../app/providers/auth/useAuth";
+import { kioskAuthApi } from "../../kiosk/api/kioskAuthApi";
 import styles from "./SignInPage.module.css";
 import logoImg from "../../../assets/images/Loocker.png";
 import "../../../shared/styles/global.css";
@@ -17,23 +18,27 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
 
 export default function SignInPage() {
   const nav = useNavigate();
+  const { authCode } = useParams();
   const [params] = useSearchParams();
+
   const redirect = useMemo(() => params.get("redirect") || "/", [params]);
 
   const { me, loginWithGoogleIdToken } = useAuth();
 
   const [keepLogin, setKeepLogin] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [googleReady, setGoogleReady] = useState(false);
+  const [kioskAuthCompleted, setKioskAuthCompleted] = useState(false);
 
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const renderedRef = useRef(false);
 
+  const isKioskMobileAuth = Boolean(authCode);
+
   useEffect(() => {
-    if (me) {
+    if (me && !isKioskMobileAuth) {
       nav(redirect, { replace: true });
     }
-  }, [me, nav, redirect]);
+  }, [me, nav, redirect, isKioskMobileAuth]);
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) {
@@ -65,11 +70,30 @@ export default function SignInPage() {
             setErr(null);
 
             const idToken = resp?.credential;
+
             if (!idToken) {
               throw new Error("id_token이 없습니다.");
             }
 
             await loginWithGoogleIdToken(idToken);
+
+            if (authCode) {
+              const userId = Number(localStorage.getItem("userId"));
+
+              if (!userId) {
+                throw new Error("사용자 ID를 확인할 수 없습니다.");
+              }
+
+              await kioskAuthApi.updateAuthSession({
+                AUTH_CODE: authCode,
+                USER_ID: userId,
+              });
+
+              sessionStorage.setItem("sellerDepositAuthCode", authCode);
+              setKioskAuthCompleted(true);
+              return;
+            }
+
             nav(redirect, { replace: true });
           } catch (e: any) {
             setErr(e?.message || "구글 로그인 실패");
@@ -94,7 +118,39 @@ export default function SignInPage() {
     return () => {
       window.clearInterval(timer);
     };
-  }, [loginWithGoogleIdToken, nav, redirect]);
+  }, [loginWithGoogleIdToken, nav, redirect, authCode]);
+
+  if (kioskAuthCompleted) {
+    return (
+      <div className={styles.page}>
+        <section className={styles.card}>
+          <div className={styles.brandTop}>
+            <img
+              src={logoImg}
+              alt="Loocker 로고"
+              className={styles.brandLogo}
+            />
+          </div>
+
+          <div
+            className={styles.error}
+            style={{
+              background: "#e8f3ff",
+              color: "#0064ff",
+              borderColor: "#bfdbfe",
+              textAlign: "center",
+              fontWeight: 800,
+              lineHeight: 1.7,
+            }}
+          >
+            인증이 완료되었습니다.
+            <br />
+            이제 키오스크 화면으로 돌아가 주세요.
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -102,6 +158,21 @@ export default function SignInPage() {
         <div className={styles.brandTop} onClick={() => nav("/")}>
           <img src={logoImg} alt="Loocker 로고" className={styles.brandLogo} />
         </div>
+
+        {isKioskMobileAuth && (
+          <div
+            className={styles.error}
+            style={{
+              background: "#e8f3ff",
+              color: "#0064ff",
+              borderColor: "#bfdbfe",
+              textAlign: "center",
+              fontWeight: 800,
+            }}
+          >
+            키오스크 입고 인증을 위해 로그인해주세요.
+          </div>
+        )}
 
         <label className={styles.keepRow}>
           <input
@@ -153,15 +224,17 @@ export default function SignInPage() {
           <span className={styles.spacer} />
         </button>
 
-        <div className={styles.guestRow}>
-          <button
-            className={styles.guestBtn}
-            onClick={() => nav(redirect || "/")}
-          >
-            비회원 둘러보기
-            <span className={styles.underline} />
-          </button>
-        </div>
+        {!isKioskMobileAuth && (
+          <div className={styles.guestRow}>
+            <button
+              className={styles.guestBtn}
+              onClick={() => nav(redirect || "/")}
+            >
+              비회원 둘러보기
+              <span className={styles.underline} />
+            </button>
+          </div>
+        )}
 
         <div className={styles.notice}>
           공용 PC에서는 [로그인 유지하기]를 꺼주세요
