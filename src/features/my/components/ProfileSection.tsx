@@ -4,9 +4,14 @@ import styles from '../pages/MyPage.module.css';
 interface ProfileSectionProps {
   nickname: string;
   onOpenNicknameChange?: () => void;
+  onLogout?: () => void;
 }
 
-const ProfileSection: React.FC<ProfileSectionProps> = ({ nickname, onOpenNicknameChange }) => {
+const ProfileSection: React.FC<ProfileSectionProps> = ({
+  nickname,
+  onOpenNicknameChange,
+  onLogout,
+}) => {
   return (
     <div className={styles.profileSection}>
       <div className={styles.profileHeader}>
@@ -38,6 +43,15 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ nickname, onOpenNicknam
           </div>
         </div>
       </div>
+      {onLogout ? (
+        <button
+          type="button"
+          className={styles.mobileProfileLogout}
+          onClick={onLogout}
+        >
+          로그아웃
+        </button>
+      ) : null}
       {/* <div className={styles.trustScore}>
         <div className={styles.trustScoreContainer}>
           <div className={styles.trustScoreHeader}>

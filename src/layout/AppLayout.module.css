@@ -1,0 +1,11 @@
+.main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 1000px) {
+  .main {
+    padding: 24px 16px 80px;
+  }
+}
