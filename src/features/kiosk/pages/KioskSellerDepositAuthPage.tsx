@@ -260,7 +260,7 @@ export default function KioskSellerDepositAuthPage() {
       </header>
 
       <section className={styles.authCard}>
-        <h1 className={styles.authTitle}>판매자 물품 입고 인증</h1>
+        <h1 className={styles.authTitle}>판매자 물품 보관 인증</h1>
 
         <p className={styles.authDescription}>
           모바일 기기로 QR 코드를 스캔한 뒤 로그인해주세요.
@@ -303,7 +303,7 @@ export default function KioskSellerDepositAuthPage() {
         {completed && (
           <div className={styles.progressNoticeBox}>
             <h2>인증 완료</h2>
-            <p>잠시 후 입고할 상품 선택 화면으로 이동합니다.</p>
+            <p>잠시 후 보관할 상품 선택 화면으로 이동합니다.</p>
           </div>
         )}
       </section>

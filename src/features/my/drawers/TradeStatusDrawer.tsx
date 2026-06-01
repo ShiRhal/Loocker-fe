@@ -41,8 +41,8 @@ const DELIVERY_STEPS: Step[] = [
 const LOCKER_STEPS: Step[] = [
   { title: "지점 선택", statusCode: "BRANCH_SELECT" },
   { title: "지점 확정", statusCode: "BRANCH_SELECTED" },
-  { title: "입고 대기", statusCode: "DEPOSIT_WAITING" },
-  { title: "입고 완료", statusCode: "DEPOSITED" },
+  { title: "보관 대기", statusCode: "DEPOSIT_WAITING" },
+  { title: "보관 완료", statusCode: "DEPOSITED" },
   { title: "결제 완료", statusCode: "PAID" },
   { title: "수령 완료", statusCode: "PICKEDUP" },
   { title: "거래 완료", statusCode: "COMPLETED" },
