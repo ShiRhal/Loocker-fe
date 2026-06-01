@@ -173,7 +173,7 @@ export const tradeApi = {
 
   /**
    * 이미 선택된 보관함 지점 조회 API
-   * 지점 선택 이후, 입고대기 화면에서 사용
+   * 지점 선택 이후, 보관대기 화면에서 사용
    * 선택 이력이 없으면 백에서 "지점을 선택한 이력이 없는 거래입니다." 발생 가능
    */
   async getTradeLockerLocation(
