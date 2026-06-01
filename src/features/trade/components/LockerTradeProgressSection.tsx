@@ -33,24 +33,24 @@ type Props = {
 const lockerSteps: Step[] = [
   {
     title: "지점 선택",
-    description: "판매자가 상품을 입고할 보관함 지점을 선택합니다.",
+    description: "판매자가 상품을 보관할 보관함 지점을 선택합니다.",
     statusCode: "BRANCH_SELECT",
   },
   {
     title: "지점 확정",
     description:
-      "선택한 지점을 확인한 뒤 판매자가 입고 대기 단계로 진행합니다.",
+      "선택한 지점을 확인한 뒤 판매자가 보관 대기 단계로 진행합니다.",
     statusCode: "BRANCH_SELECTED",
   },
   {
-    title: "입고 대기",
+    title: "보관 대기",
     description:
-      "판매자가 키오스크에서 본인 인증 후 상품을 보관함에 입고합니다.",
+      "판매자가 키오스크에서 본인 인증 후 상품을 보관함에 보관합니다..",
     statusCode: "DEPOSIT_WAITING",
   },
   {
-    title: "입고 완료",
-    description: "판매자가 상품을 보관함에 입고했습니다.",
+    title: "보관 완료",
+    description: "판매자가 상품을 보관함에 보관했습니다.",
     statusCode: "DEPOSITED",
   },
   {
@@ -832,10 +832,10 @@ export default function LockerTradeProgressSection({
       setCurrentStatusCode(nextUiStatusCode);
       onStatusChangeRef.current?.(nextUiStatusCode);
 
-      message.success("입고 대기 단계로 변경되었습니다.");
+      message.success("보관 대기 단계로 변경되었습니다.");
     } catch (error) {
       console.error(error);
-      message.error("입고 대기 처리에 실패했습니다.");
+      message.error("보관 대기 처리에 실패했습니다.");
     } finally {
       setSubmitting(false);
     }
@@ -905,7 +905,7 @@ export default function LockerTradeProgressSection({
     }
 
     if (isLockerDepositWaitingStep) {
-      message.info("키오스크에서 상품 입고가 완료되면 다음 단계로 진행됩니다.");
+      message.info("키오스크에서 상품 보관이 완료되면 다음 단계로 진행됩니다.");
       return;
     }
 
@@ -916,8 +916,8 @@ export default function LockerTradeProgressSection({
     if (isCompleteStep) return "확인";
 
     if (isLockerBranchSelectStep) return "지점 확정";
-    if (isLockerBranchConfirmStep) return "입고 대기";
-    if (isLockerDepositWaitingStep) return "입고 대기중";
+    if (isLockerBranchConfirmStep) return "보관 대기";
+    if (isLockerDepositWaitingStep) return "보관 대기중";
 
     return lockerSteps[currentStepIndex + 1]?.title ?? "다음 단계";
   };
@@ -1186,7 +1186,7 @@ export default function LockerTradeProgressSection({
                 <div>
                   <h4 className={styles.lockerActionTitle}>지점 확정</h4>
                   <p className={styles.lockerActionDesc}>
-                    선택한 지점을 확인한 뒤 판매자가 입고 대기 단계로
+                    선택한 지점을 확인한 뒤 판매자가 보관 대기 단계로
                     진행합니다.
                   </p>
                 </div>
@@ -1201,9 +1201,9 @@ export default function LockerTradeProgressSection({
             <div className={styles.lockerActionBox}>
               <div className={styles.lockerActionHeader}>
                 <div>
-                  <h4 className={styles.lockerActionTitle}>입고 대기</h4>
+                  <h4 className={styles.lockerActionTitle}>보관 대기</h4>
                   <p className={styles.lockerActionDesc}>
-                    판매자가 키오스크에서 본인 인증 후 상품을 입고하면 다음
+                    판매자가 키오스크에서 본인 인증 후 상품을 보관하면 다음
                     단계로 진행됩니다.
                   </p>
                 </div>
