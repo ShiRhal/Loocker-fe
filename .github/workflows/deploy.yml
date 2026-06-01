@@ -31,6 +31,7 @@ jobs:
             VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
             VITE_API_BASE_URL: /api
             VITE_FRONT_BASE_URL: "https://loocker.site"
+            VITE_KAKAO_MAP_APP_KEY: ${{ secrets.VITE_KAKAO_MAP_APP_KEY}}
 
       - name: Upload build files to server
         uses: appleboy/scp-action@v0.1.7
