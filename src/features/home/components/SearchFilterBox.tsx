@@ -26,12 +26,14 @@ export default function SearchFilterBox({
 }: SearchFilterBoxProps) {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isRegionOpen, setIsRegionOpen] = useState(false);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const { states, cities, mainCategories, subCategories } = useCodeOptions();
 
   useEffect(() => {
     setIsCategoryOpen(false);
     setIsRegionOpen(false);
+    setIsMobileFilterOpen(false);
   }, [resultKeyword]);
 
   const selectedMainId = useMemo(() => {
@@ -63,6 +65,13 @@ export default function SearchFilterBox({
   }, [selectedStateId, cities]);
 
   const displayKeyword = resultKeyword.trim();
+  const selectedFilterCount = [
+    appliedValue.mainCategory || appliedValue.subCategory,
+    appliedValue.stateName || appliedValue.cityName,
+    appliedValue.minPrice || appliedValue.maxPrice,
+    appliedValue.isLocker,
+    appliedValue.excludeSold,
+  ].filter(Boolean).length;
 
   const applyImmediately = (next: SearchFilterValue) => {
     onChange(next);
@@ -318,7 +327,33 @@ export default function SearchFilterBox({
 
       <div className={styles.topLine} />
 
-      <div className={styles.filterTable}>
+      <button
+        type="button"
+        className={styles.mobileFilterToggle}
+        onClick={() => setIsMobileFilterOpen((prev) => !prev)}
+        aria-expanded={isMobileFilterOpen}
+        aria-controls="home-search-filter-table"
+      >
+        <span>검색 필터</span>
+        {selectedFilterCount > 0 ? (
+          <strong>{selectedFilterCount}개 적용</strong>
+        ) : (
+          <strong>전체</strong>
+        )}
+        <span
+          className={`${styles.mobileFilterToggleIcon} ${
+            isMobileFilterOpen ? styles.mobileFilterToggleIconOpen : ""
+          }`}
+          aria-hidden="true"
+        />
+      </button>
+
+      <div
+        id="home-search-filter-table"
+        className={`${styles.filterTable} ${
+          isMobileFilterOpen ? styles.filterTableOpen : ""
+        }`}
+      >
         <div className={styles.row}>
           <div className={styles.label}>
             <span>카테고리</span>

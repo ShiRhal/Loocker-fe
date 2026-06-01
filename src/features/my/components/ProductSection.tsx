@@ -20,6 +20,16 @@ const STATUS_LABEL_MAP: Record<"SALE" | "SOLD" | "TRADING", string> = {
   TRADING: "거래중",
 };
 
+const PRODUCT_TABS: Array<{
+  label: string;
+  value: ProductStatusFilter;
+}> = [
+  { label: "전체", value: null },
+  { label: "판매중", value: "SALE" },
+  { label: "예약중", value: "TRADING" },
+  { label: "판매완료", value: "SOLD" },
+];
+
 const normalizeStatusCode = (
   statusCode: string,
 ): "SALE" | "SOLD" | "TRADING" | null => {
@@ -160,6 +170,105 @@ const ProductSection: React.FC<ProductSectionProps> = ({
           <div className={styles.productsCount}>
             총 {visibleProducts.length}개
           </div>
+        </div>
+      </div>
+
+      <div className={styles.productsTabs}>
+        <div
+          className={styles.productsTabList}
+          role="tablist"
+          aria-label="상품 상태"
+        >
+          {PRODUCT_TABS.map((tab) => {
+            const active = statusFilter === tab.value;
+
+            return (
+              <button
+                key={tab.label}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={`${styles.productsTab} ${
+                  active ? "" : styles.productsTabInactive
+                }`}
+                onClick={() => {
+                  setStatusFilter(tab.value);
+                  setIsStatusDropdownOpen(false);
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className={styles.mobileProductControls}>
+        <div className={styles.mobileProductSearchBox}>
+          <input
+            type="search"
+            className={styles.mobileProductSearchInput}
+            placeholder="상품명 검색"
+            value={searchKeyword}
+            onChange={(event) => setSearchKeyword(event.target.value)}
+          />
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={styles.searchIcon}
+          >
+            <path
+              d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M21 21L17 17"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+
+        <div className={styles.mobileProductSortRow}>
+          <span className={styles.mobileProductSortLabel}>정렬</span>
+          <button
+            type="button"
+            className={`${styles.mobileProductSortButton} ${
+              priceSort !== "none" ? styles.mobileProductSortButtonActive : ""
+            }`}
+            onClick={() => setColumnSort("price")}
+            aria-label="가격 정렬"
+          >
+            <span>가격</span>
+            {priceSort !== "none" ? (
+              <span className={styles.mobileProductSortText}>
+                {priceSort === "asc" ? "낮은순" : "높은순"}
+              </span>
+            ) : null}
+          </button>
+          <button
+            type="button"
+            className={`${styles.mobileProductSortButton} ${
+              dateSort !== "none" ? styles.mobileProductSortButtonActive : ""
+            }`}
+            onClick={() => setColumnSort("date")}
+            aria-label="등록일 정렬"
+          >
+            <span>등록일</span>
+            {dateSort !== "none" ? (
+              <span className={styles.mobileProductSortText}>
+                {dateSort === "asc" ? "오래된순" : "최신순"}
+              </span>
+            ) : null}
+          </button>
         </div>
       </div>
 

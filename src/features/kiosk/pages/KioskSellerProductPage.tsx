@@ -45,7 +45,7 @@ function extractCleanErrorMessage(message?: string) {
     "존재하지 않는 인증 코드입니다.",
     "이미 인증 완료된 코드입니다.",
     "유효하지 않은 키오스크입니다.",
-    "입고할 상품 정보가 없습니다.",
+    "보관할 상품 정보가 없습니다.",
     "상품 정보가 없습니다.",
   ];
 
@@ -241,7 +241,7 @@ export default function KioskSellerProductPage() {
     );
 
     if (!selected) {
-      setMessage("입고할 상품을 선택해주세요.");
+      setMessage("보관할 상품을 선택해주세요.");
       return;
     }
 
@@ -309,10 +309,10 @@ export default function KioskSellerProductPage() {
       </header>
 
       <section className={styles.productCard}>
-        <h1 className={styles.authTitle}>입고할 상품 선택</h1>
+        <h1 className={styles.authTitle}>보관할 상품 선택</h1>
 
         <p className={styles.authDescription}>
-          현재 키오스크 지점에 입고할 상품을 선택해주세요.
+          현재 키오스크 지점에 보관할 상품을 선택해주세요.
         </p>
 
         {loading && (
@@ -325,7 +325,7 @@ export default function KioskSellerProductPage() {
 
         {!loading && products.length === 0 && !message && (
           <p className={styles.kioskCenterMessage}>
-            입고 가능한 상품이 없습니다.
+            보관 가능한 상품이 없습니다.
           </p>
         )}
 

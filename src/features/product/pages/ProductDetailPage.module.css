@@ -578,3 +578,157 @@
   font-weight: 500;
   color: #d1d5db;
 }
+
+@media (max-width: 999px) {
+  .page {
+    width: 100%;
+    max-width: 640px;
+    padding: 12px 0 48px;
+  }
+
+  .recentViewedArea {
+    display: none;
+  }
+
+  .topSection {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .imageArea {
+    width: 100%;
+  }
+
+  .mainImage,
+  .emptyImage {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    border-radius: 14px;
+  }
+
+  .thumbnailList {
+    gap: 7px;
+    padding: 0 2px 2px;
+  }
+
+  .thumbnailButton {
+    width: 56px;
+    height: 56px;
+    border-radius: 9px;
+  }
+
+  .summaryArea {
+    padding: 0 2px;
+  }
+
+  .summaryTopRow {
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .breadcrumb {
+    flex-wrap: wrap;
+    row-gap: 4px;
+    font-size: 12px;
+  }
+
+  .ownerActions {
+    gap: 6px;
+  }
+
+  .ownerActionButton {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+
+  .title {
+    margin-bottom: 10px;
+    font-size: 21px;
+    line-height: 1.42;
+  }
+
+  .price {
+    margin-bottom: 10px;
+    font-size: 26px;
+  }
+
+  .createdAt {
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+
+  .summaryMetaRow {
+    margin: 8px 0 16px;
+  }
+
+  .summaryMetaRow .stats {
+    margin-left: 0;
+    gap: 12px;
+  }
+
+  .tradeBox {
+    margin-bottom: 18px;
+    border-radius: 10px;
+  }
+
+  .tradeHeader {
+    min-height: 44px;
+    padding: 0 14px;
+    font-size: 14px;
+  }
+
+  .tradeRow {
+    min-height: 46px;
+    padding: 0 14px;
+    font-size: 14px;
+  }
+
+  .statusBox {
+    padding: 14px;
+    margin-bottom: 18px;
+    font-size: 14px;
+  }
+
+  .productStatusNotice {
+    text-align: left;
+  }
+
+  .actionBar {
+    grid-template-columns: 52px 1fr 1fr;
+    gap: 8px;
+  }
+
+  .wishButton,
+  .chatButton,
+  .buyButton {
+    height: 46px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+
+  .bottomSection {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    margin-top: 40px;
+  }
+
+  .sectionTitle {
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    font-size: 19px;
+  }
+
+  .description {
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
+  .sellerCard {
+    padding: 10px 0 0;
+  }
+}

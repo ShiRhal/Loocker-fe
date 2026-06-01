@@ -89,8 +89,18 @@
 
 @media (max-width: 768px) {
   .formInner {
-    padding: 24px 0 140px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 24px 16px 140px;
     gap: 56px;
+  }
+
+  .submitNotice,
+  .submitBarInner {
+    width: 100%;
+    box-sizing: border-box;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 
   .submitBarInner {

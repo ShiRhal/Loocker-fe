@@ -1,36 +1,58 @@
 import React from 'react';
 import styles from '../pages/MyPage.module.css';
 
-interface MyPageMobileProps {
-  setDrawerType: (type: string) => void;
+interface MenuConfig {
+  [section: string]: {
+    [key: string]: string;
+  };
 }
 
-const MyPageMenuMobile: React.FC<MyPageMobileProps> = ({ setDrawerType }) => {
+interface MyPageMenuMobileProps {
+  setDrawerType: (type: string) => void;
+  menuConfig: MenuConfig;
+}
+
+
+const menuInitials: Record<string, string> = {
+  sell: 'S',
+  buy: 'B',
+  favorites: 'W',
+  'trade-status': 'T',
+  account: 'A',
+  address: 'D',
+  reviews: 'R',
+  withdraw: 'X',
+};
+
+const MyPageMenuMobile: React.FC<MyPageMenuMobileProps> = ({
+  setDrawerType,
+  menuConfig,
+}) => {
   return (
     <>
-      {/* 모바일 메뉴 */}
-      <div className={styles.mobileMenuDivider}></div>
-      <div className={styles.mobileMenu}>
-        <ul className={styles.mobileMenuList}>
-          <li className={styles.mobileMenuItem} onClick={() => setDrawerType('sell')}>
-            <img alt="판매내역" loading="lazy" width="52" height="52" decoding="async" className={styles.mobileMenuImage} src="https://img2.joongna.com/mystore/mypage/ios/20230411_Sale.png" />
-            <div className={styles.mobileMenuText}>판매내역</div>
-          </li>
-          <li className={styles.mobileMenuItem} onClick={() => setDrawerType('buy')}>
-            <img alt="구매내역" loading="lazy" width="52" height="52" decoding="async" className={styles.mobileMenuImage} src="https://img2.joongna.com/mystore/mypage/ios/20230411_Buy.png" />
-            <div className={styles.mobileMenuText}>구매내역</div>
-          </li>
-          <li className={styles.mobileMenuItem} onClick={() => setDrawerType('delivery-request')}>
-            <img alt="택배 신청" loading="lazy" width="52" height="52" decoding="async" className={styles.mobileMenuImage} src="https://img2.joongna.com/mystore/mypage/ios/20230411_Delivery.png" />
-            <div className={styles.mobileMenuText}>택배 신청</div>
-          </li>
-          <li className={styles.mobileMenuItem} onClick={() => setDrawerType('favorites')}>
-            <img alt="찜한 상품" loading="lazy" width="52" height="52" decoding="async" className={styles.mobileMenuImage} src="https://img2.joongna.com/mystore/mypage/ios/20230411_Heart.png" />
-            <div className={styles.mobileMenuText}>찜한 상품</div>
-          </li>
-        </ul>
-      </div>
-      <div className={styles.mobileMenuDivider}></div>
+      <div className={styles.mobileMenuDivider} />
+      <nav className={styles.mobileMenu} aria-label="마이페이지 빠른 메뉴">
+        {Object.entries(menuConfig).map(([sectionKey, items]) => (
+          <section key={sectionKey} className={styles.mobileMenuSection}>
+            <div className={styles.mobileMenuList}>
+              {Object.entries(items).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={styles.mobileMenuItem}
+                  onClick={() => setDrawerType(key)}
+                >
+                  <span className={styles.mobileMenuImage} aria-hidden="true">
+                    {menuInitials[key] ?? label.slice(0, 1)}
+                  </span>
+                  <span className={styles.mobileMenuText}>{label}</span>
+                </button>
+              ))}
+            </div>
+            <div className={styles.mobileMenuSectionDivider} />            
+          </section>
+        ))}
+      </nav>
     </>
   );
 };

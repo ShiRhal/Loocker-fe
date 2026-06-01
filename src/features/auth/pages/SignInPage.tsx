@@ -170,7 +170,7 @@ export default function SignInPage() {
               fontWeight: 800,
             }}
           >
-            키오스크 입고 인증을 위해 로그인해주세요.
+            키오스크 보관 인증을 위해 로그인해주세요.
           </div>
         )}
 

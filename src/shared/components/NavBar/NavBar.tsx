@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../app/providers/auth/useAuth";
 import { searchApi } from "../../api/searchApi";
+import SearchDrawer from "./SearchDrawer";
 import styles from "./NavBar.module.css";
 import loockerLogo from "../../../assets/images/Loocker.png";
 import chatIcon from "../../../assets/icons/chat.svg";
@@ -20,6 +21,20 @@ type PopularKeyword = {
 type NavBarProps = {
   onOpenChat?: () => void;
 };
+
+function HomeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M3.8 10.6 12 3.8l8.2 6.8v8.6a1 1 0 0 1-1 1h-4.6v-5.8H9.4v5.8H4.8a1 1 0 0 1-1-1v-8.6Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 const fallbackPopularKeywords: PopularKeyword[] = [
   { rank: 1, keyword: "레고" },
@@ -56,6 +71,7 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
   const [searchKeyword, setSearchKeyword] = useState(
     searchParams.get("keyword") ?? ""
   );
+  const [searchDrawerOpen, setSearchDrawerOpen] = useState(false);
 
   const keywordPages = useMemo(() => {
     const pageSize = 5;
@@ -130,14 +146,17 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
 
     if (!trimmedKeyword) {
       nav("/");
+      setSearchDrawerOpen(false);
       return;
     }
 
     nav(`/?keyword=${encodeURIComponent(trimmedKeyword)}`);
+    setSearchDrawerOpen(false);
   };
 
   const handlePopularKeywordClick = (keyword: string) => {
     nav(`/?keyword=${encodeURIComponent(keyword)}`);
+    setSearchDrawerOpen(false);
   };
 
   const goIfAuthedOrSignin = (to: string) => {
@@ -160,6 +179,11 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
     nav(`/signin?redirect=${redirect}`);
   };
 
+  const isFooterActive = (path: string) => {
+    if (path === "/") return loc.pathname === "/";
+    return loc.pathname.startsWith(path);
+  };
+
   return (
     <header id="siteHeader" className={styles.header}>
       <div className={styles.innerSticky}>
@@ -173,6 +197,15 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
               />
             </button>
           </div>
+
+          <button
+            type="button"
+            className={styles.mobileSearchButton}
+            onClick={() => setSearchDrawerOpen(true)}
+            aria-label="검색 열기"
+          >
+            <img src={searchIcon} alt="" className={styles.mobileSearchIcon} />
+          </button>
 
           <div className={styles.searchWrap}>
             <form
@@ -268,6 +301,62 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
           </div>
         </div>
       </div>
+
+      <nav className={styles.mobileFooterNav} aria-label="모바일 하단 메뉴">
+        <button
+          type="button"
+          className={`${styles.mobileFooterItem} ${
+            isFooterActive("/") ? styles.mobileFooterItemActive : ""
+          }`}
+          onClick={() => nav("/")}
+        >
+          <HomeIcon className={styles.mobileFooterIcon} />
+          <span>홈</span>
+        </button>
+
+        <button
+          type="button"
+          className={`${styles.mobileFooterItem} ${
+            isFooterActive("/product/form")
+              ? styles.mobileFooterItemActive
+              : ""
+          }`}
+          onClick={() => goIfAuthedOrSignin("/product/form?type=regist")}
+        >
+          <img src={saleIcon} alt="" className={styles.mobileFooterIcon} />
+          <span>등록</span>
+        </button>
+
+        <button
+          type="button"
+          className={styles.mobileFooterItem}
+          onClick={openChatDrawerOrSignin}
+        >
+          <img src={chatIcon} alt="" className={styles.mobileFooterIcon} />
+          <span>채팅</span>
+        </button>
+
+        <button
+          type="button"
+          className={`${styles.mobileFooterItem} ${
+            isFooterActive("/mypage") ? styles.mobileFooterItemActive : ""
+          }`}
+          onClick={() => goIfAuthedOrSignin("/mypage")}
+        >
+          <img src={userIcon} alt="" className={styles.mobileFooterIcon} />
+          <span>마이</span>
+        </button>
+      </nav>
+
+      <SearchDrawer
+        open={searchDrawerOpen}
+        searchKeyword={searchKeyword}
+        popularKeywords={popularKeywords}
+        onClose={() => setSearchDrawerOpen(false)}
+        onSearchKeywordChange={setSearchKeyword}
+        onSearchSubmit={handleSearchSubmit}
+        onPopularKeywordClick={handlePopularKeywordClick}
+      />
     </header>
   );
 }

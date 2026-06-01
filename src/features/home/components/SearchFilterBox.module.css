@@ -35,6 +35,10 @@
   margin-bottom: 0;
 }
 
+.mobileFilterToggle {
+  display: none;
+}
+
 .filterTable {
   border-bottom: 1px solid #d9dde3;
 }
@@ -347,6 +351,57 @@
 }
 
 @media (max-width: 900px) {
+  .mobileFilterToggle {
+    width: 100%;
+    min-height: 48px;
+    border: 0;
+    border-bottom: 1px solid #d9dde3;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 4px;
+    color: #111111;
+    cursor: pointer;
+  }
+
+  .mobileFilterToggle span:first-child {
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .mobileFilterToggle strong {
+    margin-left: auto;
+    margin-right: 14px;
+    font-size: 12px;
+    font-weight: 800;
+    color: #3182f7;
+  }
+
+  .mobileFilterToggleIcon {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    margin-right: 6px;
+    border-right: 2px solid #4b5563;
+    border-bottom: 2px solid #4b5563;
+    transform: rotate(45deg);
+    transition: transform 0.18s ease;
+  }
+
+  .mobileFilterToggleIconOpen {
+    transform: rotate(225deg);
+  }
+
+  .filterTable {
+    display: none;
+  }
+
+  .filterTableOpen {
+    display: block;
+  }
+
   .row,
   .categoryPanel {
     grid-template-columns: 1fr;
