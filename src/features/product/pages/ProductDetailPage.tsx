@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { message, Modal } from "antd";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { getOrCreateChatRoomForProduct } from "../../chat/api/chatApi";
+import { useChatDrawer } from "../../chat/context/ChatDrawerContext";
 import RecentViewedBox from "../../home/components/RecentViewedBox";
 import { productApi } from "../api/productapi";
 import type { ProductDetail } from "../types/product.types";
@@ -40,6 +42,7 @@ export default function ProductDetailPage() {
   const { productId } = useParams<{ productId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
+  const { openChatRoom } = useChatDrawer();
 
   const paymentHandledRef = useRef(false);
 
@@ -155,6 +158,37 @@ export default function ProductDetailPage() {
     setInitialTradeId(null);
     setInitialPaid(false);
     setTradeDrawerOpen(true);
+  };
+
+  const handleChatClick = async () => {
+    if (!product) return;
+
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      const redirect = encodeURIComponent(
+        `${location.pathname}${location.search}`,
+      );
+      navigate(`/signin?redirect=${redirect}`);
+      return;
+    }
+
+    try {
+      const baseRoom = await getOrCreateChatRoomForProduct(product.PRODUCT_ID);
+      const thumb = getPrimaryProductImageUrl(product.IMAGE);
+
+      openChatRoom({
+        ...baseRoom,
+        TITLE: baseRoom.TITLE ?? product.TITLE,
+        TARGET_NICKNAME:
+          baseRoom.TARGET_NICKNAME ?? product.NICKNAME ?? "판매자",
+        IMAGE_URL: baseRoom.IMAGE_URL ?? thumb ?? null,
+      });
+    } catch (err) {
+      console.error(err);
+      message.error(
+        err instanceof Error ? err.message : "채팅을 시작할 수 없습니다.",
+      );
+    }
   };
 
   const handleCloseTradeDrawer = () => {
@@ -392,6 +426,7 @@ export default function ProductDetailPage() {
             isWished={product.IS_WISHED}
             isOwner={isOwner}
             onWishlistClick={handleWishlistClick}
+            onChatClick={() => void handleChatClick()}
             onBuyClick={handleOpenTradeDrawer}
             onEditClick={handleEditProductClick}
             onDeleteClick={handleDeleteProductClick}

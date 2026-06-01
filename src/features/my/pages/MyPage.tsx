@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../app/providers/auth/useAuth";
 import styles from "./MyPage.module.css";
 import MyPageMenuDesktop from "../components/MyPageMenuDesktop";
+import MyPageMenuMobile from "../components/MyPageMenuMobile";
 import MyPageDrawer from "../components/MyPageDrawer";
 import ProfileSection from "../components/ProfileSection";
 import ProductSection from "../components/ProductSection";
@@ -43,6 +46,8 @@ function extractList<T>(data: unknown, key: string): T[] {
 }
 
 const MyPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [drawerType, setDrawerType] = useState<string | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
   const [nickname, setNickname] = useState<string>("");
@@ -134,6 +139,11 @@ const MyPage: React.FC = () => {
     }
   }, [userId]);
 
+  const handleLogout = async () => {
+    await logout();
+    navigate("/", { replace: true });
+  };
+
   return (
     <div className={styles.container}>
       <MyPageMenuDesktop setDrawerType={setDrawerType} menuConfig={Sidebar} />
@@ -148,8 +158,14 @@ const MyPage: React.FC = () => {
                   ? () => setDrawerType("nickname-change")
                   : undefined
               }
+              onLogout={() => void handleLogout()}
             />
           </div>
+
+          <MyPageMenuMobile
+            setDrawerType={setDrawerType}
+            menuConfig={Sidebar}
+          />
 
           <ProductSection
             products={products}

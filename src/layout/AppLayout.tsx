@@ -4,6 +4,7 @@ import ChatDrawer from "../features/chat/components/ChatDrawer";
 import { ChatDrawerContext } from "../features/chat/context/ChatDrawerContext";
 import type { ChatRoomListItem } from "../features/chat/types/chat";
 import NavBar from "../shared/components/NavBar/NavBar";
+import styles from "./AppLayout.module.css";
 
 export default function AppLayout() {
   const [chatOpen, setChatOpen] = useState(false);
@@ -39,9 +40,7 @@ export default function AppLayout() {
           onClose={handleCloseChat}
           initialRoom={initialChatRoom}
         />
-        <main
-          style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 16px 80px" }}
-        >
+        <main className={styles.main}>
           <Outlet />
         </main>
       </>
