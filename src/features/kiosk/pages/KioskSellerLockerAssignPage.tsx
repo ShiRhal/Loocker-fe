@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import logoImage from "../../../assets/images/Loocker.png";
-import { kioskapi } from "../../../shared/api/apiClient";
+import {
+  kioskApi,
+  type KioskLockerCommandSuccessCheckResponse,
+  type KioskLockerNextStatus,
+  type KioskLockerRequestTypeCode,
+  type KioskLockerRoleType,
+} from "../api/kioskApi";
 import styles from "../styles/kiosk.module.css";
 
 type DepositStep =
@@ -12,10 +18,6 @@ type DepositStep =
   | "PHOTO"
   | "DONE"
   | "ERROR";
-
-type RoleType = "KIOSK" | "DEVICE";
-
-type RequestTypeCode = "NORMAL" | "RETRY";
 
 type LockerAssignState = {
   TRADE_ID?: number;
@@ -46,17 +48,6 @@ type CommandCheckResult = {
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
-/**
- * kioskapi가 이미 /kiosk prefix를 붙이는 구조라면 아래처럼 사용.
- * 실제 컨트롤러 경로가 다르면 여기만 바꾸면 됨.
- */
-const ENDPOINTS = {
-  commandInsert: "/locker/command/create",
-  commandSuccessCheck: "/locker/command/success/check",
-  lockerUpdate: "/locker/update",
-  lockerImageSelect: "/locker/image/select",
-};
-
 const COMMAND_POLL_INTERVAL_MS = 1000;
 const COMMAND_POLL_TIMEOUT_MS = 60 * 1000;
 
@@ -81,10 +72,6 @@ function toApiAssetUrl(url?: string | null) {
 function formatPrice(value?: number) {
   if (typeof value !== "number") return "가격 정보 없음";
   return `${value.toLocaleString()}원`;
-}
-
-function unwrapFirst<T>(data: T | T[]): T {
-  return Array.isArray(data) ? data[0] : data;
 }
 
 function extractCleanErrorMessage(message?: string) {
@@ -201,10 +188,10 @@ function getCurrentStepText(step: DepositStep) {
   }
 }
 
-function normalizeCommandCheckResult(data: any): CommandCheckResult {
-  const list = Array.isArray(data) ? data : [data];
-
-  const normalizedList = list.filter(Boolean).map((item) => {
+function normalizeCommandCheckResult(
+  data: KioskLockerCommandSuccessCheckResponse[],
+): CommandCheckResult {
+  const normalizedList = data.filter(Boolean).map((item) => {
     const rawStatus = String(
       item.COMMAND_STATUS_CODE ||
         item.commandStatusCode ||
@@ -212,8 +199,6 @@ function normalizeCommandCheckResult(data: any): CommandCheckResult {
         item.statusCode ||
         item.RESULT_STATUS_CODE ||
         item.resultStatusCode ||
-        item.STATUS ||
-        item.status ||
         "",
     ).toUpperCase();
 
@@ -283,7 +268,7 @@ function normalizeCommandCheckResult(data: any): CommandCheckResult {
 export default function KioskSellerDepositLockerAssignPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { authCode } = useParams();
+  const { authCode } = useParams<{ authCode?: string }>();
 
   const assignData = (location.state || {}) as LockerAssignState;
 
@@ -335,91 +320,47 @@ export default function KioskSellerDepositLockerAssignPage() {
     }
   }
 
-  async function callApi<T>(
-    path: string,
-    options: {
-      method?: "GET" | "POST" | "PUT" | "DELETE";
-      body?: Record<string, unknown>;
-      query?: Record<string, string | number | undefined | null>;
-    } = {},
-  ): Promise<T> {
-    const query = new URLSearchParams();
-
-    Object.entries(options.query || {}).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        query.set(key, String(value));
-      }
-    });
-
-    const url = `${path}${query.toString() ? `?${query.toString()}` : ""}`;
-
-    try {
-      return (await kioskapi(url, {
-        method: options.method || "GET",
-        json: options.body,
-      })) as T;
-    } catch (error) {
-      const rawMessage =
-        error instanceof Error
-          ? error.message
-          : "API 요청 중 오류가 발생했습니다.";
-
-      throw new Error(extractCleanErrorMessage(rawMessage));
-    }
-  }
-
   async function createLockerCommand(
-    nextStatus: string,
-    requestTypeCode: RequestTypeCode = "NORMAL",
+    nextStatus: KioskLockerNextStatus,
+    requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
   ) {
-    const body = {
-      AUTH_CODE: normalizedAuthCode,
-      KIOSK_CODE: kioskCode,
-      NEXT_STATUS: nextStatus,
-      REQUEST_TYPE_CODE: requestTypeCode,
-    };
-
     setApiMessage(
       `라즈베리파이 명령 생성 중: ${nextStatus} / ${requestTypeCode}`,
     );
 
-    await callApi(ENDPOINTS.commandInsert, {
-      method: "PUT",
-      body,
-    });
-  }
-
-  async function updateLockerState(nextStatus: string, roleType: RoleType) {
-    const body = {
-      TRADE_ID: tradeId,
+    await kioskApi.createLockerCommand({
       AUTH_CODE: normalizedAuthCode,
       KIOSK_CODE: kioskCode,
       NEXT_STATUS: nextStatus,
-      ROLE_TYPE: roleType,
-    };
-
-    setApiMessage(`보관함 상태 변경 중: ${nextStatus}`);
-
-    await callApi(ENDPOINTS.lockerUpdate, {
-      method: "PUT",
-      body,
+      REQUEST_TYPE_CODE: requestTypeCode,
     });
   }
 
-  async function checkCommandSuccess(nextStatus: string) {
-    const data = await callApi<any>(ENDPOINTS.commandSuccessCheck, {
-      method: "GET",
-      query: {
-        AUTH_CODE: normalizedAuthCode,
-        KIOSK_CODE: kioskCode,
-        NEXT_STATUS: nextStatus,
-      },
+  async function updateLockerState(
+    nextStatus: KioskLockerNextStatus,
+    roleType: KioskLockerRoleType,
+  ) {
+    setApiMessage(`보관함 상태 변경 중: ${nextStatus}`);
+
+    await kioskApi.updateLockerState({
+      TRADE_ID: tradeId,
+      AUTH_CODE: normalizedAuthCode,
+      NEXT_STATUS: nextStatus,
+      ROLE_TYPE: roleType,
+    });
+  }
+
+  async function checkCommandSuccess(nextStatus: KioskLockerNextStatus) {
+    const data = await kioskApi.checkLockerCommandSuccess({
+      AUTH_CODE: normalizedAuthCode,
+      KIOSK_CODE: kioskCode,
+      NEXT_STATUS: nextStatus,
     });
 
     return normalizeCommandCheckResult(data);
   }
 
-  async function waitCommandSuccess(nextStatus: string) {
+  async function waitCommandSuccess(nextStatus: KioskLockerNextStatus) {
     const startedAt = Date.now();
 
     while (!cancelledRef.current) {
@@ -455,16 +396,11 @@ export default function KioskSellerDepositLockerAssignPage() {
 
   async function selectSellerCapturedImage() {
     try {
-      const data = await callApi<any>(ENDPOINTS.lockerImageSelect, {
-        method: "GET",
-        query: {
-          TRADE_ID: tradeId,
-          LOCKER_ID: lockerId || undefined,
-          IMAGE_TYPE_CODE: "SELLER_INSERT",
-        },
+      const result = await kioskApi.selectLockerImage({
+        TRADE_ID: tradeId,
+        LOCKER_ID: lockerId || undefined,
+        IMAGE_TYPE_CODE: "SELLER_INSERT",
       });
-
-      const result = unwrapFirst<any>(data);
 
       const imageUrl =
         result?.IMAGE_URL ||
@@ -481,7 +417,9 @@ export default function KioskSellerDepositLockerAssignPage() {
     }
   }
 
-  async function runOpenFlow(requestTypeCode: RequestTypeCode = "NORMAL") {
+  async function runOpenFlow(
+    requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
+  ) {
     try {
       validateRequiredValues();
 
@@ -490,74 +428,14 @@ export default function KioskSellerDepositLockerAssignPage() {
       setStep("OPENING");
       lastFailedActionRef.current = "OPEN";
 
-      /**
-       * API 1.
-       * PUT /kiosk/locker/command/create
-       *
-       * 요청값:
-       * {
-       *   AUTH_CODE,
-       *   KIOSK_CODE,
-       *   NEXT_STATUS: "SELLER_UNLOCK_REQUESTED",
-       *   REQUEST_TYPE_CODE: "NORMAL" | "RETRY"
-       * }
-       *
-       * 생성 명령:
-       * SELLER_UNLOCK, SELLER_LED_ON, SELLER_PDLC_ON, SELLER_DOOR_OPEN_CHECK
-       */
       await createLockerCommand("SELLER_UNLOCK_REQUESTED", requestTypeCode);
 
-      /**
-       * API 2.
-       * PUT /kiosk/locker/update
-       *
-       * 요청값:
-       * {
-       *   TRADE_ID,
-       *   AUTH_CODE,
-       *   KIOSK_CODE,
-       *   NEXT_STATUS: "SELLER_UNLOCK_REQUESTED",
-       *   ROLE_TYPE: "KIOSK"
-       * }
-       *
-       * 상태:
-       * EMPTY -> SELLER_UNLOCK_REQUESTED
-       *
-       * RETRY인 경우 이미 해당 상태일 수 있으므로 UPDATE 실패 가능성을 줄이기 위해
-       * NORMAL 때만 호출.
-       */
       if (requestTypeCode === "NORMAL") {
         await updateLockerState("SELLER_UNLOCK_REQUESTED", "KIOSK");
       }
 
-      /**
-       * API 3.
-       * GET /kiosk/locker/command/success/check
-       *
-       * 요청값:
-       * AUTH_CODE, KIOSK_CODE, NEXT_STATUS = SELLER_UNLOCK_READY
-       *
-       * 성공 확인:
-       * SELLER_UNLOCK, SELLER_LED_ON, SELLER_PDLC_ON, SELLER_DOOR_OPEN_CHECK
-       */
       await waitCommandSuccess("SELLER_UNLOCK_READY");
 
-      /**
-       * API 4.
-       * PUT /kiosk/locker/update
-       *
-       * 요청값:
-       * {
-       *   TRADE_ID,
-       *   AUTH_CODE,
-       *   KIOSK_CODE,
-       *   NEXT_STATUS: "SELLER_UNLOCK_READY",
-       *   ROLE_TYPE: "DEVICE"
-       * }
-       *
-       * 상태:
-       * SELLER_UNLOCK_REQUESTED -> SELLER_UNLOCK_READY
-       */
       await updateLockerState("SELLER_UNLOCK_READY", "DEVICE");
 
       if (cancelledRef.current) return;
@@ -567,9 +445,11 @@ export default function KioskSellerDepositLockerAssignPage() {
     } catch (error) {
       setStep("ERROR");
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "보관함 문 열림 처리 중 오류가 발생했습니다.",
+        extractCleanErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "보관함 문 열림 처리 중 오류가 발생했습니다.",
+        ),
       );
     } finally {
       setActionLoading(false);
@@ -585,140 +465,30 @@ export default function KioskSellerDepositLockerAssignPage() {
       setStep("CLOSING");
       lastFailedActionRef.current = "CLOSE_PHOTO";
 
-      /**
-       * API 5.
-       * PUT /kiosk/locker/update
-       *
-       * 요청값:
-       * {
-       *   TRADE_ID,
-       *   AUTH_CODE,
-       *   KIOSK_CODE,
-       *   NEXT_STATUS: "SELLER_DEPOSIT_CONFIRMED",
-       *   ROLE_TYPE: "KIOSK"
-       * }
-       *
-       * 상태:
-       * SELLER_UNLOCK_READY -> SELLER_DEPOSIT_CONFIRMED
-       */
       await updateLockerState("SELLER_DEPOSIT_CONFIRMED", "KIOSK");
 
       await sleep(2000);
 
-      /**
-       * API 6.
-       * PUT /kiosk/locker/command/create
-       *
-       * 요청값:
-       * {
-       *   AUTH_CODE,
-       *   KIOSK_CODE,
-       *   NEXT_STATUS: "SELLER_DOOR_CLOSE_REQUESTED",
-       *   REQUEST_TYPE_CODE: "NORMAL"
-       * }
-       *
-       * 생성 명령:
-       * SELLER_DOOR_CLOSE_CHECK
-       */
       await createLockerCommand("SELLER_DOOR_CLOSE_REQUESTED", "NORMAL");
 
-      /**
-       * API 7.
-       * PUT /kiosk/locker/update
-       *
-       * 상태:
-       * SELLER_DEPOSIT_CONFIRMED -> SELLER_DOOR_CLOSE_REQUESTED
-       */
       await updateLockerState("SELLER_DOOR_CLOSE_REQUESTED", "KIOSK");
 
-      /**
-       * API 8.
-       * GET /kiosk/locker/command/success/check
-       *
-       * 요청값:
-       * AUTH_CODE, KIOSK_CODE, NEXT_STATUS = SELLER_DOOR_CLOSED
-       *
-       * 성공 확인:
-       * SELLER_DOOR_CLOSE_CHECK
-       */
       await waitCommandSuccess("SELLER_DOOR_CLOSED");
 
-      /**
-       * API 9.
-       * PUT /kiosk/locker/update
-       *
-       * 상태:
-       * SELLER_DOOR_CLOSE_REQUESTED -> SELLER_DOOR_CLOSED
-       */
       await updateLockerState("SELLER_DOOR_CLOSED", "DEVICE");
 
       if (cancelledRef.current) return;
 
       setStep("CAPTURING");
 
-      /**
-       * API 10.
-       * PUT /kiosk/locker/command/create
-       *
-       * 요청값:
-       * {
-       *   AUTH_CODE,
-       *   KIOSK_CODE,
-       *   NEXT_STATUS: "SELLER_LOCK_REQUESTED",
-       *   REQUEST_TYPE_CODE: "NORMAL"
-       * }
-       *
-       * 생성 명령:
-       * SELLER_CAPTURE_INSERT_IMAGE
-       *
-       * image/create는 키오스크가 호출하지 않음.
-       * 라즈베리파이가 SELLER_CAPTURE_INSERT_IMAGE 명령을 처리하면서 이미지 저장.
-       */
       await createLockerCommand("SELLER_LOCK_REQUESTED", "NORMAL");
 
-      /**
-       * API 11.
-       * PUT /kiosk/locker/update
-       *
-       * 상태:
-       * SELLER_DOOR_CLOSED -> SELLER_LOCK_REQUESTED
-       */
       await updateLockerState("SELLER_LOCK_REQUESTED", "KIOSK");
 
-      /**
-       * API 12.
-       * GET /kiosk/locker/command/success/check
-       *
-       * 요청값:
-       * AUTH_CODE, KIOSK_CODE, NEXT_STATUS = SELLER_LOCKED_PHOTO_SAVED
-       *
-       * 성공 확인:
-       * SELLER_CAPTURE_INSERT_IMAGE
-       */
       await waitCommandSuccess("SELLER_LOCKED_PHOTO_SAVED");
 
-      /**
-       * API 13.
-       * PUT /kiosk/locker/update
-       *
-       * 상태:
-       * SELLER_LOCK_REQUESTED -> SELLER_LOCKED_PHOTO_SAVED
-       */
       await updateLockerState("SELLER_LOCKED_PHOTO_SAVED", "DEVICE");
 
-      /**
-       * API 14.
-       * GET /kiosk/locker/image/select
-       *
-       * 요청값:
-       * {
-       *   TRADE_ID,
-       *   LOCKER_ID,
-       *   IMAGE_TYPE_CODE: "SELLER_INSERT"
-       * }
-       *
-       * 키오스크는 image create가 아니라 select만 함.
-       */
       await selectSellerCapturedImage();
 
       if (cancelledRef.current) return;
@@ -728,9 +498,11 @@ export default function KioskSellerDepositLockerAssignPage() {
     } catch (error) {
       setStep("ERROR");
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "문 닫힘 또는 사진 촬영 처리 중 오류가 발생했습니다.",
+        extractCleanErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "문 닫힘 또는 사진 촬영 처리 중 오류가 발생했습니다.",
+        ),
       );
     } finally {
       setActionLoading(false);
@@ -745,53 +517,10 @@ export default function KioskSellerDepositLockerAssignPage() {
       setErrorMessage("");
       lastFailedActionRef.current = "PHOTO_CONFIRM";
 
-      /**
-       * API 15.
-       * PUT /kiosk/locker/command/create
-       *
-       * 요청값:
-       * {
-       *   AUTH_CODE,
-       *   KIOSK_CODE,
-       *   NEXT_STATUS: "SELLER_PHOTO_CONFIRMED",
-       *   REQUEST_TYPE_CODE: "NORMAL"
-       * }
-       *
-       * 생성 명령:
-       * SELLER_PDLC_OFF, SELLER_LED_OFF
-       */
       await createLockerCommand("SELLER_PHOTO_CONFIRMED", "NORMAL");
 
-      /**
-       * API 16.
-       * GET /kiosk/locker/command/success/check
-       *
-       * 요청값:
-       * AUTH_CODE, KIOSK_CODE, NEXT_STATUS = SELLER_PHOTO_CONFIRMED
-       *
-       * 성공 확인:
-       * SELLER_PDLC_OFF, SELLER_LED_OFF
-       */
       await waitCommandSuccess("SELLER_PHOTO_CONFIRMED");
 
-      /**
-       * API 17.
-       * PUT /kiosk/locker/update
-       *
-       * 요청값:
-       * {
-       *   TRADE_ID,
-       *   AUTH_CODE,
-       *   KIOSK_CODE,
-       *   NEXT_STATUS: "SELLER_PHOTO_CONFIRMED",
-       *   ROLE_TYPE: "KIOSK"
-       * }
-       *
-       * 상태:
-       * SELLER_LOCKED_PHOTO_SAVED -> SELLER_PHOTO_CONFIRMED
-       *
-       * SP 내부에서 TRADE 상태 DEPOSITED 처리.
-       */
       await updateLockerState("SELLER_PHOTO_CONFIRMED", "KIOSK");
 
       setStep("DONE");
@@ -799,9 +528,11 @@ export default function KioskSellerDepositLockerAssignPage() {
     } catch (error) {
       setStep("ERROR");
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "사진 확인 완료 처리 중 오류가 발생했습니다.",
+        extractCleanErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "사진 확인 완료 처리 중 오류가 발생했습니다.",
+        ),
       );
     } finally {
       setActionLoading(false);
