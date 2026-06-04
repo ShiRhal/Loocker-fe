@@ -1,4 +1,5 @@
 import { Drawer } from "antd";
+import type { DrawerProps } from "antd";
 import React, { useEffect, useRef, useState } from "react";
 import ChatListDrawer from "../drawers/ChatListDrawer";
 import ChatRoomDrawer from "../drawers/ChatRoomDrawer";
@@ -7,12 +8,21 @@ import type { ChatRoomListItem } from "../types/chat";
 type Props = {
   open: boolean;
   onClose: () => void;
-  /** 드로어가 닫혔다가 열릴 때만 적용. null이면 채팅 목록부터 표시. */
   initialRoom: ChatRoomListItem | null;
+  rightOffset?: number;
+  mask?: boolean;
 };
 
-export default function ChatDrawer({ open, onClose, initialRoom }: Props) {
-  const [selectedRoom, setSelectedRoom] = useState<ChatRoomListItem | null>(null);
+export default function ChatDrawer({
+  open,
+  onClose,
+  initialRoom,
+  rightOffset = 0,
+  mask = true,
+}: Props) {
+  const [selectedRoom, setSelectedRoom] = useState<ChatRoomListItem | null>(
+    null,
+  );
   const prevOpenRef = useRef(false);
 
   useEffect(() => {
@@ -30,6 +40,25 @@ export default function ChatDrawer({ open, onClose, initialRoom }: Props) {
     onClose();
   };
 
+  const normalizedRightOffset = Math.max(0, rightOffset);
+
+  const drawerStyles: DrawerProps["styles"] = {
+    body: {
+      padding: 0,
+      minHeight: "100vh",
+      display: "flex",
+      flexDirection: "column",
+    },
+    header: { display: "none" },
+    wrapper:
+      normalizedRightOffset > 0
+        ? {
+            right: normalizedRightOffset,
+            insetInlineEnd: normalizedRightOffset,
+          }
+        : undefined,
+  };
+
   return (
     <Drawer
       placement="right"
@@ -37,16 +66,19 @@ export default function ChatDrawer({ open, onClose, initialRoom }: Props) {
       open={open}
       closable={false}
       width={640}
-      styles={{
-        body: { padding: 0, minHeight: "100vh", display: "flex", flexDirection: "column" },
-        header: { display: "none" },
-      }}
+      mask={mask}
+      zIndex={normalizedRightOffset > 0 ? 1200 : undefined}
+      styles={drawerStyles}
       destroyOnClose
     >
       {selectedRoom == null ? (
         <ChatListDrawer onClose={handleClose} onSelectRoom={setSelectedRoom} />
       ) : (
-        <ChatRoomDrawer room={selectedRoom} onBack={() => setSelectedRoom(null)} onClose={handleClose} />
+        <ChatRoomDrawer
+          room={selectedRoom}
+          onBack={() => setSelectedRoom(null)}
+          onClose={handleClose}
+        />
       )}
     </Drawer>
   );
