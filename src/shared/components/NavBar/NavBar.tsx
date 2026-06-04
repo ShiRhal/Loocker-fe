@@ -5,6 +5,7 @@ import { searchApi } from "../../api/searchApi";
 import SearchDrawer from "./SearchDrawer";
 import styles from "./NavBar.module.css";
 import loockerLogo from "../../../assets/images/Loocker.png";
+import loockerLogoMobile from "../../../assets/images/Loocker_m.png";
 import chatIcon from "../../../assets/icons/chat.svg";
 import saleIcon from "../../../assets/icons/sale.svg";
 import searchIcon from "../../../assets/icons/search.svg";
@@ -66,10 +67,11 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
   const [searchParams] = useSearchParams();
 
   const [pageIndex, setPageIndex] = useState(0);
-  const [popularKeywords, setPopularKeywords] =
-  useState<PopularKeyword[]>(fallbackPopularKeywords);
+  const [popularKeywords, setPopularKeywords] = useState<PopularKeyword[]>(
+    fallbackPopularKeywords,
+  );
   const [searchKeyword, setSearchKeyword] = useState(
-    searchParams.get("keyword") ?? ""
+    searchParams.get("keyword") ?? "",
   );
   const [searchDrawerOpen, setSearchDrawerOpen] = useState(false);
 
@@ -92,30 +94,30 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
   }, [searchParams]);
 
   useEffect(() => {
-  const fetchPopularKeywords = async () => {
-    try {
-      const data = await searchApi.getPopularKeywords();
+    const fetchPopularKeywords = async () => {
+      try {
+        const data = await searchApi.getPopularKeywords();
 
-      //console.log("[NavBar] 인기 검색어 API 응답:", data);
+        //console.log("[NavBar] 인기 검색어 API 응답:", data);
 
-      const mappedKeywords = data
-        .filter((item) => item.KEYWORD && item.KEYWORD.trim().length > 0)
-        .map((item, index) => ({
-          rank: index + 1,
-          keyword: item.KEYWORD.trim(),
-        }));
+        const mappedKeywords = data
+          .filter((item) => item.KEYWORD && item.KEYWORD.trim().length > 0)
+          .map((item, index) => ({
+            rank: index + 1,
+            keyword: item.KEYWORD.trim(),
+          }));
 
-      if (mappedKeywords.length > 0) {
-        setPopularKeywords(mappedKeywords);
-        setPageIndex(0);
+        if (mappedKeywords.length > 0) {
+          setPopularKeywords(mappedKeywords);
+          setPageIndex(0);
+        }
+      } catch (error) {
+        console.error("[NavBar] 인기 검색어 API 호출 실패:", error);
       }
-    } catch (error) {
-      console.error("[NavBar] 인기 검색어 API 호출 실패:", error);
-    }
-  };
+    };
 
-  fetchPopularKeywords();
-}, []);
+    fetchPopularKeywords();
+  }, []);
 
   useEffect(() => {
     if (keywordPages.length <= 1) return;
@@ -130,7 +132,9 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
   const handlePrevKeywords = () => {
     if (!keywordPages.length) return;
 
-    setPageIndex((prev) => (prev - 1 + keywordPages.length) % keywordPages.length);
+    setPageIndex(
+      (prev) => (prev - 1 + keywordPages.length) % keywordPages.length,
+    );
   };
 
   const handleNextKeywords = () => {
@@ -190,11 +194,14 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
         <div className={styles.topRow}>
           <div className={styles.logoWrap}>
             <button className={styles.logoLink} onClick={() => nav("/")}>
-              <img
-                src={loockerLogo}
-                alt="Loocker"
-                className={styles.logoImage}
-              />
+              <picture>
+                <source media="(max-width: 1000px)" srcSet={loockerLogoMobile} />
+                <img
+                  src={loockerLogo}
+                  alt="Loocker"
+                  className={styles.logoImage}
+                />
+              </picture>
             </button>
           </div>
 
@@ -250,7 +257,11 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
                   type="button"
                   onClick={handleNextKeywords}
                 >
-                  <img src={rightIcon} alt="다음" className={styles.rightIcon} />
+                  <img
+                    src={rightIcon}
+                    alt="다음"
+                    className={styles.rightIcon}
+                  />
                 </button>
 
                 <ul className={styles.keywordList}>
@@ -261,8 +272,12 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
                         className={styles.keywordLink}
                         onClick={() => handlePopularKeywordClick(item.keyword)}
                       >
-                        <span className={styles.keywordRank}>{item.rank}. </span>
-                        <span className={styles.keywordText}>{item.keyword}</span>
+                        <span className={styles.keywordRank}>
+                          {item.rank}.{" "}
+                        </span>
+                        <span className={styles.keywordText}>
+                          {item.keyword}
+                        </span>
                       </button>
                     </li>
                   ))}
@@ -317,9 +332,7 @@ export default function NavBar({ onOpenChat }: NavBarProps) {
         <button
           type="button"
           className={`${styles.mobileFooterItem} ${
-            isFooterActive("/product/form")
-              ? styles.mobileFooterItemActive
-              : ""
+            isFooterActive("/product/form") ? styles.mobileFooterItemActive : ""
           }`}
           onClick={() => goIfAuthedOrSignin("/product/form?type=regist")}
         >
