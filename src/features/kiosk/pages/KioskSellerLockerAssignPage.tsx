@@ -280,9 +280,9 @@ export default function KioskSellerDepositLockerAssignPage() {
 
   const startedRef = useRef(false);
   const cancelledRef = useRef(false);
-  const lastFailedActionRef = useRef<"OPEN" | "CLOSE_PHOTO" | "PHOTO_CONFIRM">(
-    "OPEN",
-  );
+  const lastFailedActionRef = useRef<
+    "OPEN_WAIT" | "OPEN_RETRY" | "CLOSE_PHOTO" | "PHOTO_CONFIRM"
+  >("OPEN_WAIT");
 
   const normalizedAuthCode =
     authCode || sessionStorage.getItem("sellerDepositAuthCode") || "";
@@ -417,22 +417,23 @@ export default function KioskSellerDepositLockerAssignPage() {
     }
   }
 
-  async function runOpenFlow(
-    requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
-  ) {
+  /**
+   * /kiosk/seller/locker 호출 시점에 이미 처리되는 부분:
+   * 1. 보관함 배정
+   * 2. SELLER_UNLOCK_REQUESTED 명령 INSERT
+   * 3. LOCKER 상태 SELLER_UNLOCK_REQUESTED 변경
+   *
+   * 그래서 판매자 입고 화면 진입 직후에는 위 두 API를 다시 호출하지 않고,
+   * SELLER_UNLOCK_READY 성공 확인 후 상태 UPDATE만 수행한다.
+   */
+  async function waitInitialOpenSuccessFlow() {
     try {
       validateRequiredValues();
 
       setActionLoading(true);
       setErrorMessage("");
       setStep("OPENING");
-      lastFailedActionRef.current = "OPEN";
-
-      await createLockerCommand("SELLER_UNLOCK_REQUESTED", requestTypeCode);
-
-      if (requestTypeCode === "NORMAL") {
-        await updateLockerState("SELLER_UNLOCK_REQUESTED", "KIOSK");
-      }
+      lastFailedActionRef.current = "OPEN_WAIT";
 
       await waitCommandSuccess("SELLER_UNLOCK_READY");
 
@@ -448,7 +449,45 @@ export default function KioskSellerDepositLockerAssignPage() {
         extractCleanErrorMessage(
           error instanceof Error
             ? error.message
-            : "보관함 문 열림 처리 중 오류가 발생했습니다.",
+            : "보관함 문 열림 확인 중 오류가 발생했습니다.",
+        ),
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  /**
+   * 문 열림 재시도는 SELLER_UNLOCK_REQUESTED 상태를 다시 업데이트하지 않는다.
+   * 실패한 명령만 RETRY로 다시 INSERT하고,
+   * 성공 확인 후 SELLER_UNLOCK_READY로만 상태 전이한다.
+   */
+  async function retryOpenFlow() {
+    try {
+      validateRequiredValues();
+
+      setActionLoading(true);
+      setErrorMessage("");
+      setStep("OPENING");
+      lastFailedActionRef.current = "OPEN_RETRY";
+
+      await createLockerCommand("SELLER_UNLOCK_REQUESTED", "RETRY");
+
+      await waitCommandSuccess("SELLER_UNLOCK_READY");
+
+      await updateLockerState("SELLER_UNLOCK_READY", "DEVICE");
+
+      if (cancelledRef.current) return;
+
+      setStep("OPENED");
+      setApiMessage("보관함 문이 열렸습니다.");
+    } catch (error) {
+      setStep("ERROR");
+      setErrorMessage(
+        extractCleanErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "보관함 문 열림 재시도 중 오류가 발생했습니다.",
         ),
       );
     } finally {
@@ -544,7 +583,7 @@ export default function KioskSellerDepositLockerAssignPage() {
   }
 
   function handleRetryOpen() {
-    runOpenFlow("RETRY");
+    retryOpenFlow();
   }
 
   function handleDepositDone() {
@@ -556,8 +595,11 @@ export default function KioskSellerDepositLockerAssignPage() {
   }
 
   function handleRetryCurrentStep() {
-    if (lastFailedActionRef.current === "OPEN") {
-      runOpenFlow("RETRY");
+    if (
+      lastFailedActionRef.current === "OPEN_WAIT" ||
+      lastFailedActionRef.current === "OPEN_RETRY"
+    ) {
+      retryOpenFlow();
       return;
     }
 
@@ -581,7 +623,7 @@ export default function KioskSellerDepositLockerAssignPage() {
     if (startedRef.current) return;
 
     startedRef.current = true;
-    runOpenFlow("NORMAL");
+    waitInitialOpenSuccessFlow();
 
     return () => {
       cancelledRef.current = true;
@@ -677,7 +719,8 @@ export default function KioskSellerDepositLockerAssignPage() {
               </p>
 
               <p className={styles.kioskDepositPanelSubDescription}>
-                {apiMessage || "라즈베리파이 문 열림 명령을 처리하고 있습니다."}
+                {apiMessage ||
+                  "라즈베리파이 문 열림 성공 여부를 확인하고 있습니다."}
               </p>
             </div>
           )}
