@@ -305,19 +305,6 @@ export default function KioskSellerDepositLockerAssignPage() {
     });
   }
 
-  async function createLockerCommandAndDelay(
-    commandStatusName: KioskLockerNextStatus,
-    requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
-  ) {
-    await createLockerCommand(commandStatusName, requestTypeCode);
-
-    setApiMessage(
-      `명령 생성 완료. ${COMMAND_POLL_DELAY_AFTER_CREATE_MS / 1000}초 후 상태를 확인합니다.`,
-    );
-
-    await sleep(COMMAND_POLL_DELAY_AFTER_CREATE_MS);
-  }
-
   async function updateLockerState(
     nextStatus: KioskLockerNextStatus,
     roleType: KioskLockerRoleType,
@@ -330,6 +317,24 @@ export default function KioskSellerDepositLockerAssignPage() {
       NEXT_STATUS: nextStatus,
       ROLE_TYPE: roleType,
     });
+  }
+
+  async function createCommandUpdateAndDelay(
+    commandStatusName: KioskLockerNextStatus,
+    requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
+    roleType: KioskLockerRoleType = "KIOSK",
+  ) {
+    await createLockerCommand(commandStatusName, requestTypeCode);
+
+    await updateLockerState(commandStatusName, roleType);
+
+    setApiMessage(
+      `명령 생성 및 상태 변경 완료. ${
+        COMMAND_POLL_DELAY_AFTER_CREATE_MS / 1000
+      }초 후 상태를 확인합니다.`,
+    );
+
+    await sleep(COMMAND_POLL_DELAY_AFTER_CREATE_MS);
   }
 
   async function checkCommandStatus(commandStatusName: KioskLockerNextStatus) {
@@ -411,9 +416,10 @@ export default function KioskSellerDepositLockerAssignPage() {
       setStep("OPENING");
       lastFailedActionRef.current = "OPEN";
 
-      await createLockerCommandAndDelay(
+      await createCommandUpdateAndDelay(
         "SELLER_UNLOCK_REQUESTED",
         requestTypeCode,
+        "KIOSK",
       );
 
       await waitCommandSuccess("SELLER_UNLOCK_REQUESTED");
@@ -449,11 +455,12 @@ export default function KioskSellerDepositLockerAssignPage() {
 
       await updateLockerState("SELLER_DEPOSIT_CONFIRMED", "KIOSK");
 
-      await sleep(2000);
+      await sleep(1000);
 
-      await createLockerCommandAndDelay(
+      await createCommandUpdateAndDelay(
         "SELLER_DOOR_CLOSE_REQUESTED",
         "NORMAL",
+        "KIOSK",
       );
 
       await waitCommandSuccess("SELLER_DOOR_CLOSE_REQUESTED");
@@ -464,7 +471,11 @@ export default function KioskSellerDepositLockerAssignPage() {
 
       setStep("CAPTURING");
 
-      await createLockerCommandAndDelay("SELLER_LOCK_REQUESTED", "NORMAL");
+      await createCommandUpdateAndDelay(
+        "SELLER_LOCK_REQUESTED",
+        "NORMAL",
+        "KIOSK",
+      );
 
       await waitCommandSuccess("SELLER_LOCK_REQUESTED");
 
@@ -498,11 +509,13 @@ export default function KioskSellerDepositLockerAssignPage() {
       setErrorMessage("");
       lastFailedActionRef.current = "PHOTO_CONFIRM";
 
-      await createLockerCommandAndDelay("SELLER_PHOTO_CONFIRMED", "NORMAL");
+      await createCommandUpdateAndDelay(
+        "SELLER_PHOTO_CONFIRMED",
+        "NORMAL",
+        "KIOSK",
+      );
 
       await waitCommandSuccess("SELLER_PHOTO_CONFIRMED");
-
-      await updateLockerState("SELLER_PHOTO_CONFIRMED", "KIOSK");
 
       setStep("DONE");
       setApiMessage("물품 보관이 완료되었습니다.");
