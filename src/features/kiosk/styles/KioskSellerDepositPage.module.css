@@ -1,0 +1,508 @@
+.page {
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f7faff 0%, #eef5ff 100%);
+  padding: 10px 14px 14px;
+  box-sizing: border-box;
+}
+
+.header {
+  height: 46px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  width: 150px;
+  height: auto;
+  object-fit: contain;
+}
+
+.homeButton {
+  height: 38px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #0064ff;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: 0 10px 22px rgba(0, 100, 255, 0.13);
+  cursor: pointer;
+}
+
+.main {
+  height: calc(100dvh - 66px);
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.card {
+  width: min(680px, calc(100vw - 28px));
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 18px 20px;
+  border-radius: 26px;
+  background: #ffffff;
+  box-shadow: 0 22px 54px rgba(0, 100, 255, 0.18);
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: clamp(23px, 3.2vw, 34px);
+  font-weight: 900;
+  color: #0064ff;
+  text-align: center;
+  margin: 0 0 5px;
+}
+
+.description {
+  font-size: clamp(13px, 1.8vw, 18px);
+  font-weight: 800;
+  color: #526070;
+  text-align: center;
+  margin: 0 0 12px;
+}
+
+.summaryBox {
+  background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+  border: 2px solid #dbeafe;
+  border-radius: 20px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.summaryTop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.productMini {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.productImageBox {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  background: #f1f5f9;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.productImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.noImage {
+  width: 100%;
+  height: 100%;
+  font-size: 11px;
+  font-weight: 900;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.productInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.productInfo span {
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.productInfo strong {
+  font-size: 17px;
+  font-weight: 900;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productInfo p {
+  font-size: 15px;
+  font-weight: 900;
+  color: #0064ff;
+  margin: 0;
+}
+
+.lockerMini {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.lockerMini span {
+  font-size: 12px;
+  font-weight: 900;
+  color: #64748b;
+}
+
+.lockerMini strong {
+  display: block;
+  font-size: clamp(38px, 3vw, 56px);
+  font-weight: 1000;
+  color: #0064ff;
+  line-height: 1;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #dbeafe;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 999px;
+  background: #0064ff;
+  transition: width 0.35s ease;
+}
+
+.progressFill0 {
+  width: 0%;
+}
+
+.progressFill25 {
+  width: 25%;
+}
+
+.progressFill50 {
+  width: 50%;
+}
+
+.progressFill75 {
+  width: 75%;
+}
+
+.progressFill100 {
+  width: 100%;
+}
+
+.currentStep {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 900;
+  color: #111827;
+  text-align: center;
+}
+
+.panel {
+  flex: 1;
+  min-height: 0;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 3px solid #0064ff;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.panelBlue {
+  border-color: #0064ff;
+  color: #0064ff;
+}
+
+.panelGreen {
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+.panelOrange {
+  border-color: #ea580c;
+  color: #ea580c;
+}
+
+.panelPurple {
+  border-color: #7c3aed;
+  color: #7c3aed;
+}
+
+/* 구매자 수령 페이지의 doorIcon 계열을 그대로 1:1 복사 */
+.doorIcon,
+.openDoorIcon,
+.closedDoorIcon {
+  width: min(210px, 38vw);
+  height: min(160px, 26dvh);
+  position: relative;
+  margin-bottom: 4px;
+  border-radius: 26px;
+  background: #eef6ff;
+  border: 4px solid #0064ff;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.doorIcon::before,
+.openDoorIcon::before,
+.closedDoorIcon::before {
+  content: "";
+  position: absolute;
+  left: 36px;
+  top: 28px;
+  width: 132px;
+  height: 100px;
+  border-radius: 16px;
+  border: 4px solid #0064ff;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.doorIcon::after {
+  content: "";
+  position: absolute;
+  left: 86px;
+  top: 72px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #0064ff;
+}
+
+.openDoorIcon::before {
+  transform: perspective(240px) rotateY(-34deg);
+  transform-origin: left center;
+  background: #ffffff;
+}
+
+.openDoorIcon::after {
+  content: "";
+  position: absolute;
+  left: 118px;
+  top: 72px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #0064ff;
+}
+
+.closedDoorIcon::after {
+  content: "✓";
+  position: absolute;
+  right: 22px;
+  bottom: 18px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 26px;
+  font-weight: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 촬영 중 단계용 아이콘 */
+.cameraIcon {
+  width: min(210px, 38vw);
+  height: min(160px, 26dvh);
+  position: relative;
+  margin-bottom: 4px;
+  border-radius: 30px;
+  background: #eef4ff;
+  border: 4px solid #0064ff;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.cameraIcon::before {
+  content: "";
+  position: absolute;
+  left: 38px;
+  top: 50px;
+  width: 134px;
+  height: 82px;
+  border-radius: 22px;
+  border: 4px solid #0064ff;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.cameraIcon::after {
+  content: "";
+  position: absolute;
+  left: 86px;
+  top: 67px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 8px solid #0064ff;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.cameraIcon span::before {
+  content: "";
+  position: absolute;
+  left: 58px;
+  top: 32px;
+  width: 58px;
+  height: 26px;
+  border-radius: 16px 16px 0 0;
+  background: #0064ff;
+}
+
+.cameraIcon span::after {
+  content: "";
+  position: absolute;
+  right: 48px;
+  top: 62px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #0064ff;
+}
+
+/* 사진 확인 단계 미리보기 영역 유지 */
+.captureBox {
+  width: min(100%, 460px);
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  background: #f8fbff;
+  border: 2px solid #dbeafe;
+  padding: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.captureImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 14px;
+  display: block;
+  background: #ffffff;
+}
+
+.capturePlaceholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  background: #eef4ff;
+  color: #0064ff;
+  font-size: 18px;
+  font-weight: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doneCircle {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 64px;
+  font-weight: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.panel h2 {
+  margin: 0 0 4px;
+  font-size: clamp(23px, 3.6vw, 34px);
+  font-weight: 1000;
+  color: #111827;
+}
+
+.panel p {
+  margin: 0;
+  font-size: clamp(15px, 2.1vw, 21px);
+  font-weight: 850;
+  line-height: 1.45;
+  color: #334155;
+}
+
+.panel span {
+  margin: 4px 0 0;
+  font-size: clamp(12px, 1.6vw, 16px);
+  font-weight: 800;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.retryButton,
+.primaryButton,
+.replayButton {
+  border: none;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.retryButton {
+  width: 100%;
+  height: 50px;
+  margin-top: 12px;
+  border-radius: 16px;
+  background: #eef4ff;
+  color: #0064ff;
+  font-size: 17px;
+}
+
+.primaryButton {
+  width: 100%;
+  height: 58px;
+  border-radius: 18px;
+  background: #0064ff;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 1000;
+  margin-top: 10px;
+  box-shadow: 0 12px 24px rgba(0, 100, 255, 0.2);
+}
+
+.replayButton {
+  height: 42px;
+  min-height: 42px;
+  border-radius: 16px;
+  background: #eef4ff;
+  color: #0064ff;
+  font-size: 16px;
+  flex-shrink: 0;
+}

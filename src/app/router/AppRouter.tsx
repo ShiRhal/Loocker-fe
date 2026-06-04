@@ -16,6 +16,11 @@ import KioskSellerProductPage from "../../features/kiosk/pages/KioskSellerProduc
 import KioskSellerDepositLockerAssignPage from "../../features/kiosk/pages/KioskSellerLockerAssignPage";
 import KioskErrorPage from "../../features/kiosk/error/KioskErrorPage";
 
+import KioskBuyerCheckAuthPage from "../../features/kiosk/pages/KioskBuyerCheckAuthPage";
+import KioskBuyerCheckProductPage from "../../features/kiosk/pages/KioskBuyerCheckProductPage";
+import KioskBuyerInspectionPage from "../../features/kiosk/pages/KioskBuyerInspectionPage";
+import KioskBuyerPickupPage from "../../features/kiosk/pages/KioskBuyerPickupPage";
+
 import ProductTradePage from "../../features/trade/pages/ProductTradePage";
 
 function RequireKioskAuth({ children }: { children: ReactNode }) {
@@ -57,7 +62,6 @@ export default function AppRouter() {
         </Route>
 
         <Route path="/signin" element={<SignInPage />} />
-
         <Route path="/m/login/:authCode" element={<SignInPage />} />
 
         <Route path="/kiosk/login" element={<KioskLoginPage />} />
@@ -103,6 +107,42 @@ export default function AppRouter() {
           element={
             <RequireKioskAuth>
               <KioskSellerDepositLockerAssignPage />
+            </RequireKioskAuth>
+          }
+        />
+
+        <Route
+          path="/kiosk/check"
+          element={
+            <RequireKioskAuth>
+              <KioskBuyerCheckAuthPage />
+            </RequireKioskAuth>
+          }
+        />
+
+        <Route
+          path="/kiosk/buyer/check/products/:authCode"
+          element={
+            <RequireKioskAuth>
+              <KioskBuyerCheckProductPage />
+            </RequireKioskAuth>
+          }
+        />
+
+        <Route
+          path="/kiosk/buyer/check/inspection/:authCode"
+          element={
+            <RequireKioskAuth>
+              <KioskBuyerInspectionPage />
+            </RequireKioskAuth>
+          }
+        />
+
+        <Route
+          path="/kiosk/pickup"
+          element={
+            <RequireKioskAuth>
+              <KioskBuyerPickupPage />
             </RequireKioskAuth>
           }
         />

@@ -1,7 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import logoImage from "../../../assets/images/Loocker.png";
+import { kioskapi } from "../../../shared/api/apiClient";
 import styles from "../styles/kiosk.module.css";
+
+type DepositStep =
+  | "OPENING"
+  | "OPENED"
+  | "CLOSING"
+  | "CAPTURING"
+  | "PHOTO"
+  | "DONE"
+  | "ERROR";
+
+type RoleType = "KIOSK" | "DEVICE";
+
+type RequestTypeCode = "NORMAL" | "RETRY";
 
 type LockerAssignState = {
   TRADE_ID?: number;
@@ -12,106 +26,43 @@ type LockerAssignState = {
   PRODUCT_IMAGE_URL?: string;
   THUMBNAIL_URL?: string;
   PRODUCT_IMG?: string;
+  BASE_PRICE?: number;
+  PRICE?: number;
+  SELL_PRICE?: number;
   LOCKER_ID?: number;
   LOCKER_NO?: number;
   LOCKER_STATUS_CODE?: string;
   LOCKER_STATUS?: string;
 };
 
-type DepositPhaseId =
-  | "OPENING"
-  | "OPENED"
-  | "CLOSING_CHECK"
-  | "PHOTO_TAKING"
-  | "PHOTO_CONFIRM"
-  | "DONE";
-
-type DepositPhase = {
-  id: DepositPhaseId;
-  stepLabel: string;
-  title: string;
-  description: string;
-  subDescription?: string;
-  progressIndex: number;
-  tone: "blue" | "green" | "orange" | "purple";
+type CommandCheckResult = {
+  isSuccess: boolean;
+  isFailed: boolean;
+  failedCommand?: string;
+  resultMessage?: string;
+  rawStatus?: string;
 };
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
-const DEFAULT_CAPTURE_IMAGE_URL =
-  "https://picsum.photos/seed/loocker-kiosk-capture/1280/720";
-
-const depositPhases: Record<DepositPhaseId, DepositPhase> = {
-  OPENING: {
-    id: "OPENING",
-    stepLabel: "문 열림",
-    title: "보관함 문을 여는 중입니다.",
-    description: "잠시만 기다려주세요.",
-    subDescription: "보관함이 열리면 물품 보관 안내 화면으로 이동합니다.",
-    progressIndex: 0,
-    tone: "blue",
-  },
-  OPENED: {
-    id: "OPENED",
-    stepLabel: "물품 보관",
-    title: "문이 열렸습니다.",
-    description: "물건을 보관함 안에 넣고 문을 닫아주세요.",
-    subDescription: "문이 안 열릴 경우 재시도 버튼을 클릭해주세요.",
-    progressIndex: 1,
-    tone: "green",
-  },
-  CLOSING_CHECK: {
-    id: "CLOSING_CHECK",
-    stepLabel: "문 확인",
-    title: "문 닫힘을 확인하고 있습니다.",
-    description: "문이 완전히 닫혔는지 확인 중입니다.",
-    subDescription: "확인이 완료되면 자동으로 사진 촬영 단계로 이동합니다.",
-    progressIndex: 2,
-    tone: "orange",
-  },
-  PHOTO_TAKING: {
-    id: "PHOTO_TAKING",
-    stepLabel: "사진 촬영",
-    title: "보관 사진을 촬영하고 있습니다.",
-    description: "물품 보관 상태를 기록하고 있습니다.",
-    subDescription: "촬영이 완료되면 사진 확인 화면으로 이동합니다.",
-    progressIndex: 3,
-    tone: "blue",
-  },
-  PHOTO_CONFIRM: {
-    id: "PHOTO_CONFIRM",
-    stepLabel: "사진 확인",
-    title: "촬영된 사진을 확인해주세요.",
-    description: "보관 상태가 잘 보이는지 확인한 뒤 완료 버튼을 눌러주세요.",
-    progressIndex: 3,
-    tone: "purple",
-  },
-  DONE: {
-    id: "DONE",
-    stepLabel: "완료",
-    title: "물품 보관이 완료되었습니다.",
-    description: "판매자 입고 단계가 완료되었습니다.",
-    subDescription: "이제 구매자가 물품 확인 단계를 진행할 수 있습니다.",
-    progressIndex: 4,
-    tone: "green",
-  },
+/**
+ * kioskapi가 이미 /kiosk prefix를 붙이는 구조라면 아래처럼 사용.
+ * 실제 컨트롤러 경로가 다르면 여기만 바꾸면 됨.
+ */
+const ENDPOINTS = {
+  commandInsert: "/locker/command/create",
+  commandSuccessCheck: "/locker/command/success/check",
+  lockerUpdate: "/locker/update",
+  lockerImageSelect: "/locker/image/select",
 };
 
-const panelClassMap: Record<DepositPhase["tone"], string> = {
-  blue: styles.kioskDepositPanelBlue,
-  green: styles.kioskDepositPanelGreen,
-  orange: styles.kioskDepositPanelOrange,
-  purple: styles.kioskDepositPanelPurple,
-};
+const COMMAND_POLL_INTERVAL_MS = 1000;
+const COMMAND_POLL_TIMEOUT_MS = 60 * 1000;
 
-const progressClassMap: Record<number, string> = {
-  0: styles.kioskDepositProgressFill0,
-  1: styles.kioskDepositProgressFill25,
-  2: styles.kioskDepositProgressFill50,
-  3: styles.kioskDepositProgressFill75,
-  4: styles.kioskDepositProgressFill100,
-};
+function sleep(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
 
 function toApiAssetUrl(url?: string | null) {
   if (!url) return "";
@@ -127,9 +78,77 @@ function toApiAssetUrl(url?: string | null) {
   return `${API_BASE_URL}/${url}`;
 }
 
+function formatPrice(value?: number) {
+  if (typeof value !== "number") return "가격 정보 없음";
+  return `${value.toLocaleString()}원`;
+}
+
+function unwrapFirst<T>(data: T | T[]): T {
+  return Array.isArray(data) ? data[0] : data;
+}
+
+function extractCleanErrorMessage(message?: string) {
+  if (!message) return "요청 처리 중 오류가 발생했습니다.";
+
+  const knownMessages = [
+    "키오스크 인증 정보가 만료되었습니다.",
+    "키오스크 사용자 인증 정보가 없습니다.",
+    "진행 가능한 거래 또는 보관함이 없습니다.",
+    "배정된 보관함이 없습니다.",
+    "보관함 정보를 찾을 수 없습니다.",
+    "현재 보관함 상태값이 정의되어 있지 않습니다.",
+    "존재하지 않는 보관함 상태값입니다.",
+    "허용되지 않은 보관함 상태 전이입니다.",
+    "판매자만 처리할 수 있는 보관함 이벤트입니다.",
+    "라즈베리파이 명령 실패",
+    "라즈베리파이 명령이 아직 성공하지 않았습니다",
+    "보관함 상태 변경에 실패했습니다.",
+    "이미 처리 대기 중이거나 실행 중인 동일 명령이 있습니다.",
+    "재시도 가능한 실패 명령이 없습니다.",
+  ];
+
+  const matched = knownMessages.find((text) => message.includes(text));
+
+  if (matched) {
+    return matched;
+  }
+
+  const sqlServerExceptionMatch = message.match(
+    /SQLServerException:\s*([^;\r\n]+)/,
+  );
+
+  if (sqlServerExceptionMatch?.[1]) {
+    return sqlServerExceptionMatch[1].trim();
+  }
+
+  const causeMatch = message.match(/Cause:\s*([^;\r\n]+)/);
+
+  if (causeMatch?.[1]) {
+    return causeMatch[1].trim();
+  }
+
+  const firstLine = message.split("\n")[0]?.trim();
+
+  return firstLine || "요청 처리 중 오류가 발생했습니다.";
+}
+
 function getProductTitle(data?: LockerAssignState | null) {
   if (!data) return "-";
   return data.PRODUCT_TITLE || data.TITLE || "-";
+}
+
+function getProductPrice(data?: LockerAssignState | null) {
+  if (!data) return undefined;
+
+  if (typeof data.BASE_PRICE === "number") return data.BASE_PRICE;
+  if (typeof data.PRICE === "number") return data.PRICE;
+  if (typeof data.SELL_PRICE === "number") return data.SELL_PRICE;
+
+  const savedPrice = Number(
+    sessionStorage.getItem("sellerDepositProductPrice"),
+  );
+
+  return Number.isFinite(savedPrice) && savedPrice > 0 ? savedPrice : undefined;
 }
 
 function getProductImageUrl(data?: LockerAssignState | null) {
@@ -144,405 +163,977 @@ function getProductImageUrl(data?: LockerAssignState | null) {
   );
 }
 
-function PhaseVisual({ phaseId }: { phaseId: DepositPhaseId }) {
-  if (phaseId === "OPENING") {
-    return (
-      <svg viewBox="0 0 220 160" aria-hidden="true">
-        <rect x="54" y="22" width="112" height="116" rx="18" fill="#eef4ff" />
-        <rect
-          x="68"
-          y="36"
-          width="74"
-          height="88"
-          rx="12"
-          fill="#ffffff"
-          stroke="currentColor"
-          strokeWidth="7"
-        />
-        <path
-          d="M142 40 L178 26 V116 L142 124 Z"
-          fill="#dbeafe"
-          stroke="currentColor"
-          strokeWidth="7"
-          strokeLinejoin="round"
-        />
-        <circle cx="126" cy="80" r="5" fill="currentColor" />
-        <path
-          d="M38 80 H16 M45 55 L28 38 M45 105 L28 122"
-          stroke="currentColor"
-          strokeWidth="8"
-          strokeLinecap="round"
-        />
-        <path
-          d="M180 48 C194 58 200 70 200 82"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="6"
-          strokeLinecap="round"
-        />
-      </svg>
-    );
+function getProgressClass(step: DepositStep) {
+  switch (step) {
+    case "OPENING":
+      return styles.kioskDepositProgressFill25;
+    case "OPENED":
+      return styles.kioskDepositProgressFill50;
+    case "CLOSING":
+      return styles.kioskDepositProgressFill75;
+    case "CAPTURING":
+    case "PHOTO":
+    case "DONE":
+      return styles.kioskDepositProgressFill100;
+    default:
+      return styles.kioskDepositProgressFill0;
+  }
+}
+
+function getCurrentStepText(step: DepositStep) {
+  switch (step) {
+    case "OPENING":
+      return "보관함 문을 여는 중입니다.";
+    case "OPENED":
+      return "보관함 문이 열렸습니다.";
+    case "CLOSING":
+      return "문 닫힘을 확인하고 있습니다.";
+    case "CAPTURING":
+      return "보관 사진을 촬영하고 있습니다.";
+    case "PHOTO":
+      return "보관 사진을 확인해주세요.";
+    case "DONE":
+      return "물품 보관이 완료되었습니다.";
+    case "ERROR":
+      return "오류가 발생했습니다.";
+    default:
+      return "";
+  }
+}
+
+function normalizeCommandCheckResult(data: any): CommandCheckResult {
+  const list = Array.isArray(data) ? data : [data];
+
+  const normalizedList = list.filter(Boolean).map((item) => {
+    const rawStatus = String(
+      item.COMMAND_STATUS_CODE ||
+        item.commandStatusCode ||
+        item.STATUS_CODE ||
+        item.statusCode ||
+        item.RESULT_STATUS_CODE ||
+        item.resultStatusCode ||
+        item.STATUS ||
+        item.status ||
+        "",
+    ).toUpperCase();
+
+    return {
+      rawStatus,
+      failedCommand:
+        item.FAILED_COMMAND ||
+        item.failedCommand ||
+        item.COMMAND_TYPE_CODE ||
+        item.commandTypeCode ||
+        "",
+      resultMessage:
+        item.RESULT_MESSAGE ||
+        item.resultMessage ||
+        item.MESSAGE ||
+        item.message ||
+        "",
+      isSuccess:
+        item.IS_SUCCESS === true ||
+        item.IS_SUCCESS === 1 ||
+        item.isSuccess === true ||
+        item.isSuccess === 1 ||
+        rawStatus === "SUCCESS" ||
+        rawStatus === "ALL_SUCCESS" ||
+        rawStatus === "COMMAND_SUCCESS" ||
+        rawStatus === "COMPLETED",
+      isFailed:
+        item.IS_FAILED === true ||
+        item.IS_FAILED === 1 ||
+        item.isFailed === true ||
+        item.isFailed === 1 ||
+        rawStatus === "FAILED" ||
+        rawStatus === "COMMAND_FAILED" ||
+        Boolean(item.FAILED_COMMAND || item.failedCommand),
+    };
+  });
+
+  if (normalizedList.length === 0) {
+    return {
+      isSuccess: false,
+      isFailed: false,
+      rawStatus: "",
+    };
   }
 
-  if (phaseId === "OPENED") {
-    return (
-      <svg viewBox="0 0 220 160" aria-hidden="true">
-        <rect x="52" y="28" width="98" height="104" rx="18" fill="#ecfdf5" />
-        <rect
-          x="68"
-          y="42"
-          width="70"
-          height="76"
-          rx="12"
-          fill="#ffffff"
-          stroke="currentColor"
-          strokeWidth="7"
-        />
-        <path
-          d="M138 42 L188 20 V106 L138 118 Z"
-          fill="#dcfce7"
-          stroke="currentColor"
-          strokeWidth="7"
-          strokeLinejoin="round"
-        />
-        <rect x="82" y="80" width="44" height="30" rx="7" fill="#93c5fd" />
-        <path
-          d="M82 80 L104 64 L126 80"
-          fill="#bfdbfe"
-          stroke="#2563eb"
-          strokeWidth="4"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M104 64 V110"
-          stroke="#2563eb"
-          strokeWidth="4"
-          strokeLinecap="round"
-        />
-        <circle cx="124" cy="79" r="5" fill="currentColor" />
-      </svg>
-    );
+  const failed = normalizedList.find((item) => item.isFailed);
+
+  if (failed) {
+    return {
+      isSuccess: false,
+      isFailed: true,
+      failedCommand: failed.failedCommand,
+      resultMessage: failed.resultMessage,
+      rawStatus: failed.rawStatus,
+    };
   }
 
-  if (phaseId === "CLOSING_CHECK") {
-    return (
-      <svg viewBox="0 0 220 160" aria-hidden="true">
-        <rect
-          x="58"
-          y="26"
-          width="104"
-          height="108"
-          rx="20"
-          fill="#fff7ed"
-          stroke="currentColor"
-          strokeWidth="7"
-        />
-        <rect x="76" y="44" width="68" height="72" rx="13" fill="#ffffff" />
-        <path
-          d="M86 81 L104 99 L136 61"
-          fill="none"
-          stroke="#16a34a"
-          strokeWidth="10"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M42 48 C28 68 28 92 42 112"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="7"
-          strokeLinecap="round"
-        />
-        <path
-          d="M178 48 C192 68 192 92 178 112"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="7"
-          strokeLinecap="round"
-        />
-      </svg>
-    );
-  }
+  const allSuccess = normalizedList.every((item) => item.isSuccess);
 
-  if (phaseId === "PHOTO_TAKING") {
-    return (
-      <svg viewBox="0 0 220 160" aria-hidden="true">
-        <rect
-          x="58"
-          y="40"
-          width="104"
-          height="86"
-          rx="18"
-          fill="#eff6ff"
-          stroke="currentColor"
-          strokeWidth="7"
-        />
-        <path
-          d="M86 40 L94 24 H126 L134 40"
-          fill="#dbeafe"
-          stroke="currentColor"
-          strokeWidth="7"
-          strokeLinejoin="round"
-        />
-        <circle
-          cx="110"
-          cy="83"
-          r="25"
-          fill="#ffffff"
-          stroke="currentColor"
-          strokeWidth="7"
-        />
-        <circle cx="110" cy="83" r="10" fill="currentColor" />
-        <circle cx="145" cy="59" r="5" fill="currentColor" />
-        <path
-          d="M40 32 L28 20 M180 32 L192 20 M110 18 V6"
-          stroke="currentColor"
-          strokeWidth="7"
-          strokeLinecap="round"
-        />
-      </svg>
-    );
-  }
-
-  if (phaseId === "DONE") {
-    return (
-      <svg viewBox="0 0 220 160" aria-hidden="true">
-        <rect
-          x="62"
-          y="32"
-          width="96"
-          height="96"
-          rx="20"
-          fill="#ecfdf5"
-          stroke="currentColor"
-          strokeWidth="7"
-        />
-        <path
-          d="M84 80 L104 101 L138 60"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="11"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M70 32 L110 14 L150 32"
-          fill="#dcfce7"
-          stroke="currentColor"
-          strokeWidth="7"
-          strokeLinejoin="round"
-        />
-      </svg>
-    );
-  }
-
-  return null;
+  return {
+    isSuccess: allSuccess,
+    isFailed: false,
+    rawStatus: normalizedList.map((item) => item.rawStatus).join(","),
+  };
 }
 
 export default function KioskSellerDepositLockerAssignPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { authCode } = useParams();
 
   const assignData = (location.state || {}) as LockerAssignState;
 
-  const [phaseId, setPhaseId] = useState<DepositPhaseId>("OPENING");
+  const [step, setStep] = useState<DepositStep>("OPENING");
+  const [apiMessage, setApiMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [capturedImageUrl, setCapturedImageUrl] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const currentPhase = depositPhases[phaseId];
+  const startedRef = useRef(false);
+  const cancelledRef = useRef(false);
+  const lastFailedActionRef = useRef<"OPEN" | "CLOSE_PHOTO" | "PHOTO_CONFIRM">(
+    "OPEN",
+  );
+
+  const normalizedAuthCode =
+    authCode || sessionStorage.getItem("sellerDepositAuthCode") || "";
+
+  const kioskCode = localStorage.getItem("kioskCode") || "";
+
+  const tradeId =
+    assignData.TRADE_ID ||
+    Number(sessionStorage.getItem("sellerDepositTradeId") || 0);
+
+  const lockerId =
+    assignData.LOCKER_ID ||
+    Number(sessionStorage.getItem("sellerDepositLockerId") || 0);
 
   const productTitle = getProductTitle(assignData);
+  const productPrice = getProductPrice(assignData);
   const productImageUrl = toApiAssetUrl(getProductImageUrl(assignData));
   const lockerNo = assignData.LOCKER_NO || assignData.LOCKER_ID || "-";
 
-  const captureImageUrl = productImageUrl || DEFAULT_CAPTURE_IMAGE_URL;
+  const previewImageUrl = capturedImageUrl || productImageUrl;
 
-  const progressFillClass = useMemo(() => {
-    return progressClassMap[currentPhase.progressIndex];
-  }, [currentPhase.progressIndex]);
+  const progressClassName = useMemo(() => getProgressClass(step), [step]);
 
-  useEffect(() => {
-    let timer: number | null = null;
-
-    if (phaseId === "OPENING") {
-      timer = window.setTimeout(() => {
-        setPhaseId("OPENED");
-      }, 1800);
+  function validateRequiredValues() {
+    if (!normalizedAuthCode) {
+      throw new Error("판매자 인증 코드가 없습니다.");
     }
 
-    if (phaseId === "OPENED") {
-      timer = window.setTimeout(() => {
-        setPhaseId("CLOSING_CHECK");
-      }, 5200);
+    if (!kioskCode) {
+      throw new Error("키오스크 코드가 없습니다.");
     }
 
-    if (phaseId === "CLOSING_CHECK") {
-      timer = window.setTimeout(() => {
-        setPhaseId("PHOTO_TAKING");
-      }, 2600);
+    if (!tradeId) {
+      throw new Error("거래 ID가 없습니다.");
     }
+  }
 
-    if (phaseId === "PHOTO_TAKING") {
-      timer = window.setTimeout(() => {
-        setPhaseId("PHOTO_CONFIRM");
-      }, 2600);
-    }
+  async function callApi<T>(
+    path: string,
+    options: {
+      method?: "GET" | "POST" | "PUT" | "DELETE";
+      body?: Record<string, unknown>;
+      query?: Record<string, string | number | undefined | null>;
+    } = {},
+  ): Promise<T> {
+    const query = new URLSearchParams();
 
-    return () => {
-      if (timer) {
-        window.clearTimeout(timer);
+    Object.entries(options.query || {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        query.set(key, String(value));
       }
+    });
+
+    const url = `${path}${query.toString() ? `?${query.toString()}` : ""}`;
+
+    try {
+      return (await kioskapi(url, {
+        method: options.method || "GET",
+        json: options.body,
+      })) as T;
+    } catch (error) {
+      const rawMessage =
+        error instanceof Error
+          ? error.message
+          : "API 요청 중 오류가 발생했습니다.";
+
+      throw new Error(extractCleanErrorMessage(rawMessage));
+    }
+  }
+
+  async function createLockerCommand(
+    nextStatus: string,
+    requestTypeCode: RequestTypeCode = "NORMAL",
+  ) {
+    const body = {
+      AUTH_CODE: normalizedAuthCode,
+      KIOSK_CODE: kioskCode,
+      NEXT_STATUS: nextStatus,
+      REQUEST_TYPE_CODE: requestTypeCode,
     };
-  }, [phaseId]);
+
+    setApiMessage(
+      `라즈베리파이 명령 생성 중: ${nextStatus} / ${requestTypeCode}`,
+    );
+
+    await callApi(ENDPOINTS.commandInsert, {
+      method: "PUT",
+      body,
+    });
+  }
+
+  async function updateLockerState(nextStatus: string, roleType: RoleType) {
+    const body = {
+      TRADE_ID: tradeId,
+      AUTH_CODE: normalizedAuthCode,
+      KIOSK_CODE: kioskCode,
+      NEXT_STATUS: nextStatus,
+      ROLE_TYPE: roleType,
+    };
+
+    setApiMessage(`보관함 상태 변경 중: ${nextStatus}`);
+
+    await callApi(ENDPOINTS.lockerUpdate, {
+      method: "PUT",
+      body,
+    });
+  }
+
+  async function checkCommandSuccess(nextStatus: string) {
+    const data = await callApi<any>(ENDPOINTS.commandSuccessCheck, {
+      method: "GET",
+      query: {
+        AUTH_CODE: normalizedAuthCode,
+        KIOSK_CODE: kioskCode,
+        NEXT_STATUS: nextStatus,
+      },
+    });
+
+    return normalizeCommandCheckResult(data);
+  }
+
+  async function waitCommandSuccess(nextStatus: string) {
+    const startedAt = Date.now();
+
+    while (!cancelledRef.current) {
+      const result = await checkCommandSuccess(nextStatus);
+
+      if (result.isSuccess) {
+        return;
+      }
+
+      if (result.isFailed) {
+        throw new Error(
+          `라즈베리파이 명령 실패: ${
+            result.failedCommand || nextStatus
+          } / ${result.resultMessage || "상세 사유 없음"}`,
+        );
+      }
+
+      if (Date.now() - startedAt > COMMAND_POLL_TIMEOUT_MS) {
+        throw new Error(
+          `라즈베리파이 명령 대기 시간이 초과되었습니다: ${nextStatus}`,
+        );
+      }
+
+      setApiMessage(
+        `라즈베리파이 명령 성공 대기 중: ${nextStatus}${
+          result.rawStatus ? ` (${result.rawStatus})` : ""
+        }`,
+      );
+
+      await sleep(COMMAND_POLL_INTERVAL_MS);
+    }
+  }
+
+  async function selectSellerCapturedImage() {
+    try {
+      const data = await callApi<any>(ENDPOINTS.lockerImageSelect, {
+        method: "GET",
+        query: {
+          TRADE_ID: tradeId,
+          LOCKER_ID: lockerId || undefined,
+          IMAGE_TYPE_CODE: "SELLER_INSERT",
+        },
+      });
+
+      const result = unwrapFirst<any>(data);
+
+      const imageUrl =
+        result?.IMAGE_URL ||
+        result?.imageUrl ||
+        result?.FILE_URL ||
+        result?.fileUrl ||
+        "";
+
+      if (imageUrl) {
+        setCapturedImageUrl(toApiAssetUrl(imageUrl));
+      }
+    } catch {
+      setCapturedImageUrl("");
+    }
+  }
+
+  async function runOpenFlow(requestTypeCode: RequestTypeCode = "NORMAL") {
+    try {
+      validateRequiredValues();
+
+      setActionLoading(true);
+      setErrorMessage("");
+      setStep("OPENING");
+      lastFailedActionRef.current = "OPEN";
+
+      /**
+       * API 1.
+       * PUT /kiosk/locker/command/create
+       *
+       * 요청값:
+       * {
+       *   AUTH_CODE,
+       *   KIOSK_CODE,
+       *   NEXT_STATUS: "SELLER_UNLOCK_REQUESTED",
+       *   REQUEST_TYPE_CODE: "NORMAL" | "RETRY"
+       * }
+       *
+       * 생성 명령:
+       * SELLER_UNLOCK, SELLER_LED_ON, SELLER_PDLC_ON, SELLER_DOOR_OPEN_CHECK
+       */
+      await createLockerCommand("SELLER_UNLOCK_REQUESTED", requestTypeCode);
+
+      /**
+       * API 2.
+       * PUT /kiosk/locker/update
+       *
+       * 요청값:
+       * {
+       *   TRADE_ID,
+       *   AUTH_CODE,
+       *   KIOSK_CODE,
+       *   NEXT_STATUS: "SELLER_UNLOCK_REQUESTED",
+       *   ROLE_TYPE: "KIOSK"
+       * }
+       *
+       * 상태:
+       * EMPTY -> SELLER_UNLOCK_REQUESTED
+       *
+       * RETRY인 경우 이미 해당 상태일 수 있으므로 UPDATE 실패 가능성을 줄이기 위해
+       * NORMAL 때만 호출.
+       */
+      if (requestTypeCode === "NORMAL") {
+        await updateLockerState("SELLER_UNLOCK_REQUESTED", "KIOSK");
+      }
+
+      /**
+       * API 3.
+       * GET /kiosk/locker/command/success/check
+       *
+       * 요청값:
+       * AUTH_CODE, KIOSK_CODE, NEXT_STATUS = SELLER_UNLOCK_READY
+       *
+       * 성공 확인:
+       * SELLER_UNLOCK, SELLER_LED_ON, SELLER_PDLC_ON, SELLER_DOOR_OPEN_CHECK
+       */
+      await waitCommandSuccess("SELLER_UNLOCK_READY");
+
+      /**
+       * API 4.
+       * PUT /kiosk/locker/update
+       *
+       * 요청값:
+       * {
+       *   TRADE_ID,
+       *   AUTH_CODE,
+       *   KIOSK_CODE,
+       *   NEXT_STATUS: "SELLER_UNLOCK_READY",
+       *   ROLE_TYPE: "DEVICE"
+       * }
+       *
+       * 상태:
+       * SELLER_UNLOCK_REQUESTED -> SELLER_UNLOCK_READY
+       */
+      await updateLockerState("SELLER_UNLOCK_READY", "DEVICE");
+
+      if (cancelledRef.current) return;
+
+      setStep("OPENED");
+      setApiMessage("보관함 문이 열렸습니다.");
+    } catch (error) {
+      setStep("ERROR");
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "보관함 문 열림 처리 중 오류가 발생했습니다.",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function runCloseAndCaptureFlow() {
+    try {
+      validateRequiredValues();
+
+      setActionLoading(true);
+      setErrorMessage("");
+      setStep("CLOSING");
+      lastFailedActionRef.current = "CLOSE_PHOTO";
+
+      /**
+       * API 5.
+       * PUT /kiosk/locker/update
+       *
+       * 요청값:
+       * {
+       *   TRADE_ID,
+       *   AUTH_CODE,
+       *   KIOSK_CODE,
+       *   NEXT_STATUS: "SELLER_DEPOSIT_CONFIRMED",
+       *   ROLE_TYPE: "KIOSK"
+       * }
+       *
+       * 상태:
+       * SELLER_UNLOCK_READY -> SELLER_DEPOSIT_CONFIRMED
+       */
+      await updateLockerState("SELLER_DEPOSIT_CONFIRMED", "KIOSK");
+
+      await sleep(2000);
+
+      /**
+       * API 6.
+       * PUT /kiosk/locker/command/create
+       *
+       * 요청값:
+       * {
+       *   AUTH_CODE,
+       *   KIOSK_CODE,
+       *   NEXT_STATUS: "SELLER_DOOR_CLOSE_REQUESTED",
+       *   REQUEST_TYPE_CODE: "NORMAL"
+       * }
+       *
+       * 생성 명령:
+       * SELLER_DOOR_CLOSE_CHECK
+       */
+      await createLockerCommand("SELLER_DOOR_CLOSE_REQUESTED", "NORMAL");
+
+      /**
+       * API 7.
+       * PUT /kiosk/locker/update
+       *
+       * 상태:
+       * SELLER_DEPOSIT_CONFIRMED -> SELLER_DOOR_CLOSE_REQUESTED
+       */
+      await updateLockerState("SELLER_DOOR_CLOSE_REQUESTED", "KIOSK");
+
+      /**
+       * API 8.
+       * GET /kiosk/locker/command/success/check
+       *
+       * 요청값:
+       * AUTH_CODE, KIOSK_CODE, NEXT_STATUS = SELLER_DOOR_CLOSED
+       *
+       * 성공 확인:
+       * SELLER_DOOR_CLOSE_CHECK
+       */
+      await waitCommandSuccess("SELLER_DOOR_CLOSED");
+
+      /**
+       * API 9.
+       * PUT /kiosk/locker/update
+       *
+       * 상태:
+       * SELLER_DOOR_CLOSE_REQUESTED -> SELLER_DOOR_CLOSED
+       */
+      await updateLockerState("SELLER_DOOR_CLOSED", "DEVICE");
+
+      if (cancelledRef.current) return;
+
+      setStep("CAPTURING");
+
+      /**
+       * API 10.
+       * PUT /kiosk/locker/command/create
+       *
+       * 요청값:
+       * {
+       *   AUTH_CODE,
+       *   KIOSK_CODE,
+       *   NEXT_STATUS: "SELLER_LOCK_REQUESTED",
+       *   REQUEST_TYPE_CODE: "NORMAL"
+       * }
+       *
+       * 생성 명령:
+       * SELLER_CAPTURE_INSERT_IMAGE
+       *
+       * image/create는 키오스크가 호출하지 않음.
+       * 라즈베리파이가 SELLER_CAPTURE_INSERT_IMAGE 명령을 처리하면서 이미지 저장.
+       */
+      await createLockerCommand("SELLER_LOCK_REQUESTED", "NORMAL");
+
+      /**
+       * API 11.
+       * PUT /kiosk/locker/update
+       *
+       * 상태:
+       * SELLER_DOOR_CLOSED -> SELLER_LOCK_REQUESTED
+       */
+      await updateLockerState("SELLER_LOCK_REQUESTED", "KIOSK");
+
+      /**
+       * API 12.
+       * GET /kiosk/locker/command/success/check
+       *
+       * 요청값:
+       * AUTH_CODE, KIOSK_CODE, NEXT_STATUS = SELLER_LOCKED_PHOTO_SAVED
+       *
+       * 성공 확인:
+       * SELLER_CAPTURE_INSERT_IMAGE
+       */
+      await waitCommandSuccess("SELLER_LOCKED_PHOTO_SAVED");
+
+      /**
+       * API 13.
+       * PUT /kiosk/locker/update
+       *
+       * 상태:
+       * SELLER_LOCK_REQUESTED -> SELLER_LOCKED_PHOTO_SAVED
+       */
+      await updateLockerState("SELLER_LOCKED_PHOTO_SAVED", "DEVICE");
+
+      /**
+       * API 14.
+       * GET /kiosk/locker/image/select
+       *
+       * 요청값:
+       * {
+       *   TRADE_ID,
+       *   LOCKER_ID,
+       *   IMAGE_TYPE_CODE: "SELLER_INSERT"
+       * }
+       *
+       * 키오스크는 image create가 아니라 select만 함.
+       */
+      await selectSellerCapturedImage();
+
+      if (cancelledRef.current) return;
+
+      setStep("PHOTO");
+      setApiMessage("보관 사진이 촬영되었습니다.");
+    } catch (error) {
+      setStep("ERROR");
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "문 닫힘 또는 사진 촬영 처리 중 오류가 발생했습니다.",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function runPhotoConfirmFlow() {
+    try {
+      validateRequiredValues();
+
+      setActionLoading(true);
+      setErrorMessage("");
+      lastFailedActionRef.current = "PHOTO_CONFIRM";
+
+      /**
+       * API 15.
+       * PUT /kiosk/locker/command/create
+       *
+       * 요청값:
+       * {
+       *   AUTH_CODE,
+       *   KIOSK_CODE,
+       *   NEXT_STATUS: "SELLER_PHOTO_CONFIRMED",
+       *   REQUEST_TYPE_CODE: "NORMAL"
+       * }
+       *
+       * 생성 명령:
+       * SELLER_PDLC_OFF, SELLER_LED_OFF
+       */
+      await createLockerCommand("SELLER_PHOTO_CONFIRMED", "NORMAL");
+
+      /**
+       * API 16.
+       * GET /kiosk/locker/command/success/check
+       *
+       * 요청값:
+       * AUTH_CODE, KIOSK_CODE, NEXT_STATUS = SELLER_PHOTO_CONFIRMED
+       *
+       * 성공 확인:
+       * SELLER_PDLC_OFF, SELLER_LED_OFF
+       */
+      await waitCommandSuccess("SELLER_PHOTO_CONFIRMED");
+
+      /**
+       * API 17.
+       * PUT /kiosk/locker/update
+       *
+       * 요청값:
+       * {
+       *   TRADE_ID,
+       *   AUTH_CODE,
+       *   KIOSK_CODE,
+       *   NEXT_STATUS: "SELLER_PHOTO_CONFIRMED",
+       *   ROLE_TYPE: "KIOSK"
+       * }
+       *
+       * 상태:
+       * SELLER_LOCKED_PHOTO_SAVED -> SELLER_PHOTO_CONFIRMED
+       *
+       * SP 내부에서 TRADE 상태 DEPOSITED 처리.
+       */
+      await updateLockerState("SELLER_PHOTO_CONFIRMED", "KIOSK");
+
+      setStep("DONE");
+      setApiMessage("물품 보관이 완료되었습니다.");
+    } catch (error) {
+      setStep("ERROR");
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "사진 확인 완료 처리 중 오류가 발생했습니다.",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  }
 
   function handleGoHome() {
-    navigate("/kiosk");
+    navigate("/kiosk", { replace: true });
   }
 
   function handleRetryOpen() {
-    setPhaseId("OPENING");
+    runOpenFlow("RETRY");
   }
 
-  function handleConfirmPhoto() {
-    setPhaseId("DONE");
+  function handleDepositDone() {
+    runCloseAndCaptureFlow();
   }
 
-  function handleReplayFlow() {
-    setPhaseId("OPENING");
+  function handlePhotoConfirm() {
+    runPhotoConfirmFlow();
   }
+
+  function handleRetryCurrentStep() {
+    if (lastFailedActionRef.current === "OPEN") {
+      runOpenFlow("RETRY");
+      return;
+    }
+
+    if (lastFailedActionRef.current === "CLOSE_PHOTO") {
+      runCloseAndCaptureFlow();
+      return;
+    }
+
+    if (lastFailedActionRef.current === "PHOTO_CONFIRM") {
+      runPhotoConfirmFlow();
+    }
+  }
+
+  function handleFinish() {
+    navigate("/kiosk", { replace: true });
+  }
+
+  useEffect(() => {
+    cancelledRef.current = false;
+
+    if (startedRef.current) return;
+
+    startedRef.current = true;
+    runOpenFlow("NORMAL");
+
+    return () => {
+      cancelledRef.current = true;
+    };
+  }, []);
 
   return (
-    <div className={styles.kioskDepositPage}>
+    <main className={styles.kioskDepositPage}>
       <header className={styles.kioskDepositHeader}>
-        <img src={logoImage} alt="루커" className={styles.kioskDepositLogo} />
+        <img
+          className={styles.kioskDepositLogo}
+          src={logoImage}
+          alt="Loocker"
+        />
 
         <button
-          type="button"
           className={styles.kioskDepositHomeButton}
+          type="button"
           onClick={handleGoHome}
+          disabled={actionLoading}
         >
           처음으로
         </button>
       </header>
 
-      <main className={styles.kioskDepositMain}>
-        <section className={styles.kioskDepositCard}>
+      <section className={styles.kioskDepositMain}>
+        <div className={styles.kioskDepositCard}>
           <h1 className={styles.kioskDepositTitle}>판매자 물품 보관</h1>
 
           <p className={styles.kioskDepositDescription}>
-            배정된 보관함에 물품을 보관해주세요.
+            안내에 따라 상품을 보관함에 넣어주세요.
           </p>
 
-          <div className={styles.kioskDepositProductBox}>
-            <div className={styles.kioskDepositProductImageBox}>
-              {productImageUrl ? (
-                <img
-                  src={productImageUrl}
-                  alt={productTitle}
-                  className={styles.kioskDepositProductImage}
-                />
-              ) : (
-                <div className={styles.kioskDepositNoImage}>이미지 없음</div>
-              )}
+          <div className={styles.kioskDepositSummaryBox}>
+            <div className={styles.kioskDepositSummaryTop}>
+              <div className={styles.kioskDepositProductMini}>
+                <div className={styles.kioskDepositProductImageBox}>
+                  {productImageUrl ? (
+                    <img
+                      className={styles.kioskDepositProductImage}
+                      src={productImageUrl}
+                      alt={productTitle}
+                    />
+                  ) : (
+                    <div className={styles.kioskDepositNoImage}>NO IMAGE</div>
+                  )}
+                </div>
+
+                <div className={styles.kioskDepositProductInfo}>
+                  <span>보관 상품</span>
+                  <strong>{productTitle}</strong>
+                  <p className={styles.kioskDepositProductPrice}>
+                    {formatPrice(productPrice)}
+                  </p>
+                </div>
+              </div>
+
+              <div className={styles.kioskDepositLockerMini}>
+                <span className={styles.kioskDepositLockerMiniLabel}>
+                  보관함 번호
+                </span>
+                <strong className={styles.kioskDepositLockerNumber}>
+                  {lockerNo}번
+                </strong>
+              </div>
             </div>
-
-            <div className={styles.kioskDepositProductInfo}>
-              <span>선택 상품</span>
-              <strong>{productTitle}</strong>
-            </div>
-          </div>
-
-          <div className={styles.kioskDepositLockerBox}>
-            <p className={styles.kioskDepositLockerLabel}>지정된 보관함</p>
-
-            <strong className={styles.kioskDepositLockerNumber}>
-              {lockerNo}번
-            </strong>
 
             <div className={styles.kioskDepositProgressTrack}>
               <div
-                className={`${styles.kioskDepositProgressFill} ${progressFillClass}`}
+                className={`${styles.kioskDepositProgressFill} ${progressClassName}`}
               />
             </div>
 
             <p className={styles.kioskDepositCurrentStep}>
-              현재 단계: {currentPhase.stepLabel}
+              {getCurrentStepText(step)}
             </p>
           </div>
 
-          <div
-            className={`${styles.kioskDepositPanel} ${
-              panelClassMap[currentPhase.tone]
-            }`}
-          >
-            {phaseId !== "PHOTO_CONFIRM" && (
-              <div className={styles.kioskDepositVisual}>
-                <PhaseVisual phaseId={phaseId} />
+          {step === "OPENING" && (
+            <div
+              className={`${styles.kioskDepositPanel} ${styles.kioskDepositPanelBlue}`}
+            >
+              <div className={styles.kioskDepositDoorIcon}>
+                <span />
               </div>
-            )}
 
-            {phaseId === "PHOTO_CONFIRM" && (
-              <div className={styles.kioskDepositCaptureBox}>
-                <img
-                  src={captureImageUrl}
-                  alt="임시 촬영 이미지"
-                  className={styles.kioskDepositCaptureImage}
-                />
-              </div>
-            )}
+              <h2 className={styles.kioskDepositPanelTitle}>
+                보관함 문을 여는 중입니다
+              </h2>
 
-            <h2 className={styles.kioskDepositPanelTitle}>
-              {currentPhase.title}
-            </h2>
-
-            <p className={styles.kioskDepositPanelDescription}>
-              {currentPhase.description}
-            </p>
-
-            {currentPhase.subDescription && (
-              <p className={styles.kioskDepositPanelSubDescription}>
-                {currentPhase.subDescription}
+              <p className={styles.kioskDepositPanelDescription}>
+                잠시만 기다려주세요.
               </p>
-            )}
 
-            {phaseId === "OPENED" && (
+              <p className={styles.kioskDepositPanelSubDescription}>
+                {apiMessage || "라즈베리파이 문 열림 명령을 처리하고 있습니다."}
+              </p>
+            </div>
+          )}
+
+          {step === "OPENED" && (
+            <div
+              className={`${styles.kioskDepositPanel} ${styles.kioskDepositPanelGreen}`}
+            >
+              <div className={styles.kioskDepositOpenDoorIcon}>
+                <span />
+              </div>
+
+              <h2 className={styles.kioskDepositPanelTitle}>
+                보관함 문이 열렸습니다
+              </h2>
+
+              <p className={styles.kioskDepositPanelDescription}>
+                물건을 보관함 안에 넣어주세요.
+              </p>
+
+              <p className={styles.kioskDepositPanelSubDescription}>
+                문이 열리지 않았다면 재시도 버튼을 눌러주세요.
+              </p>
+
               <button
-                type="button"
                 className={styles.kioskDepositRetryButton}
+                type="button"
                 onClick={handleRetryOpen}
+                disabled={actionLoading}
               >
                 문 열림 재시도
               </button>
-            )}
 
-            {phaseId === "PHOTO_CONFIRM" && (
               <button
-                type="button"
                 className={styles.kioskDepositPrimaryButton}
-                onClick={handleConfirmPhoto}
+                type="button"
+                onClick={handleDepositDone}
+                disabled={actionLoading}
+              >
+                물품을 보관했습니다
+              </button>
+            </div>
+          )}
+
+          {step === "CLOSING" && (
+            <div
+              className={`${styles.kioskDepositPanel} ${styles.kioskDepositPanelOrange}`}
+            >
+              <div className={styles.kioskDepositClosedDoorIcon}>
+                <span />
+              </div>
+
+              <h2 className={styles.kioskDepositPanelTitle}>
+                문 닫힘 확인 중입니다
+              </h2>
+
+              <p className={styles.kioskDepositPanelDescription}>
+                문이 완전히 닫힐 때까지 기다려주세요.
+              </p>
+
+              <p className={styles.kioskDepositPanelSubDescription}>
+                {apiMessage || "문 닫힘 센서 값을 확인하고 있습니다."}
+              </p>
+            </div>
+          )}
+
+          {step === "CAPTURING" && (
+            <div
+              className={`${styles.kioskDepositPanel} ${styles.kioskDepositPanelPurple}`}
+            >
+              <div className={styles.kioskDepositCameraIcon}>
+                <span />
+              </div>
+
+              <h2 className={styles.kioskDepositPanelTitle}>
+                보관 사진을 촬영하고 있습니다
+              </h2>
+
+              <p className={styles.kioskDepositPanelDescription}>
+                상품 보관 상태를 기록하는 중입니다.
+              </p>
+
+              <p className={styles.kioskDepositPanelSubDescription}>
+                {apiMessage || "촬영 완료 후 사진 확인 화면으로 이동합니다."}
+              </p>
+            </div>
+          )}
+
+          {step === "PHOTO" && (
+            <div
+              className={`${styles.kioskDepositPanel} ${styles.kioskDepositPanelPurple}`}
+            >
+              <div className={styles.kioskDepositCaptureBox}>
+                {previewImageUrl ? (
+                  <img
+                    className={styles.kioskDepositCaptureImage}
+                    src={previewImageUrl}
+                    alt="보관 사진 미리보기"
+                  />
+                ) : (
+                  <div className={styles.kioskDepositCaptureEmpty} />
+                )}
+              </div>
+
+              <h2 className={styles.kioskDepositPanelTitle}>
+                촬영된 사진을 확인해주세요
+              </h2>
+
+              <p className={styles.kioskDepositPanelDescription}>
+                보관 상태가 잘 보이는지 확인한 뒤 완료 버튼을 눌러주세요.
+              </p>
+
+              <button
+                className={styles.kioskDepositPrimaryButton}
+                type="button"
+                onClick={handlePhotoConfirm}
+                disabled={actionLoading}
               >
                 사진 확인 완료
               </button>
-            )}
+            </div>
+          )}
 
-            {phaseId === "DONE" && (
+          {step === "DONE" && (
+            <div
+              className={`${styles.kioskDepositPanel} ${styles.kioskDepositPanelGreen}`}
+            >
+              <div className={styles.kioskDepositDoneCircle}>✓</div>
+
+              <h2 className={styles.kioskDepositPanelTitle}>물품 보관 완료</h2>
+
+              <p className={styles.kioskDepositPanelDescription}>
+                구매자가 물품을 확인할 수 있는 상태가 되었습니다.
+              </p>
+
+              <p className={styles.kioskDepositPanelSubDescription}>
+                거래 상태가 입고 완료로 변경되었습니다.
+              </p>
+
               <button
-                type="button"
                 className={styles.kioskDepositPrimaryButton}
+                type="button"
+                onClick={handleFinish}
+              >
+                처음으로 돌아가기
+              </button>
+            </div>
+          )}
+
+          {step === "ERROR" && (
+            <div
+              className={`${styles.kioskDepositPanel} ${styles.kioskDepositPanelOrange}`}
+            >
+              <div className={styles.kioskDepositDoneCircle}>!</div>
+
+              <h2 className={styles.kioskDepositPanelTitle}>
+                처리 중 오류가 발생했습니다
+              </h2>
+
+              <p className={styles.kioskDepositPanelDescription}>
+                {errorMessage}
+              </p>
+
+              <p className={styles.kioskDepositPanelSubDescription}>
+                문제가 계속되면 처음 화면으로 돌아가 다시 진행해주세요.
+              </p>
+
+              <button
+                className={styles.kioskDepositRetryButton}
+                type="button"
+                onClick={handleRetryCurrentStep}
+                disabled={actionLoading}
+              >
+                현재 단계 재시도
+              </button>
+
+              <button
+                className={styles.kioskDepositPrimaryButton}
+                type="button"
                 onClick={handleGoHome}
               >
-                처음으로
+                처음으로 돌아가기
               </button>
-            )}
-          </div>
-
-          <button
-            type="button"
-            className={styles.kioskDepositReplayButton}
-            onClick={handleReplayFlow}
-          >
-            UI 흐름 다시보기
-          </button>
-        </section>
-      </main>
-    </div>
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
   );
 }
