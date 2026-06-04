@@ -86,33 +86,43 @@ export type KioskLockerCommandCreateRequest = {
   REQUEST_TYPE_CODE?: KioskLockerRequestTypeCode;
 };
 
-export type KioskLockerCommandSuccessCheckRequest = {
+export type KioskLockerCommandStatusSelectRequest = {
   AUTH_CODE: string;
   KIOSK_CODE: string;
-  NEXT_STATUS: KioskLockerNextStatus;
+  LOCKER_ID: number;
+  LOCKER_STATUS_NAME: KioskLockerNextStatus;
 };
 
-export type KioskLockerCommandSuccessCheckResponse = {
+export type KioskLockerCommandStatusSelectResponse = {
+  LOCKER_COMMAND_ID?: number;
+  TRADE_ID?: number;
+  LOCKER_ID?: number;
+  COMMAND_TYPE_CODE?: string;
   COMMAND_STATUS_CODE?: string;
+  RESULT_MESSAGE?: string;
   STATUS_CODE?: string;
   RESULT_STATUS_CODE?: string;
   IS_SUCCESS?: boolean | number;
   IS_FAILED?: boolean | number;
   FAILED_COMMAND?: string;
-  COMMAND_TYPE_CODE?: string;
-  RESULT_MESSAGE?: string;
   MESSAGE?: string;
 
+  lockerCommandId?: number;
+  tradeId?: number;
+  lockerId?: number;
+  commandTypeCode?: string;
   commandStatusCode?: string;
+  resultMessage?: string;
   statusCode?: string;
   resultStatusCode?: string;
   isSuccess?: boolean | number;
   isFailed?: boolean | number;
   failedCommand?: string;
-  commandTypeCode?: string;
-  resultMessage?: string;
   message?: string;
 };
+
+export type KioskLockerCommandSuccessCheckResponse =
+  KioskLockerCommandStatusSelectResponse;
 
 export type KioskLockerUpdateRequest = {
   TRADE_ID: number;
@@ -285,23 +295,24 @@ export const kioskApi = {
     });
   },
 
-  async checkLockerCommandSuccess(
-    body: KioskLockerCommandSuccessCheckRequest,
-  ): Promise<KioskLockerCommandSuccessCheckResponse[]> {
+  async selectLockerCommandStatus(
+    body: KioskLockerCommandStatusSelectRequest,
+  ): Promise<KioskLockerCommandStatusSelectResponse[]> {
     const query = new URLSearchParams();
 
     query.set("AUTH_CODE", body.AUTH_CODE);
     query.set("KIOSK_CODE", body.KIOSK_CODE);
-    query.set("NEXT_STATUS", body.NEXT_STATUS);
+    query.set("LOCKER_ID", String(body.LOCKER_ID));
+    query.set("LOCKER_STATUS_NAME", body.LOCKER_STATUS_NAME);
 
     const res = await kioskapi(
-      `/locker/command/success/check?${query.toString()}`,
+      `/locker/command/status/select?${query.toString()}`,
       {
         method: "GET",
       },
     );
 
-    return toArray<KioskLockerCommandSuccessCheckResponse>(res);
+    return toArray<KioskLockerCommandStatusSelectResponse>(res);
   },
 
   async updateLockerState(body: KioskLockerUpdateRequest): Promise<void> {

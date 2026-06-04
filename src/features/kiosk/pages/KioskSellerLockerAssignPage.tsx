@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import logoImage from "../../../assets/images/Loocker.png";
 import {
   kioskApi,
-  type KioskLockerCommandSuccessCheckResponse,
+  type KioskLockerCommandStatusSelectResponse,
   type KioskLockerNextStatus,
   type KioskLockerRequestTypeCode,
   type KioskLockerRoleType,
@@ -189,7 +189,7 @@ function getCurrentStepText(step: DepositStep) {
 }
 
 function normalizeCommandCheckResult(
-  data: KioskLockerCommandSuccessCheckResponse[],
+  data: KioskLockerCommandStatusSelectResponse[],
 ): CommandCheckResult {
   const normalizedList = data.filter(Boolean).map((item) => {
     const rawStatus = String(
@@ -300,7 +300,8 @@ export default function KioskSellerDepositLockerAssignPage() {
   const productTitle = getProductTitle(assignData);
   const productPrice = getProductPrice(assignData);
   const productImageUrl = toApiAssetUrl(getProductImageUrl(assignData));
-  const lockerNo = assignData.LOCKER_NO || assignData.LOCKER_ID || "-";
+  const lockerNo =
+    assignData.LOCKER_NO || assignData.LOCKER_ID || lockerId || "-";
 
   const previewImageUrl = capturedImageUrl || productImageUrl;
 
@@ -317,6 +318,10 @@ export default function KioskSellerDepositLockerAssignPage() {
 
     if (!tradeId) {
       throw new Error("거래 ID가 없습니다.");
+    }
+
+    if (!lockerId) {
+      throw new Error("보관함 ID가 없습니다.");
     }
   }
 
@@ -350,21 +355,22 @@ export default function KioskSellerDepositLockerAssignPage() {
     });
   }
 
-  async function checkCommandSuccess(nextStatus: KioskLockerNextStatus) {
-    const data = await kioskApi.checkLockerCommandSuccess({
+  async function checkCommandSuccess(lockerStatusName: KioskLockerNextStatus) {
+    const data = await kioskApi.selectLockerCommandStatus({
       AUTH_CODE: normalizedAuthCode,
       KIOSK_CODE: kioskCode,
-      NEXT_STATUS: nextStatus,
+      LOCKER_ID: lockerId,
+      LOCKER_STATUS_NAME: lockerStatusName,
     });
 
     return normalizeCommandCheckResult(data);
   }
 
-  async function waitCommandSuccess(nextStatus: KioskLockerNextStatus) {
+  async function waitCommandSuccess(lockerStatusName: KioskLockerNextStatus) {
     const startedAt = Date.now();
 
     while (!cancelledRef.current) {
-      const result = await checkCommandSuccess(nextStatus);
+      const result = await checkCommandSuccess(lockerStatusName);
 
       if (result.isSuccess) {
         return;
@@ -373,19 +379,19 @@ export default function KioskSellerDepositLockerAssignPage() {
       if (result.isFailed) {
         throw new Error(
           `라즈베리파이 명령 실패: ${
-            result.failedCommand || nextStatus
+            result.failedCommand || lockerStatusName
           } / ${result.resultMessage || "상세 사유 없음"}`,
         );
       }
 
       if (Date.now() - startedAt > COMMAND_POLL_TIMEOUT_MS) {
         throw new Error(
-          `라즈베리파이 명령 대기 시간이 초과되었습니다: ${nextStatus}`,
+          `라즈베리파이 명령 대기 시간이 초과되었습니다: ${lockerStatusName}`,
         );
       }
 
       setApiMessage(
-        `라즈베리파이 명령 성공 대기 중: ${nextStatus}${
+        `라즈베리파이 명령 성공 대기 중: ${lockerStatusName}${
           result.rawStatus ? ` (${result.rawStatus})` : ""
         }`,
       );
@@ -417,15 +423,6 @@ export default function KioskSellerDepositLockerAssignPage() {
     }
   }
 
-  /**
-   * /kiosk/seller/locker 호출 시점에 이미 처리되는 부분:
-   * 1. 보관함 배정
-   * 2. SELLER_UNLOCK_REQUESTED 명령 INSERT
-   * 3. LOCKER 상태 SELLER_UNLOCK_REQUESTED 변경
-   *
-   * 그래서 판매자 입고 화면 진입 직후에는 위 두 API를 다시 호출하지 않고,
-   * SELLER_UNLOCK_READY 성공 확인 후 상태 UPDATE만 수행한다.
-   */
   async function waitInitialOpenSuccessFlow() {
     try {
       validateRequiredValues();
@@ -457,11 +454,6 @@ export default function KioskSellerDepositLockerAssignPage() {
     }
   }
 
-  /**
-   * 문 열림 재시도는 SELLER_UNLOCK_REQUESTED 상태를 다시 업데이트하지 않는다.
-   * 실패한 명령만 RETRY로 다시 INSERT하고,
-   * 성공 확인 후 SELLER_UNLOCK_READY로만 상태 전이한다.
-   */
   async function retryOpenFlow() {
     try {
       validateRequiredValues();
