@@ -48,6 +48,7 @@ type CommandCheckResult = {
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
+const COMMAND_POLL_DELAY_AFTER_CREATE_MS = 1000;
 const COMMAND_POLL_INTERVAL_MS = 1000;
 const COMMAND_POLL_TIMEOUT_MS = 60 * 1000;
 
@@ -280,9 +281,9 @@ export default function KioskSellerDepositLockerAssignPage() {
 
   const startedRef = useRef(false);
   const cancelledRef = useRef(false);
-  const lastFailedActionRef = useRef<
-    "OPEN_WAIT" | "OPEN_RETRY" | "CLOSE_PHOTO" | "PHOTO_CONFIRM"
-  >("OPEN_WAIT");
+  const lastFailedActionRef = useRef<"OPEN" | "CLOSE_PHOTO" | "PHOTO_CONFIRM">(
+    "OPEN",
+  );
 
   const normalizedAuthCode =
     authCode || sessionStorage.getItem("sellerDepositAuthCode") || "";
@@ -339,6 +340,19 @@ export default function KioskSellerDepositLockerAssignPage() {
       NEXT_STATUS: nextStatus,
       REQUEST_TYPE_CODE: requestTypeCode,
     });
+  }
+
+  async function createLockerCommandAndDelay(
+    nextStatus: KioskLockerNextStatus,
+    requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
+  ) {
+    await createLockerCommand(nextStatus, requestTypeCode);
+
+    setApiMessage(
+      `명령 생성 완료. ${COMMAND_POLL_DELAY_AFTER_CREATE_MS / 1000}초 후 상태를 확인합니다.`,
+    );
+
+    await sleep(COMMAND_POLL_DELAY_AFTER_CREATE_MS);
   }
 
   async function updateLockerState(
@@ -423,50 +437,56 @@ export default function KioskSellerDepositLockerAssignPage() {
     }
   }
 
-  async function waitInitialOpenSuccessFlow() {
+  async function runOpenFlow(
+    requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
+  ) {
     try {
       validateRequiredValues();
 
       setActionLoading(true);
       setErrorMessage("");
       setStep("OPENING");
-      lastFailedActionRef.current = "OPEN_WAIT";
+      lastFailedActionRef.current = "OPEN";
 
-      await waitCommandSuccess("SELLER_UNLOCK_READY");
-
-      await updateLockerState("SELLER_UNLOCK_READY", "DEVICE");
-
-      if (cancelledRef.current) return;
-
-      setStep("OPENED");
-      setApiMessage("보관함 문이 열렸습니다.");
-    } catch (error) {
-      setStep("ERROR");
-      setErrorMessage(
-        extractCleanErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "보관함 문 열림 확인 중 오류가 발생했습니다.",
-        ),
+      /**
+       * 1. 문 열림 명령 생성
+       * PUT /kiosk/locker/command/create
+       *
+       * {
+       *   AUTH_CODE,
+       *   KIOSK_CODE,
+       *   NEXT_STATUS: "SELLER_UNLOCK_REQUESTED",
+       *   REQUEST_TYPE_CODE: "NORMAL" | "RETRY"
+       * }
+       */
+      await createLockerCommandAndDelay(
+        "SELLER_UNLOCK_REQUESTED",
+        requestTypeCode,
       );
-    } finally {
-      setActionLoading(false);
-    }
-  }
 
-  async function retryOpenFlow() {
-    try {
-      validateRequiredValues();
-
-      setActionLoading(true);
-      setErrorMessage("");
-      setStep("OPENING");
-      lastFailedActionRef.current = "OPEN_RETRY";
-
-      await createLockerCommand("SELLER_UNLOCK_REQUESTED", "RETRY");
-
+      /**
+       * 2. create 이후 1초 뒤부터 polling 시작
+       * GET /kiosk/locker/command/status/select
+       *
+       * AUTH_CODE
+       * KIOSK_CODE
+       * LOCKER_ID
+       * LOCKER_STATUS_NAME = SELLER_UNLOCK_READY
+       */
       await waitCommandSuccess("SELLER_UNLOCK_READY");
 
+      /**
+       * 3. SUCCESS 확인 후 상태 전이
+       * PUT /kiosk/locker/update
+       *
+       * {
+       *   TRADE_ID,
+       *   AUTH_CODE,
+       *   RESULT_STATUS_CODE: "",
+       *   NEXT_STATUS: "SELLER_UNLOCK_READY",
+       *   ROLE_TYPE: "DEVICE"
+       * }
+       */
       await updateLockerState("SELLER_UNLOCK_READY", "DEVICE");
 
       if (cancelledRef.current) return;
@@ -479,7 +499,7 @@ export default function KioskSellerDepositLockerAssignPage() {
         extractCleanErrorMessage(
           error instanceof Error
             ? error.message
-            : "보관함 문 열림 재시도 중 오류가 발생했습니다.",
+            : "보관함 문 열림 처리 중 오류가 발생했습니다.",
         ),
       );
     } finally {
@@ -496,30 +516,63 @@ export default function KioskSellerDepositLockerAssignPage() {
       setStep("CLOSING");
       lastFailedActionRef.current = "CLOSE_PHOTO";
 
+      /**
+       * 1. 판매자 물품 투입 완료 상태 전이
+       */
       await updateLockerState("SELLER_DEPOSIT_CONFIRMED", "KIOSK");
 
       await sleep(2000);
 
-      await createLockerCommand("SELLER_DOOR_CLOSE_REQUESTED", "NORMAL");
+      /**
+       * 2. 문 닫힘 체크 명령 생성
+       */
+      await createLockerCommandAndDelay(
+        "SELLER_DOOR_CLOSE_REQUESTED",
+        "NORMAL",
+      );
 
+      /**
+       * 3. 문 닫힘 요청 상태 전이
+       */
       await updateLockerState("SELLER_DOOR_CLOSE_REQUESTED", "KIOSK");
 
+      /**
+       * 4. create 이후 1초 뒤부터 polling
+       */
       await waitCommandSuccess("SELLER_DOOR_CLOSED");
 
+      /**
+       * 5. 문 닫힘 SUCCESS 후 상태 전이
+       */
       await updateLockerState("SELLER_DOOR_CLOSED", "DEVICE");
 
       if (cancelledRef.current) return;
 
       setStep("CAPTURING");
 
-      await createLockerCommand("SELLER_LOCK_REQUESTED", "NORMAL");
+      /**
+       * 6. 사진 촬영 명령 생성
+       */
+      await createLockerCommandAndDelay("SELLER_LOCK_REQUESTED", "NORMAL");
 
+      /**
+       * 7. 사진 촬영 요청 상태 전이
+       */
       await updateLockerState("SELLER_LOCK_REQUESTED", "KIOSK");
 
+      /**
+       * 8. create 이후 1초 뒤부터 polling
+       */
       await waitCommandSuccess("SELLER_LOCKED_PHOTO_SAVED");
 
+      /**
+       * 9. 사진 저장 SUCCESS 후 상태 전이
+       */
       await updateLockerState("SELLER_LOCKED_PHOTO_SAVED", "DEVICE");
 
+      /**
+       * 10. 저장된 사진 조회
+       */
       await selectSellerCapturedImage();
 
       if (cancelledRef.current) return;
@@ -548,10 +601,19 @@ export default function KioskSellerDepositLockerAssignPage() {
       setErrorMessage("");
       lastFailedActionRef.current = "PHOTO_CONFIRM";
 
-      await createLockerCommand("SELLER_PHOTO_CONFIRMED", "NORMAL");
+      /**
+       * 1. LED / PDLC OFF 명령 생성
+       */
+      await createLockerCommandAndDelay("SELLER_PHOTO_CONFIRMED", "NORMAL");
 
+      /**
+       * 2. create 이후 1초 뒤부터 polling
+       */
       await waitCommandSuccess("SELLER_PHOTO_CONFIRMED");
 
+      /**
+       * 3. SUCCESS 확인 후 상태 전이
+       */
       await updateLockerState("SELLER_PHOTO_CONFIRMED", "KIOSK");
 
       setStep("DONE");
@@ -575,7 +637,7 @@ export default function KioskSellerDepositLockerAssignPage() {
   }
 
   function handleRetryOpen() {
-    retryOpenFlow();
+    runOpenFlow("RETRY");
   }
 
   function handleDepositDone() {
@@ -587,11 +649,8 @@ export default function KioskSellerDepositLockerAssignPage() {
   }
 
   function handleRetryCurrentStep() {
-    if (
-      lastFailedActionRef.current === "OPEN_WAIT" ||
-      lastFailedActionRef.current === "OPEN_RETRY"
-    ) {
-      retryOpenFlow();
+    if (lastFailedActionRef.current === "OPEN") {
+      runOpenFlow("RETRY");
       return;
     }
 
@@ -615,7 +674,7 @@ export default function KioskSellerDepositLockerAssignPage() {
     if (startedRef.current) return;
 
     startedRef.current = true;
-    waitInitialOpenSuccessFlow();
+    runOpenFlow("NORMAL");
 
     return () => {
       cancelledRef.current = true;
@@ -711,8 +770,7 @@ export default function KioskSellerDepositLockerAssignPage() {
               </p>
 
               <p className={styles.kioskDepositPanelSubDescription}>
-                {apiMessage ||
-                  "라즈베리파이 문 열림 성공 여부를 확인하고 있습니다."}
+                {apiMessage || "라즈베리파이 문 열림 명령을 생성하고 있습니다."}
               </p>
             </div>
           )}
