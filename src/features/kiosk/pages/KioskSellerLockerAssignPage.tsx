@@ -40,6 +40,7 @@ type LockerAssignState = {
 type CommandCheckResult = {
   isSuccess: boolean;
   isFailed: boolean;
+  canRetry: boolean;
   failedCommand?: string;
   resultMessage?: string;
   rawStatus?: string;
@@ -192,77 +193,39 @@ function getCurrentStepText(step: DepositStep) {
 function normalizeCommandCheckResult(
   data: KioskLockerCommandStatusSelectResponse[],
 ): CommandCheckResult {
-  const normalizedList = data.filter(Boolean).map((item) => {
-    const rawStatus = String(
-      item.COMMAND_STATUS_CODE ||
-        item.commandStatusCode ||
-        item.STATUS_CODE ||
-        item.statusCode ||
-        item.RESULT_STATUS_CODE ||
-        item.resultStatusCode ||
-        "",
-    ).toUpperCase();
+  const first = data.filter(Boolean)[0];
 
-    return {
-      rawStatus,
-      failedCommand:
-        item.FAILED_COMMAND ||
-        item.failedCommand ||
-        item.COMMAND_TYPE_CODE ||
-        item.commandTypeCode ||
-        "",
-      resultMessage:
-        item.RESULT_MESSAGE ||
-        item.resultMessage ||
-        item.MESSAGE ||
-        item.message ||
-        "",
-      isSuccess:
-        item.IS_SUCCESS === true ||
-        item.IS_SUCCESS === 1 ||
-        item.isSuccess === true ||
-        item.isSuccess === 1 ||
-        rawStatus === "SUCCESS" ||
-        rawStatus === "ALL_SUCCESS" ||
-        rawStatus === "COMMAND_SUCCESS" ||
-        rawStatus === "COMPLETED",
-      isFailed:
-        item.IS_FAILED === true ||
-        item.IS_FAILED === 1 ||
-        item.isFailed === true ||
-        item.isFailed === 1 ||
-        rawStatus === "FAILED" ||
-        rawStatus === "COMMAND_FAILED" ||
-        Boolean(item.FAILED_COMMAND || item.failedCommand),
-    };
-  });
-
-  if (normalizedList.length === 0) {
+  if (!first) {
     return {
       isSuccess: false,
       isFailed: false,
-      rawStatus: "",
+      canRetry: false,
+      rawStatus: "NONE",
+      resultMessage: "아직 생성된 명령이 없습니다.",
     };
   }
 
-  const failed = normalizedList.find((item) => item.isFailed);
+  const rawStatus = String(
+    first.CHECK_STATUS || first.checkStatus || "",
+  ).toUpperCase();
 
-  if (failed) {
-    return {
-      isSuccess: false,
-      isFailed: true,
-      failedCommand: failed.failedCommand,
-      resultMessage: failed.resultMessage,
-      rawStatus: failed.rawStatus,
-    };
-  }
+  const canRetry = String(
+    first.CAN_RETRY || first.canRetry || "",
+  ).toUpperCase();
 
-  const allSuccess = normalizedList.every((item) => item.isSuccess);
+  const failedCommand =
+    first.FAILED_COMMAND_TYPE_CODE || first.failedCommandTypeCode || "";
+
+  const resultMessage =
+    first.RESULT_MESSAGE || first.resultMessage || "명령 상태를 확인 중입니다.";
 
   return {
-    isSuccess: allSuccess,
-    isFailed: false,
-    rawStatus: normalizedList.map((item) => item.rawStatus).join(","),
+    isSuccess: rawStatus === "SUCCESS",
+    isFailed: rawStatus === "FAILED",
+    canRetry: canRetry === "Y",
+    failedCommand: failedCommand || undefined,
+    resultMessage,
+    rawStatus,
   };
 }
 
@@ -327,26 +290,26 @@ export default function KioskSellerDepositLockerAssignPage() {
   }
 
   async function createLockerCommand(
-    nextStatus: KioskLockerNextStatus,
+    commandStatusName: KioskLockerNextStatus,
     requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
   ) {
     setApiMessage(
-      `라즈베리파이 명령 생성 중: ${nextStatus} / ${requestTypeCode}`,
+      `라즈베리파이 명령 생성 중: ${commandStatusName} / ${requestTypeCode}`,
     );
 
     await kioskApi.createLockerCommand({
       AUTH_CODE: normalizedAuthCode,
       KIOSK_CODE: kioskCode,
-      NEXT_STATUS: nextStatus,
+      NEXT_STATUS: commandStatusName,
       REQUEST_TYPE_CODE: requestTypeCode,
     });
   }
 
   async function createLockerCommandAndDelay(
-    nextStatus: KioskLockerNextStatus,
+    commandStatusName: KioskLockerNextStatus,
     requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
   ) {
-    await createLockerCommand(nextStatus, requestTypeCode);
+    await createLockerCommand(commandStatusName, requestTypeCode);
 
     setApiMessage(
       `명령 생성 완료. ${COMMAND_POLL_DELAY_AFTER_CREATE_MS / 1000}초 후 상태를 확인합니다.`,
@@ -369,22 +332,22 @@ export default function KioskSellerDepositLockerAssignPage() {
     });
   }
 
-  async function checkCommandSuccess(lockerStatusName: KioskLockerNextStatus) {
+  async function checkCommandStatus(commandStatusName: KioskLockerNextStatus) {
     const data = await kioskApi.selectLockerCommandStatus({
       AUTH_CODE: normalizedAuthCode,
       KIOSK_CODE: kioskCode,
       LOCKER_ID: lockerId,
-      LOCKER_STATUS_NAME: lockerStatusName,
+      LOCKER_STATUS_NAME: commandStatusName,
     });
 
     return normalizeCommandCheckResult(data);
   }
 
-  async function waitCommandSuccess(lockerStatusName: KioskLockerNextStatus) {
+  async function waitCommandSuccess(commandStatusName: KioskLockerNextStatus) {
     const startedAt = Date.now();
 
     while (!cancelledRef.current) {
-      const result = await checkCommandSuccess(lockerStatusName);
+      const result = await checkCommandStatus(commandStatusName);
 
       if (result.isSuccess) {
         return;
@@ -393,19 +356,19 @@ export default function KioskSellerDepositLockerAssignPage() {
       if (result.isFailed) {
         throw new Error(
           `라즈베리파이 명령 실패: ${
-            result.failedCommand || lockerStatusName
+            result.failedCommand || commandStatusName
           } / ${result.resultMessage || "상세 사유 없음"}`,
         );
       }
 
       if (Date.now() - startedAt > COMMAND_POLL_TIMEOUT_MS) {
         throw new Error(
-          `라즈베리파이 명령 대기 시간이 초과되었습니다: ${lockerStatusName}`,
+          `라즈베리파이 명령 대기 시간이 초과되었습니다: ${commandStatusName}`,
         );
       }
 
       setApiMessage(
-        `라즈베리파이 명령 성공 대기 중: ${lockerStatusName}${
+        `라즈베리파이 명령 성공 대기 중: ${commandStatusName}${
           result.rawStatus ? ` (${result.rawStatus})` : ""
         }`,
       );
@@ -448,45 +411,13 @@ export default function KioskSellerDepositLockerAssignPage() {
       setStep("OPENING");
       lastFailedActionRef.current = "OPEN";
 
-      /**
-       * 1. 문 열림 명령 생성
-       * PUT /kiosk/locker/command/create
-       *
-       * {
-       *   AUTH_CODE,
-       *   KIOSK_CODE,
-       *   NEXT_STATUS: "SELLER_UNLOCK_REQUESTED",
-       *   REQUEST_TYPE_CODE: "NORMAL" | "RETRY"
-       * }
-       */
       await createLockerCommandAndDelay(
         "SELLER_UNLOCK_REQUESTED",
         requestTypeCode,
       );
 
-      /**
-       * 2. create 이후 1초 뒤부터 polling 시작
-       * GET /kiosk/locker/command/status/select
-       *
-       * AUTH_CODE
-       * KIOSK_CODE
-       * LOCKER_ID
-       * LOCKER_STATUS_NAME = SELLER_UNLOCK_READY
-       */
-      await waitCommandSuccess("SELLER_UNLOCK_READY");
+      await waitCommandSuccess("SELLER_UNLOCK_REQUESTED");
 
-      /**
-       * 3. SUCCESS 확인 후 상태 전이
-       * PUT /kiosk/locker/update
-       *
-       * {
-       *   TRADE_ID,
-       *   AUTH_CODE,
-       *   RESULT_STATUS_CODE: "",
-       *   NEXT_STATUS: "SELLER_UNLOCK_READY",
-       *   ROLE_TYPE: "DEVICE"
-       * }
-       */
       await updateLockerState("SELLER_UNLOCK_READY", "DEVICE");
 
       if (cancelledRef.current) return;
@@ -516,63 +447,29 @@ export default function KioskSellerDepositLockerAssignPage() {
       setStep("CLOSING");
       lastFailedActionRef.current = "CLOSE_PHOTO";
 
-      /**
-       * 1. 판매자 물품 투입 완료 상태 전이
-       */
       await updateLockerState("SELLER_DEPOSIT_CONFIRMED", "KIOSK");
 
       await sleep(2000);
 
-      /**
-       * 2. 문 닫힘 체크 명령 생성
-       */
       await createLockerCommandAndDelay(
         "SELLER_DOOR_CLOSE_REQUESTED",
         "NORMAL",
       );
 
-      /**
-       * 3. 문 닫힘 요청 상태 전이
-       */
-      await updateLockerState("SELLER_DOOR_CLOSE_REQUESTED", "KIOSK");
+      await waitCommandSuccess("SELLER_DOOR_CLOSE_REQUESTED");
 
-      /**
-       * 4. create 이후 1초 뒤부터 polling
-       */
-      await waitCommandSuccess("SELLER_DOOR_CLOSED");
-
-      /**
-       * 5. 문 닫힘 SUCCESS 후 상태 전이
-       */
       await updateLockerState("SELLER_DOOR_CLOSED", "DEVICE");
 
       if (cancelledRef.current) return;
 
       setStep("CAPTURING");
 
-      /**
-       * 6. 사진 촬영 명령 생성
-       */
       await createLockerCommandAndDelay("SELLER_LOCK_REQUESTED", "NORMAL");
 
-      /**
-       * 7. 사진 촬영 요청 상태 전이
-       */
-      await updateLockerState("SELLER_LOCK_REQUESTED", "KIOSK");
+      await waitCommandSuccess("SELLER_LOCK_REQUESTED");
 
-      /**
-       * 8. create 이후 1초 뒤부터 polling
-       */
-      await waitCommandSuccess("SELLER_LOCKED_PHOTO_SAVED");
-
-      /**
-       * 9. 사진 저장 SUCCESS 후 상태 전이
-       */
       await updateLockerState("SELLER_LOCKED_PHOTO_SAVED", "DEVICE");
 
-      /**
-       * 10. 저장된 사진 조회
-       */
       await selectSellerCapturedImage();
 
       if (cancelledRef.current) return;
@@ -601,19 +498,10 @@ export default function KioskSellerDepositLockerAssignPage() {
       setErrorMessage("");
       lastFailedActionRef.current = "PHOTO_CONFIRM";
 
-      /**
-       * 1. LED / PDLC OFF 명령 생성
-       */
       await createLockerCommandAndDelay("SELLER_PHOTO_CONFIRMED", "NORMAL");
 
-      /**
-       * 2. create 이후 1초 뒤부터 polling
-       */
       await waitCommandSuccess("SELLER_PHOTO_CONFIRMED");
 
-      /**
-       * 3. SUCCESS 확인 후 상태 전이
-       */
       await updateLockerState("SELLER_PHOTO_CONFIRMED", "KIOSK");
 
       setStep("DONE");

@@ -58,6 +58,7 @@ export type KioskBuyerLockerResponse = {
 };
 
 export type KioskLockerNextStatus =
+  | "EMPTY"
   | "SELLER_UNLOCK_REQUESTED"
   | "SELLER_UNLOCK_READY"
   | "SELLER_DEPOSIT_CONFIRMED"
@@ -72,8 +73,7 @@ export type KioskLockerNextStatus =
   | "BUYER_UNLOCK_REQUESTED"
   | "BUYER_UNLOCK_READY"
   | "BUYER_PICKUP_DONE"
-  | "PICKUP_LOCKED_EMPTY_READY"
-  | "EMPTY";
+  | "PICKUP_LOCKED_EMPTY_READY";
 
 export type KioskLockerRequestTypeCode = "NORMAL" | "RETRY";
 
@@ -94,35 +94,18 @@ export type KioskLockerCommandStatusSelectRequest = {
 };
 
 export type KioskLockerCommandStatusSelectResponse = {
-  LOCKER_COMMAND_ID?: number;
-  TRADE_ID?: number;
-  LOCKER_ID?: number;
-  COMMAND_TYPE_CODE?: string;
-  COMMAND_STATUS_CODE?: string;
+  CHECK_STATUS?: "NONE" | "WAITING" | "RUNNING" | "SUCCESS" | "FAILED" | string;
+  CAN_RETRY?: "Y" | "N" | string;
+  FAILED_COMMAND_TYPE_CODE?: string | null;
   RESULT_MESSAGE?: string;
-  STATUS_CODE?: string;
-  RESULT_STATUS_CODE?: string;
-  IS_SUCCESS?: boolean | number;
-  IS_FAILED?: boolean | number;
-  FAILED_COMMAND?: string;
-  MESSAGE?: string;
+  LOCKER_STATUS?: string;
 
-  lockerCommandId?: number;
-  tradeId?: number;
-  lockerId?: number;
-  commandTypeCode?: string;
-  commandStatusCode?: string;
+  checkStatus?: string;
+  canRetry?: string;
+  failedCommandTypeCode?: string | null;
   resultMessage?: string;
-  statusCode?: string;
-  resultStatusCode?: string;
-  isSuccess?: boolean | number;
-  isFailed?: boolean | number;
-  failedCommand?: string;
-  message?: string;
+  lockerStatus?: string;
 };
-
-export type KioskLockerCommandSuccessCheckResponse =
-  KioskLockerCommandStatusSelectResponse;
 
 export type KioskLockerUpdateRequest = {
   TRADE_ID: number;
