@@ -36,15 +36,61 @@ export default function KioskSellerDepositAuthPage() {
     return `${window.location.origin}/m/login/${authCode}`;
   }, [authCode]);
 
+  function stopAuthPolling() {
+    if (pollingRef.current) {
+      window.clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }
+
+  function stopMoveTimer() {
+    if (moveTimerRef.current) {
+      window.clearTimeout(moveTimerRef.current);
+      moveTimerRef.current = null;
+    }
+  }
+
   function moveToProductPage(nextAuthCode: string) {
+    stopAuthPolling();
+    stopMoveTimer();
+
     moveTimerRef.current = window.setTimeout(() => {
+      stopAuthPolling();
+
       navigate(`/kiosk/seller/deposit/products/${nextAuthCode}`, {
         replace: true,
       });
     }, 2000);
   }
 
+  function handleVerifiedAuth(result: {
+    AUTH_CODE: string;
+    AUTH_STATUS_CODE: string;
+    AUTH_RESULT_TIME?: string | null;
+    AUTH_TYPE_CODE?: string;
+  }) {
+    verifiedHandledRef.current = true;
+    stopAuthPolling();
+
+    saveSellerDepositAuthSession({
+      AUTH_CODE: result.AUTH_CODE,
+      AUTH_STATUS_CODE: result.AUTH_STATUS_CODE,
+      AUTH_RESULT_TIME: result.AUTH_RESULT_TIME ?? "",
+      AUTH_TYPE_CODE: result.AUTH_TYPE_CODE || AUTH_TYPE_CODE,
+    });
+
+    setAuthCode(result.AUTH_CODE);
+    setAuthStatusCode(result.AUTH_STATUS_CODE);
+    setAuthResultTime(result.AUTH_RESULT_TIME ?? null);
+    setCompleted(true);
+    setMessage("인증이 완료되었습니다. 2초 후 상품 선택 화면으로 이동합니다.");
+
+    moveToProductPage(result.AUTH_CODE);
+  }
+
   function handleGoHome() {
+    stopAuthPolling();
+    stopMoveTimer();
     navigate("/kiosk");
   }
 
@@ -72,24 +118,13 @@ export default function KioskSellerDepositAuthPage() {
           });
 
           if (savedResult?.AUTH_STATUS_CODE === "VERIFIED") {
-            verifiedHandledRef.current = true;
-
-            saveSellerDepositAuthSession({
+            handleVerifiedAuth({
               AUTH_CODE: savedResult.AUTH_CODE,
               AUTH_STATUS_CODE: savedResult.AUTH_STATUS_CODE,
               AUTH_RESULT_TIME: savedResult.AUTH_RESULT_TIME ?? "",
               AUTH_TYPE_CODE: savedResult.AUTH_TYPE_CODE,
             });
 
-            setAuthCode(savedResult.AUTH_CODE);
-            setAuthStatusCode(savedResult.AUTH_STATUS_CODE);
-            setAuthResultTime(savedResult.AUTH_RESULT_TIME ?? null);
-            setCompleted(true);
-            setMessage(
-              "이미 인증이 완료되었습니다. 2초 후 상품 선택 화면으로 이동합니다.",
-            );
-
-            moveToProductPage(savedResult.AUTH_CODE);
             return;
           }
 
@@ -109,6 +144,7 @@ export default function KioskSellerDepositAuthPage() {
           }
 
           if (savedResult?.AUTH_STATUS_CODE === "EXPIRED") {
+            stopAuthPolling();
             clearSellerDepositSession();
 
             navigate("/kiosk/error", {
@@ -118,6 +154,7 @@ export default function KioskSellerDepositAuthPage() {
                   "인증 시간이 만료되었습니다. 처음부터 다시 진행해주세요.",
               },
             });
+
             return;
           }
 
@@ -154,13 +191,37 @@ export default function KioskSellerDepositAuthPage() {
     }
 
     initializeAuthSession();
+
+    return () => {
+      stopAuthPolling();
+      stopMoveTimer();
+    };
   }, [kioskId, kioskCode, navigate]);
 
   useEffect(() => {
     if (!authCode || !kioskCode) return;
 
+    if (
+      completed ||
+      verifiedHandledRef.current ||
+      authStatusCode === "VERIFIED"
+    ) {
+      stopAuthPolling();
+      return;
+    }
+
+    let cancelled = false;
+
     async function pollAuthStatus() {
-      if (verifiedHandledRef.current) return;
+      if (
+        cancelled ||
+        completed ||
+        verifiedHandledRef.current ||
+        authStatusCode === "VERIFIED"
+      ) {
+        stopAuthPolling();
+        return;
+      }
 
       try {
         const result = await kioskAuthApi.selectAuthSession({
@@ -168,7 +229,7 @@ export default function KioskSellerDepositAuthPage() {
           KIOSK_CODE: kioskCode,
         });
 
-        if (!result) return;
+        if (!result || cancelled) return;
 
         setAuthStatusCode(result.AUTH_STATUS_CODE);
         setAuthResultTime(result.AUTH_RESULT_TIME ?? null);
@@ -180,35 +241,18 @@ export default function KioskSellerDepositAuthPage() {
         });
 
         if (result.AUTH_STATUS_CODE === "VERIFIED") {
-          verifiedHandledRef.current = true;
-
-          if (pollingRef.current) {
-            window.clearInterval(pollingRef.current);
-            pollingRef.current = null;
-          }
-
-          saveSellerDepositAuthSession({
+          handleVerifiedAuth({
             AUTH_CODE: result.AUTH_CODE,
             AUTH_STATUS_CODE: result.AUTH_STATUS_CODE,
             AUTH_RESULT_TIME: result.AUTH_RESULT_TIME ?? "",
             AUTH_TYPE_CODE: result.AUTH_TYPE_CODE,
           });
 
-          setCompleted(true);
-          setMessage(
-            "인증이 완료되었습니다. 2초 후 상품 선택 화면으로 이동합니다.",
-          );
-
-          moveToProductPage(result.AUTH_CODE);
           return;
         }
 
         if (result.AUTH_STATUS_CODE === "EXPIRED") {
-          if (pollingRef.current) {
-            window.clearInterval(pollingRef.current);
-            pollingRef.current = null;
-          }
-
+          stopAuthPolling();
           clearSellerDepositSession();
 
           navigate("/kiosk/error", {
@@ -228,22 +272,19 @@ export default function KioskSellerDepositAuthPage() {
       }
     }
 
+    stopAuthPolling();
+
     pollAuthStatus();
 
-    pollingRef.current = window.setInterval(pollAuthStatus, 1000);
+    pollingRef.current = window.setInterval(() => {
+      pollAuthStatus();
+    }, 1000);
 
     return () => {
-      if (pollingRef.current) {
-        window.clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-
-      if (moveTimerRef.current) {
-        window.clearTimeout(moveTimerRef.current);
-        moveTimerRef.current = null;
-      }
+      cancelled = true;
+      stopAuthPolling();
     };
-  }, [authCode, kioskCode, navigate]);
+  }, [authCode, kioskCode, completed, authStatusCode, navigate]);
 
   return (
     <main className={styles.authPage}>
