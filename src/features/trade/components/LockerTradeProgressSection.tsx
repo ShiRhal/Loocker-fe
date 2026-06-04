@@ -13,6 +13,8 @@ import type {
   TradeTab,
 } from "../types/trade.types";
 import styles from "./LockerTradeProgressSection.module.css";
+import { getOrCreateChatRoomForProduct } from "../../chat/api/chatApi";
+import { useChatDrawer } from "../../chat/context/ChatDrawerContext";
 
 type Step = {
   title: string;
@@ -89,6 +91,35 @@ const statusAliasMap: Record<string, string> = {
   RETURED: "RETURED",
   SELLER_DEPOSITED: "DEPOSITED",
 };
+
+const CHAT_DRAWER_WIDTH = 640;
+const FALLBACK_TRADE_DRAWER_WIDTH = 520;
+const DRAWER_GAP = 6;
+
+function getCurrentRightDrawerWidth() {
+  const wrappers = Array.from(
+    document.querySelectorAll<HTMLElement>(
+      ".ant-drawer-right .ant-drawer-content-wrapper",
+    ),
+  );
+
+  const visibleWrappers = wrappers
+    .map((el) => ({
+      el,
+      rect: el.getBoundingClientRect(),
+    }))
+    .filter(({ rect }) => rect.width > 0 && rect.height > 0 && rect.right > 0);
+
+  if (visibleWrappers.length === 0) {
+    return FALLBACK_TRADE_DRAWER_WIDTH;
+  }
+
+  const rightMostDrawer = visibleWrappers.reduce((best, current) =>
+    current.rect.right > best.rect.right ? current : best,
+  );
+
+  return Math.ceil(rightMostDrawer.rect.width);
+}
 
 function formatPrice(value: number) {
   return `${Number(value ?? 0).toLocaleString()}원`;
@@ -370,37 +401,6 @@ function MiniBranchMap({ location }: MiniBranchMapProps) {
   return <div ref={mapRef} className={styles.branchMiniMap} />;
 }
 
-type ChatDrawerProps = {
-  open: boolean;
-  onClose: () => void;
-};
-
-function ChatDrawer({ open, onClose }: ChatDrawerProps) {
-  if (!open) return null;
-
-  return (
-    <aside className={styles.leftDrawer}>
-      <div className={styles.mapDrawerHeader}>
-        <div>
-          <h2 className={styles.mapDrawerTitle}>채팅하기</h2>
-        </div>
-
-        <button
-          type="button"
-          className={styles.mapCloseButton}
-          onClick={onClose}
-        >
-          ×
-        </button>
-      </div>
-
-      <div className={styles.chatPlaceholder}>
-        기존 채팅방 연결 예정 영역입니다.
-      </div>
-    </aside>
-  );
-}
-
 export default function LockerTradeProgressSection({
   tradeId,
   tradeType,
@@ -411,6 +411,24 @@ export default function LockerTradeProgressSection({
   onStatusChange,
 }: Props) {
   const nav = useNavigate();
+  const { openChatRoom, closeChat } = useChatDrawer();
+
+  const handleBackTradeProgress = useCallback(() => {
+    closeChat();
+    onBack();
+  }, [closeChat, onBack]);
+
+  const handleCloseTradeProgress = useCallback(() => {
+    closeChat();
+    onClose();
+  }, [closeChat, onClose]);
+
+  useEffect(() => {
+    return () => {
+      closeChat();
+    };
+  }, [closeChat]);
+
   const onStatusChangeRef = useRef(onStatusChange);
 
   const [resolvedTradeId, setResolvedTradeId] = useState(tradeId);
@@ -421,7 +439,6 @@ export default function LockerTradeProgressSection({
   const [submitting, setSubmitting] = useState(false);
 
   const [mapDrawerOpen, setMapDrawerOpen] = useState(false);
-  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
 
   const [selectedLocation, setSelectedLocation] =
     useState<TradeLockerLocationResponse | null>(null);
@@ -681,7 +698,7 @@ export default function LockerTradeProgressSection({
       });
 
       message.success("거래가 취소되었습니다.");
-      onClose();
+      handleCloseTradeProgress();
       nav(`/product/${product.productId}`);
     } catch (error) {
       console.error(error);
@@ -841,13 +858,57 @@ export default function LockerTradeProgressSection({
     }
   };
 
+  const handleOpenChatRoom = async () => {
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+      message.error("로그인이 필요합니다.");
+      nav("/signin");
+      return;
+    }
+
+    if (!product.productId) {
+      message.error("상품 정보를 확인할 수 없습니다.");
+      return;
+    }
+
+    try {
+      const room = await getOrCreateChatRoomForProduct(product.productId);
+
+      const tradeDrawerWidth = getCurrentRightDrawerWidth();
+
+      const shouldOpenBesideTradeDrawer =
+        window.innerWidth >= tradeDrawerWidth + CHAT_DRAWER_WIDTH;
+
+      openChatRoom(
+        {
+          ...room,
+          TITLE: room.TITLE ?? product.title,
+          IMAGE_URL: room.IMAGE_URL ?? product.imageUrl ?? null,
+        },
+        shouldOpenBesideTradeDrawer
+          ? {
+              rightOffset: tradeDrawerWidth + DRAWER_GAP,
+              mask: false,
+            }
+          : undefined,
+      );
+
+      setMapDrawerOpen(false);
+    } catch (error) {
+      console.error(error);
+      message.error(
+        error instanceof Error ? error.message : "채팅방을 열 수 없습니다.",
+      );
+    }
+  };
+
   const handleOpenMapDrawer = async () => {
     const targetTradeId = await resolveTradeId();
 
     if (!targetTradeId) return;
 
     setMapDrawerOpen(true);
-    setChatDrawerOpen(false);
   };
 
   const handleMapLocationSelected = async (
@@ -889,7 +950,7 @@ export default function LockerTradeProgressSection({
 
   const handleMainButtonClick = () => {
     if (isCompleteStep) {
-      onClose();
+      handleCloseTradeProgress();
       nav(`/product/${product.productId}`);
       return;
     }
@@ -1018,10 +1079,7 @@ export default function LockerTradeProgressSection({
         <button
           type="button"
           className={styles.lockerSubActionButton}
-          onClick={() => {
-            setChatDrawerOpen(true);
-            setMapDrawerOpen(false);
-          }}
+          onClick={() => void handleOpenChatRoom()}
         >
           채팅하기
         </button>
@@ -1047,7 +1105,7 @@ export default function LockerTradeProgressSection({
     <>
       <DrawerLayout
         title="거래 진행"
-        onBack={onBack}
+        onBack={handleBackTradeProgress}
         mainClassName={styles.main}
         footer={
           <div className={styles.footerButtonRow}>
@@ -1233,11 +1291,6 @@ export default function LockerTradeProgressSection({
         }
         onClose={() => setMapDrawerOpen(false)}
         onLocationSelected={handleMapLocationSelected}
-      />
-
-      <ChatDrawer
-        open={chatDrawerOpen}
-        onClose={() => setChatDrawerOpen(false)}
       />
     </>
   );
