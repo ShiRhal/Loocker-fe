@@ -130,6 +130,7 @@ export default function LockerMapDrawer({
   const [searchKeyword, setSearchKeyword] = useState("");
   const [loading, setLoading] = useState(false);
   const [selecting, setSelecting] = useState(false);
+  const [mapReadyTick, setMapReadyTick] = useState(0);
 
   const filteredLocations = useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase();
@@ -212,36 +213,52 @@ export default function LockerMapDrawer({
     }
   }, [open, readonly, initialSelectedLocation, fetchLockerStates]);
 
-  useEffect(() => {
+  const fetchLocations = useCallback(
+  async (showSuccessMessage = false) => {
     if (!open) return;
 
-    let stopped = false;
+    try {
+      setLoading(true);
 
-    const fetchLocations = async () => {
-      try {
-        setLoading(true);
+      const data = await tradeApi.getTradeLockerLocationList(accessToken);
+      const nextLocations = Array.isArray(data) ? data : [];
 
-        const data = await tradeApi.getTradeLockerLocationList(accessToken);
+      setLocations(nextLocations);
 
-        if (stopped) return;
+      setSelectedLocation((prev) => {
+        if (!prev?.KIOSK_ID) return prev;
 
-        setLocations(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error(error);
-        message.error("보관함 지점 목록을 불러오지 못했습니다.");
-      } finally {
-        if (!stopped) {
-          setLoading(false);
-        }
+        return (
+          nextLocations.find(
+            (location) => location.KIOSK_ID === prev.KIOSK_ID,
+          ) ?? prev
+        );
+      });
+
+      window.setTimeout(() => {
+        if (!mapRef.current) return;
+
+        mapRef.current.relayout();
+      }, 100);
+
+      if (showSuccessMessage) {
+        message.success("보관함 지점 목록을 새로고침했습니다.");
       }
-    };
+    } catch (error) {
+      console.error(error);
+      message.error("보관함 지점 목록을 불러오지 못했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  },
+  [accessToken, open],
+);
 
-    fetchLocations();
+useEffect(() => {
+  if (!open) return;
 
-    return () => {
-      stopped = true;
-    };
-  }, [open, accessToken]);
+  void fetchLocations(false);
+}, [open, fetchLocations]);
 
   useEffect(() => {
     if (!open) return;
@@ -269,6 +286,7 @@ export default function LockerMapDrawer({
         });
 
         mapRef.current = map;
+        setMapReadyTick((prev) => prev + 1);
 
         const mapTypeControl = new window.kakao.maps.MapTypeControl();
 
@@ -422,6 +440,7 @@ export default function LockerMapDrawer({
     isSameSelectedLocation,
     selectedLocation,
     initialSelectedLocation,
+    mapReadyTick,
   ]);
 
   const handleSelectLocationOnly = async () => {
@@ -464,13 +483,26 @@ export default function LockerMapDrawer({
           />
         </div>
 
-        <button
-          type="button"
-          className={styles.mapCloseButton}
-          onClick={onClose}
-        >
-          ×
-        </button>
+        <div className={styles.mapHeaderButtonGroup}>
+  <button
+    type="button"
+    className={styles.mapRefreshButton}
+    onClick={() => void fetchLocations(true)}
+    disabled={loading}
+    aria-label="보관함 지점 목록 새로고침"
+    title="보관함 지점 목록 새로고침"
+  >
+    ↻
+  </button>
+
+  <button
+    type="button"
+    className={styles.mapCloseButton}
+    onClick={onClose}
+  >
+    ×
+  </button>
+</div>
       </div>
 
       <div className={styles.mapDrawerBody}>
