@@ -310,6 +310,7 @@ export const kioskApi = {
       json: {
         TRADE_ID: body.TRADE_ID,
         AUTH_CODE: body.AUTH_CODE,
+        RESULT_STATUS_CODE: "",
         NEXT_STATUS: body.NEXT_STATUS,
         ROLE_TYPE: body.ROLE_TYPE,
       },
