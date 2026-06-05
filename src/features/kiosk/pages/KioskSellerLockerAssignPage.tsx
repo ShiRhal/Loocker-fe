@@ -318,7 +318,7 @@ export default function KioskSellerDepositLockerAssignPage() {
     await sleep(COMMAND_POLL_DELAY_MS);
   }
 
-  async function createCommandUpdateRequestStateAndDelay(
+  async function createCommandUpdateAndDelay(
     commandStatusName: KioskLockerNextStatus,
     requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
     roleType: KioskLockerRoleType = "KIOSK",
@@ -328,7 +328,7 @@ export default function KioskSellerDepositLockerAssignPage() {
     await updateLockerState(commandStatusName, roleType);
 
     setApiMessage(
-      `명령 생성 및 요청 상태 변경 완료. ${
+      `명령 생성 및 상태 변경 완료. ${
         COMMAND_POLL_DELAY_MS / 1000
       }초 후 상태를 확인합니다.`,
     );
@@ -419,15 +419,16 @@ export default function KioskSellerDepositLockerAssignPage() {
       /*
        * 첫 문 열림 단계.
        *
+       * 주의:
+       * /kiosk/seller/locker 응답의 LOCKER_STATUS_CODE 값인 OPENED_FOR_SELLER는
+       * command/create, status/select, locker/update의 NEXT_STATUS로 쓰지 않는다.
+       *
        * 순서:
        * command/create SELLER_UNLOCK_REQUESTED
        * → 1초 대기
        * → status/select SELLER_UNLOCK_REQUESTED
        * → CHECK_STATUS === SUCCESS
        * → locker/update SELLER_UNLOCK_READY, ROLE_TYPE=DEVICE
-       *
-       * command/create 요청값:
-       * AUTH_CODE, KIOSK_CODE, NEXT_STATUS, REQUEST_TYPE_CODE
        */
       await createCommandAndDelay("SELLER_UNLOCK_REQUESTED", "NORMAL");
 
@@ -463,8 +464,10 @@ export default function KioskSellerDepositLockerAssignPage() {
       lastFailedActionRef.current = "OPEN";
 
       /*
-       * 문 열림 재시도만 프론트에서 command/create 호출.
-       * command/create 요청값은 AUTH_CODE, KIOSK_CODE, NEXT_STATUS, REQUEST_TYPE_CODE만 보냄.
+       * 문 열림 재시도.
+       *
+       * command/create 요청값:
+       * AUTH_CODE, KIOSK_CODE, NEXT_STATUS, REQUEST_TYPE_CODE
        */
       await createCommandAndDelay("SELLER_UNLOCK_REQUESTED", "RETRY");
 
@@ -502,9 +505,6 @@ export default function KioskSellerDepositLockerAssignPage() {
       /*
        * 사용자가 물품 보관 버튼 클릭.
        * 먼저 키오스크 주체로 물품 보관 확인 상태 전이.
-       *
-       * locker/update 요청값:
-       * AUTH_CODE, TRADE_ID, NEXT_STATUS, ROLE_TYPE, RESULT_STATUS_CODE=""
        */
       await updateLockerState("SELLER_DEPOSIT_CONFIRMED", "KIOSK");
 
@@ -521,7 +521,7 @@ export default function KioskSellerDepositLockerAssignPage() {
        * → CHECK_STATUS === SUCCESS
        * → locker/update SELLER_DOOR_CLOSED, ROLE_TYPE=DEVICE
        */
-      await createCommandUpdateRequestStateAndDelay(
+      await createCommandUpdateAndDelay(
         "SELLER_DOOR_CLOSE_REQUESTED",
         "NORMAL",
         "KIOSK",
@@ -538,10 +538,6 @@ export default function KioskSellerDepositLockerAssignPage() {
       /*
        * 사진 촬영 단계.
        *
-       * SP_LOCKER_COMMAND_INSERT 기준:
-       * NEXT_STATUS=SELLER_LOCK_REQUESTED
-       * → SELLER_CAPTURE_INSERT_IMAGE 명령 생성
-       *
        * 순서:
        * command/create SELLER_LOCK_REQUESTED
        * → locker/update SELLER_LOCK_REQUESTED, ROLE_TYPE=KIOSK
@@ -549,9 +545,9 @@ export default function KioskSellerDepositLockerAssignPage() {
        * → status/select SELLER_LOCK_REQUESTED
        * → CHECK_STATUS === SUCCESS
        * → locker/update SELLER_LOCKED_PHOTO_SAVED, ROLE_TYPE=DEVICE
-       * → image/select
+       * → img/select
        */
-      await createCommandUpdateRequestStateAndDelay(
+      await createCommandUpdateAndDelay(
         "SELLER_LOCK_REQUESTED",
         "NORMAL",
         "KIOSK",
@@ -591,12 +587,6 @@ export default function KioskSellerDepositLockerAssignPage() {
 
       /*
        * 사진 확인 완료 단계.
-       *
-       * SP_LOCKER_COMMAND_INSERT 기준:
-       * NEXT_STATUS=SELLER_PHOTO_CONFIRMED
-       * → SELLER_PDLC_OFF, SELLER_LED_OFF 명령 생성
-       *
-       * 여기서는 command/create 직후 locker/update 바로 호출 금지.
        *
        * 순서:
        * command/create SELLER_PHOTO_CONFIRMED
