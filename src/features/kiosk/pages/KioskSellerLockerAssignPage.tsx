@@ -49,7 +49,7 @@ type CommandCheckResult = {
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
-const COMMAND_POLL_DELAY_AFTER_CREATE_MS = 1000;
+const COMMAND_POLL_DELAY_MS = 1000;
 const COMMAND_POLL_INTERVAL_MS = 1000;
 const COMMAND_POLL_TIMEOUT_MS = 60 * 1000;
 
@@ -330,11 +330,11 @@ export default function KioskSellerDepositLockerAssignPage() {
 
     setApiMessage(
       `명령 생성 및 상태 변경 완료. ${
-        COMMAND_POLL_DELAY_AFTER_CREATE_MS / 1000
+        COMMAND_POLL_DELAY_MS / 1000
       }초 후 상태를 확인합니다.`,
     );
 
-    await sleep(COMMAND_POLL_DELAY_AFTER_CREATE_MS);
+    await sleep(COMMAND_POLL_DELAY_MS);
   }
 
   async function checkCommandStatus(commandStatusName: KioskLockerNextStatus) {
@@ -405,9 +405,7 @@ export default function KioskSellerDepositLockerAssignPage() {
     }
   }
 
-  async function runOpenFlow(
-    requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
-  ) {
+  async function runOpenFlow() {
     try {
       validateRequiredValues();
 
@@ -416,11 +414,17 @@ export default function KioskSellerDepositLockerAssignPage() {
       setStep("OPENING");
       lastFailedActionRef.current = "OPEN";
 
-      await createCommandUpdateAndDelay(
-        "SELLER_UNLOCK_REQUESTED",
-        requestTypeCode,
-        "KIOSK",
-      );
+      /**
+       * /kiosk/seller/locker 호출 시 백엔드가 이미 처리함:
+       * 1. SELLER_UNLOCK_REQUESTED 명령 생성
+       * 2. LOCKER 상태 SELLER_UNLOCK_REQUESTED 변경
+       *
+       * 그래서 여기서는 create/update를 다시 호출하지 않고,
+       * 1초 뒤부터 상태조회만 한다.
+       */
+      setApiMessage("보관함 문 열림 명령 처리 상태를 확인합니다.");
+
+      await sleep(COMMAND_POLL_DELAY_MS);
 
       await waitCommandSuccess("SELLER_UNLOCK_REQUESTED");
 
@@ -437,6 +441,47 @@ export default function KioskSellerDepositLockerAssignPage() {
           error instanceof Error
             ? error.message
             : "보관함 문 열림 처리 중 오류가 발생했습니다.",
+        ),
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function retryOpenFlow() {
+    try {
+      validateRequiredValues();
+
+      setActionLoading(true);
+      setErrorMessage("");
+      setStep("OPENING");
+      lastFailedActionRef.current = "OPEN";
+
+      await createLockerCommand("SELLER_UNLOCK_REQUESTED", "RETRY");
+
+      setApiMessage(
+        `문 열림 재시도 명령 생성 완료. ${
+          COMMAND_POLL_DELAY_MS / 1000
+        }초 후 상태를 확인합니다.`,
+      );
+
+      await sleep(COMMAND_POLL_DELAY_MS);
+
+      await waitCommandSuccess("SELLER_UNLOCK_REQUESTED");
+
+      await updateLockerState("SELLER_UNLOCK_READY", "DEVICE");
+
+      if (cancelledRef.current) return;
+
+      setStep("OPENED");
+      setApiMessage("보관함 문이 열렸습니다.");
+    } catch (error) {
+      setStep("ERROR");
+      setErrorMessage(
+        extractCleanErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "보관함 문 열림 재시도 중 오류가 발생했습니다.",
         ),
       );
     } finally {
@@ -538,7 +583,7 @@ export default function KioskSellerDepositLockerAssignPage() {
   }
 
   function handleRetryOpen() {
-    runOpenFlow("RETRY");
+    retryOpenFlow();
   }
 
   function handleDepositDone() {
@@ -551,7 +596,7 @@ export default function KioskSellerDepositLockerAssignPage() {
 
   function handleRetryCurrentStep() {
     if (lastFailedActionRef.current === "OPEN") {
-      runOpenFlow("RETRY");
+      retryOpenFlow();
       return;
     }
 
@@ -575,7 +620,7 @@ export default function KioskSellerDepositLockerAssignPage() {
     if (startedRef.current) return;
 
     startedRef.current = true;
-    runOpenFlow("NORMAL");
+    runOpenFlow();
 
     return () => {
       cancelledRef.current = true;
@@ -671,7 +716,8 @@ export default function KioskSellerDepositLockerAssignPage() {
               </p>
 
               <p className={styles.kioskDepositPanelSubDescription}>
-                {apiMessage || "라즈베리파이 문 열림 명령을 생성하고 있습니다."}
+                {apiMessage ||
+                  "라즈베리파이 문 열림 명령 상태를 확인하고 있습니다."}
               </p>
             </div>
           )}
