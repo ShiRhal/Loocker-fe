@@ -112,6 +112,7 @@ export type KioskLockerUpdateRequest = {
   AUTH_CODE: string;
   NEXT_STATUS: KioskLockerNextStatus;
   ROLE_TYPE: KioskLockerRoleType;
+  RESULT_STATUS_CODE?: string;
 };
 
 export type KioskLockerImageSelectRequest = {
@@ -304,7 +305,7 @@ export const kioskApi = {
       json: {
         TRADE_ID: body.TRADE_ID,
         AUTH_CODE: body.AUTH_CODE,
-        RESULT_STATUS_CODE: "",
+        RESULT_STATUS_CODE: body.RESULT_STATUS_CODE ?? "",
         NEXT_STATUS: body.NEXT_STATUS,
         ROLE_TYPE: body.ROLE_TYPE,
       },

@@ -301,6 +301,7 @@ export default function KioskSellerDepositLockerAssignPage() {
       AUTH_CODE: normalizedAuthCode,
       NEXT_STATUS: nextStatus,
       ROLE_TYPE: roleType,
+      RESULT_STATUS_CODE: "",
     });
   }
 
@@ -317,7 +318,7 @@ export default function KioskSellerDepositLockerAssignPage() {
     await sleep(COMMAND_POLL_DELAY_MS);
   }
 
-  async function createCommandUpdateAndDelay(
+  async function createCommandUpdateRequestStateAndDelay(
     commandStatusName: KioskLockerNextStatus,
     requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
     roleType: KioskLockerRoleType = "KIOSK",
@@ -327,7 +328,7 @@ export default function KioskSellerDepositLockerAssignPage() {
     await updateLockerState(commandStatusName, roleType);
 
     setApiMessage(
-      `명령 생성 및 상태 변경 완료. ${
+      `명령 생성 및 요청 상태 변경 완료. ${
         COMMAND_POLL_DELAY_MS / 1000
       }초 후 상태를 확인합니다.`,
     );
@@ -414,13 +415,14 @@ export default function KioskSellerDepositLockerAssignPage() {
 
       /*
        * 첫 문 열림 단계는 /kiosk/seller/locker에서 백엔드가 이미 처리함.
-       * 프론트에서 SELLER_UNLOCK_REQUESTED create/update 호출 금지.
+       * 프론트에서 SELLER_UNLOCK_REQUESTED command/create 호출 금지.
+       * 프론트에서 SELLER_UNLOCK_REQUESTED locker/update 호출 금지.
        *
        * 순서:
        * 1초 대기
        * → status/select SELLER_UNLOCK_REQUESTED
        * → CHECK_STATUS === SUCCESS
-       * → update SELLER_UNLOCK_READY
+       * → locker/update SELLER_UNLOCK_READY, ROLE_TYPE=DEVICE
        */
       setApiMessage("보관함 문 열림 명령 상태를 확인하고 있습니다.");
 
@@ -458,8 +460,8 @@ export default function KioskSellerDepositLockerAssignPage() {
       lastFailedActionRef.current = "OPEN";
 
       /*
-       * 재시도만 프론트에서 create.
-       * 단, SELLER_UNLOCK_REQUESTED 상태 update는 백에서 이미 되어 있는 상태라 update 호출 안 함.
+       * 문 열림 재시도만 프론트에서 command/create 호출.
+       * command/create 요청값은 AUTH_CODE, KIOSK_CODE, NEXT_STATUS, REQUEST_TYPE_CODE만 보냄.
        */
       await createCommandAndDelay("SELLER_UNLOCK_REQUESTED", "RETRY");
 
@@ -497,6 +499,9 @@ export default function KioskSellerDepositLockerAssignPage() {
       /*
        * 사용자가 물품 보관 버튼 클릭.
        * 먼저 키오스크 주체로 물품 보관 확인 상태 전이.
+       *
+       * locker/update 요청값:
+       * AUTH_CODE, TRADE_ID, NEXT_STATUS, ROLE_TYPE, RESULT_STATUS_CODE=""
        */
       await updateLockerState("SELLER_DEPOSIT_CONFIRMED", "KIOSK");
 
@@ -504,15 +509,16 @@ export default function KioskSellerDepositLockerAssignPage() {
 
       /*
        * 문 닫힘 단계.
+       *
        * 순서:
        * command/create SELLER_DOOR_CLOSE_REQUESTED
-       * → update SELLER_DOOR_CLOSE_REQUESTED
+       * → locker/update SELLER_DOOR_CLOSE_REQUESTED, ROLE_TYPE=KIOSK
        * → 1초 대기
        * → status/select SELLER_DOOR_CLOSE_REQUESTED
-       * → SUCCESS
-       * → update SELLER_DOOR_CLOSED
+       * → CHECK_STATUS === SUCCESS
+       * → locker/update SELLER_DOOR_CLOSED, ROLE_TYPE=DEVICE
        */
-      await createCommandUpdateAndDelay(
+      await createCommandUpdateRequestStateAndDelay(
         "SELLER_DOOR_CLOSE_REQUESTED",
         "NORMAL",
         "KIOSK",
@@ -528,15 +534,21 @@ export default function KioskSellerDepositLockerAssignPage() {
 
       /*
        * 사진 촬영 단계.
+       *
+       * SP_LOCKER_COMMAND_INSERT 기준:
+       * NEXT_STATUS=SELLER_LOCK_REQUESTED
+       * → SELLER_CAPTURE_INSERT_IMAGE 명령 생성
+       *
        * 순서:
        * command/create SELLER_LOCK_REQUESTED
-       * → update SELLER_LOCK_REQUESTED
+       * → locker/update SELLER_LOCK_REQUESTED, ROLE_TYPE=KIOSK
        * → 1초 대기
        * → status/select SELLER_LOCK_REQUESTED
-       * → SUCCESS
-       * → update SELLER_LOCKED_PHOTO_SAVED
+       * → CHECK_STATUS === SUCCESS
+       * → locker/update SELLER_LOCKED_PHOTO_SAVED, ROLE_TYPE=DEVICE
+       * → image/select
        */
-      await createCommandUpdateAndDelay(
+      await createCommandUpdateRequestStateAndDelay(
         "SELLER_LOCK_REQUESTED",
         "NORMAL",
         "KIOSK",
@@ -576,14 +588,19 @@ export default function KioskSellerDepositLockerAssignPage() {
 
       /*
        * 사진 확인 완료 단계.
-       * create 직후 update 금지.
+       *
+       * SP_LOCKER_COMMAND_INSERT 기준:
+       * NEXT_STATUS=SELLER_PHOTO_CONFIRMED
+       * → SELLER_PDLC_OFF, SELLER_LED_OFF 명령 생성
+       *
+       * 여기서는 command/create 직후 locker/update 바로 호출 금지.
        *
        * 순서:
        * command/create SELLER_PHOTO_CONFIRMED
        * → 1초 대기
        * → status/select SELLER_PHOTO_CONFIRMED
-       * → SUCCESS
-       * → update SELLER_PHOTO_CONFIRMED
+       * → CHECK_STATUS === SUCCESS
+       * → locker/update SELLER_PHOTO_CONFIRMED, ROLE_TYPE=KIOSK
        */
       await createCommandAndDelay("SELLER_PHOTO_CONFIRMED", "NORMAL");
 
