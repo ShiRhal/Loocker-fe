@@ -116,29 +116,26 @@ export type KioskLockerUpdateRequest = {
 };
 
 export type KioskLockerImageSelectRequest = {
+  LOCKER_CODE?: string;
   TRADE_ID: number;
-  LOCKER_ID?: number;
-  IMAGE_TYPE_CODE: "SELLER_INSERT" | "BUYER_BEFORE_PICKUP" | string;
+  KIOSK_CODE: string;
+  LOCKER_ID: number;
 };
 
 export type KioskLockerImageResponse = {
-  LOCKER_IMAGE_ID?: number;
-  LOCKER_COMMAND_ID?: number;
   TRADE_ID?: number;
   LOCKER_ID?: number;
-  IMAGE_TYPE_CODE?: string;
+  SELLER_IMAGE_URL?: string | null;
+  BUYER_IMAGE_URL?: string | null;
   IMAGE_URL?: string | null;
   FILE_URL?: string | null;
-  CREATED_AT?: string;
 
-  lockerImageId?: number;
-  lockerCommandId?: number;
   tradeId?: number;
   lockerId?: number;
-  imageTypeCode?: string;
+  sellerImageUrl?: string | null;
+  buyerImageUrl?: string | null;
   imageUrl?: string | null;
   fileUrl?: string | null;
-  createdAt?: string;
 };
 
 function unwrapFirst<T>(data: T | T[]): T {
@@ -317,14 +314,12 @@ export const kioskApi = {
   ): Promise<KioskLockerImageResponse | null> {
     const query = new URLSearchParams();
 
+    query.set("LOCKER_CODE", body.LOCKER_CODE || "LOCKER_001");
     query.set("TRADE_ID", String(body.TRADE_ID));
-    query.set("IMAGE_TYPE_CODE", body.IMAGE_TYPE_CODE);
+    query.set("KIOSK_CODE", body.KIOSK_CODE);
+    query.set("LOCKER_ID", String(body.LOCKER_ID));
 
-    if (body.LOCKER_ID) {
-      query.set("LOCKER_ID", String(body.LOCKER_ID));
-    }
-
-    const res = await kioskapi(`/locker/image/select?${query.toString()}`, {
+    const res = await kioskapi(`/locker/img/select?${query.toString()}`, {
       method: "GET",
     });
 
