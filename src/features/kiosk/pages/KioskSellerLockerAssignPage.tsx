@@ -43,7 +43,7 @@ type CommandCheckResult = {
   canRetry: boolean;
   failedCommand?: string;
   resultMessage?: string;
-  rawStatus?: string;
+  rawStatus: string;
 };
 
 const API_BASE_URL =
@@ -98,9 +98,7 @@ function extractCleanErrorMessage(message?: string) {
 
   const matched = knownMessages.find((text) => message.includes(text));
 
-  if (matched) {
-    return matched;
-  }
+  if (matched) return matched;
 
   const sqlServerExceptionMatch = message.match(
     /SQLServerException:\s*([^;\r\n]+)/,
@@ -116,9 +114,7 @@ function extractCleanErrorMessage(message?: string) {
     return causeMatch[1].trim();
   }
 
-  const firstLine = message.split("\n")[0]?.trim();
-
-  return firstLine || "요청 처리 중 오류가 발생했습니다.";
+  return message.split("\n")[0]?.trim() || "요청 처리 중 오류가 발생했습니다.";
 }
 
 function getProductTitle(data?: LockerAssignState | null) {
@@ -225,7 +221,7 @@ function normalizeCommandCheckResult(
     canRetry: canRetry === "Y",
     failedCommand: failedCommand || undefined,
     resultMessage,
-    rawStatus,
+    rawStatus: rawStatus || "NONE",
   };
 }
 
@@ -272,21 +268,10 @@ export default function KioskSellerDepositLockerAssignPage() {
   const progressClassName = useMemo(() => getProgressClass(step), [step]);
 
   function validateRequiredValues() {
-    if (!normalizedAuthCode) {
-      throw new Error("판매자 인증 코드가 없습니다.");
-    }
-
-    if (!kioskCode) {
-      throw new Error("키오스크 코드가 없습니다.");
-    }
-
-    if (!tradeId) {
-      throw new Error("거래 ID가 없습니다.");
-    }
-
-    if (!lockerId) {
-      throw new Error("보관함 ID가 없습니다.");
-    }
+    if (!normalizedAuthCode) throw new Error("판매자 인증 코드가 없습니다.");
+    if (!kioskCode) throw new Error("키오스크 코드가 없습니다.");
+    if (!tradeId) throw new Error("거래 ID가 없습니다.");
+    if (!lockerId) throw new Error("보관함 ID가 없습니다.");
   }
 
   async function createLockerCommand(
@@ -317,6 +302,19 @@ export default function KioskSellerDepositLockerAssignPage() {
       NEXT_STATUS: nextStatus,
       ROLE_TYPE: roleType,
     });
+  }
+
+  async function createCommandAndDelay(
+    commandStatusName: KioskLockerNextStatus,
+    requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
+  ) {
+    await createLockerCommand(commandStatusName, requestTypeCode);
+
+    setApiMessage(
+      `명령 생성 완료. ${COMMAND_POLL_DELAY_MS / 1000}초 후 상태를 확인합니다.`,
+    );
+
+    await sleep(COMMAND_POLL_DELAY_MS);
   }
 
   async function createCommandUpdateAndDelay(
@@ -373,13 +371,13 @@ export default function KioskSellerDepositLockerAssignPage() {
       }
 
       setApiMessage(
-        `라즈베리파이 명령 성공 대기 중: ${commandStatusName}${
-          result.rawStatus ? ` (${result.rawStatus})` : ""
-        }`,
+        `라즈베리파이 명령 성공 대기 중: ${commandStatusName} (${result.rawStatus})`,
       );
 
       await sleep(COMMAND_POLL_INTERVAL_MS);
     }
+
+    throw new Error("작업이 취소되었습니다.");
   }
 
   async function selectSellerCapturedImage() {
@@ -414,15 +412,17 @@ export default function KioskSellerDepositLockerAssignPage() {
       setStep("OPENING");
       lastFailedActionRef.current = "OPEN";
 
-      /**
-       * /kiosk/seller/locker 호출 시 백엔드가 이미 처리함:
-       * 1. SELLER_UNLOCK_REQUESTED 명령 생성
-       * 2. LOCKER 상태 SELLER_UNLOCK_REQUESTED 변경
+      /*
+       * 첫 문 열림 단계는 /kiosk/seller/locker에서 백엔드가 이미 처리함.
+       * 프론트에서 SELLER_UNLOCK_REQUESTED create/update 호출 금지.
        *
-       * 그래서 여기서는 create/update를 다시 호출하지 않고,
-       * 1초 뒤부터 상태조회만 한다.
+       * 순서:
+       * 1초 대기
+       * → status/select SELLER_UNLOCK_REQUESTED
+       * → CHECK_STATUS === SUCCESS
+       * → update SELLER_UNLOCK_READY
        */
-      setApiMessage("보관함 문 열림 명령 처리 상태를 확인합니다.");
+      setApiMessage("보관함 문 열림 명령 상태를 확인하고 있습니다.");
 
       await sleep(COMMAND_POLL_DELAY_MS);
 
@@ -457,15 +457,11 @@ export default function KioskSellerDepositLockerAssignPage() {
       setStep("OPENING");
       lastFailedActionRef.current = "OPEN";
 
-      await createLockerCommand("SELLER_UNLOCK_REQUESTED", "RETRY");
-
-      setApiMessage(
-        `문 열림 재시도 명령 생성 완료. ${
-          COMMAND_POLL_DELAY_MS / 1000
-        }초 후 상태를 확인합니다.`,
-      );
-
-      await sleep(COMMAND_POLL_DELAY_MS);
+      /*
+       * 재시도만 프론트에서 create.
+       * 단, SELLER_UNLOCK_REQUESTED 상태 update는 백에서 이미 되어 있는 상태라 update 호출 안 함.
+       */
+      await createCommandAndDelay("SELLER_UNLOCK_REQUESTED", "RETRY");
 
       await waitCommandSuccess("SELLER_UNLOCK_REQUESTED");
 
@@ -498,10 +494,24 @@ export default function KioskSellerDepositLockerAssignPage() {
       setStep("CLOSING");
       lastFailedActionRef.current = "CLOSE_PHOTO";
 
+      /*
+       * 사용자가 물품 보관 버튼 클릭.
+       * 먼저 키오스크 주체로 물품 보관 확인 상태 전이.
+       */
       await updateLockerState("SELLER_DEPOSIT_CONFIRMED", "KIOSK");
 
       await sleep(1000);
 
+      /*
+       * 문 닫힘 단계.
+       * 순서:
+       * command/create SELLER_DOOR_CLOSE_REQUESTED
+       * → update SELLER_DOOR_CLOSE_REQUESTED
+       * → 1초 대기
+       * → status/select SELLER_DOOR_CLOSE_REQUESTED
+       * → SUCCESS
+       * → update SELLER_DOOR_CLOSED
+       */
       await createCommandUpdateAndDelay(
         "SELLER_DOOR_CLOSE_REQUESTED",
         "NORMAL",
@@ -516,6 +526,16 @@ export default function KioskSellerDepositLockerAssignPage() {
 
       setStep("CAPTURING");
 
+      /*
+       * 사진 촬영 단계.
+       * 순서:
+       * command/create SELLER_LOCK_REQUESTED
+       * → update SELLER_LOCK_REQUESTED
+       * → 1초 대기
+       * → status/select SELLER_LOCK_REQUESTED
+       * → SUCCESS
+       * → update SELLER_LOCKED_PHOTO_SAVED
+       */
       await createCommandUpdateAndDelay(
         "SELLER_LOCK_REQUESTED",
         "NORMAL",
@@ -554,13 +574,22 @@ export default function KioskSellerDepositLockerAssignPage() {
       setErrorMessage("");
       lastFailedActionRef.current = "PHOTO_CONFIRM";
 
-      await createCommandUpdateAndDelay(
-        "SELLER_PHOTO_CONFIRMED",
-        "NORMAL",
-        "KIOSK",
-      );
+      /*
+       * 사진 확인 완료 단계.
+       * create 직후 update 금지.
+       *
+       * 순서:
+       * command/create SELLER_PHOTO_CONFIRMED
+       * → 1초 대기
+       * → status/select SELLER_PHOTO_CONFIRMED
+       * → SUCCESS
+       * → update SELLER_PHOTO_CONFIRMED
+       */
+      await createCommandAndDelay("SELLER_PHOTO_CONFIRMED", "NORMAL");
 
       await waitCommandSuccess("SELLER_PHOTO_CONFIRMED");
+
+      await updateLockerState("SELLER_PHOTO_CONFIRMED", "KIOSK");
 
       setStep("DONE");
       setApiMessage("물품 보관이 완료되었습니다.");
