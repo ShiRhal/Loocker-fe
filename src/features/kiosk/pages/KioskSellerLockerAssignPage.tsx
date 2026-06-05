@@ -414,19 +414,19 @@ export default function KioskSellerDepositLockerAssignPage() {
       lastFailedActionRef.current = "OPEN";
 
       /*
-       * 첫 문 열림 단계는 /kiosk/seller/locker에서 백엔드가 이미 처리함.
-       * 프론트에서 SELLER_UNLOCK_REQUESTED command/create 호출 금지.
-       * 프론트에서 SELLER_UNLOCK_REQUESTED locker/update 호출 금지.
+       * 첫 문 열림 단계.
        *
        * 순서:
-       * 1초 대기
+       * command/create SELLER_UNLOCK_REQUESTED
+       * → 1초 대기
        * → status/select SELLER_UNLOCK_REQUESTED
        * → CHECK_STATUS === SUCCESS
        * → locker/update SELLER_UNLOCK_READY, ROLE_TYPE=DEVICE
+       *
+       * command/create 요청값:
+       * AUTH_CODE, KIOSK_CODE, NEXT_STATUS, REQUEST_TYPE_CODE
        */
-      setApiMessage("보관함 문 열림 명령 상태를 확인하고 있습니다.");
-
-      await sleep(COMMAND_POLL_DELAY_MS);
+      await createCommandAndDelay("SELLER_UNLOCK_REQUESTED", "NORMAL");
 
       await waitCommandSuccess("SELLER_UNLOCK_REQUESTED");
 
