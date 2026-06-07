@@ -106,7 +106,7 @@ export default function KioskLoginPage() {
           <button
             type="button"
             onClick={() => {
-              localStorage.setItem("검사하는_KEY_이름", "KIOSK");
+              localStorage.setItem("kioskCode", "KIOSK");
               window.location.reload();
             }}
           >
