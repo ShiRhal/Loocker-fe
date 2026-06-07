@@ -66,11 +66,11 @@ export default function KioskLoginPage() {
       });
 
       localStorage.setItem("kioskAccessToken", result.KIOSK_ACCESS_TOKEN);
+      localStorage.setItem("kioskId", String(result.KIOSK_ID));
+      localStorage.setItem("kioskCode", result.KIOSK_CODE);
       localStorage.setItem("kioskLoginId", result.LOGIN_ID);
       localStorage.setItem("kioskBranchName", result.BRANCH_NAME);
       localStorage.setItem("kioskLockerCount", String(result.LOCKER_COUNT));
-
-      localStorage.removeItem("kioskCode");
 
       navigate("/kiosk", { replace: true });
     } catch (error) {
@@ -103,6 +103,15 @@ export default function KioskLoginPage() {
           <p className={styles.loginDescription}>
             허용되지 않은 키오스크입니다.
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.setItem("kioskCode", "KIOSK");
+              window.location.reload();
+            }}
+          >
+            임시 키오스크 인증 저장
+          </button>
         </section>
       </main>
     );

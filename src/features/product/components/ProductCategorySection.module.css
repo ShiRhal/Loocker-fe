@@ -21,6 +21,7 @@
 
 .sectionContent {
   flex: 1;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -28,18 +29,24 @@
 }
 
 .categoryRow {
+  width: 100%;
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
 .categoryRowWithSubCategory {
+  width: 100%;
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
 .categoryPanel {
+  width: 100%;
+  box-sizing: border-box;
   min-height: 288px;
   max-height: 288px;
   border: 1px solid #d1d5db;
@@ -85,6 +92,7 @@
 .categoryNotice {
   margin-top: 4px;
   width: 100%;
+  box-sizing: border-box;
   min-height: 48px;
   padding: 12px 16px;
   border-radius: 10px;
@@ -105,6 +113,13 @@
 
   .sectionLabelBox {
     flex: none;
+    width: 100%;
+  }
+
+  .sectionContent,
+  .categoryRow,
+  .categoryRowWithSubCategory,
+  .categoryNotice {
     width: 100%;
   }
 

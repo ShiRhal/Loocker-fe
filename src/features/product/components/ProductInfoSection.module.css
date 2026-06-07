@@ -59,6 +59,7 @@
 
 .sectionContent {
   flex: 1;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -114,6 +115,7 @@
 }
 
 .textInput {
+  box-sizing: border-box;
   height: 48px;
   padding: 0 16px;
   border: 1px solid #d1d5db;
@@ -123,6 +125,7 @@
 
 .priceInputBox {
   width: 100%;
+  box-sizing: border-box;
   height: 48px;
   padding: 0 16px;
   border: 1px solid #d1d5db;
@@ -146,6 +149,8 @@
 }
 
 .textareaBox {
+  width: 100%;
+  box-sizing: border-box;
   min-height: 288px;
   max-height: 320px;
   padding: 20px;
@@ -214,6 +219,13 @@
 
   .sectionLabelBox {
     flex: none;
+    width: 100%;
+  }
+
+  .sectionContent,
+  .textInput,
+  .priceInputBox,
+  .textareaBox {
     width: 100%;
   }
 }

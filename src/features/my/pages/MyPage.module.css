@@ -2,8 +2,8 @@
 
 .container {
   margin: 0 auto;
-  padding-left: 0;
-  padding-right: 0;
+  padding-left: 1rem;
+  padding-right: 1rem;
   box-sizing: border-box;
   display: flex;
   justify-content: space-between;
@@ -266,6 +266,28 @@
 
 .nicknameChangeButton:active {
   background-color: rgba(17, 24, 39, 0.2);
+}
+
+.mobileProfileLogout {
+  order: 2;
+  display: inline-flex;
+  width: fit-content;
+  margin: 12px 0 0 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+@media (min-width: 1024px) {
+  .mobileProfileLogout {
+    display: none;
+  }
 }
 
 .shareButton {
@@ -565,27 +587,27 @@
 }
 
 .mobileMenuDivider {
-  width: 100vw;
+  width: 100%;
   height: 6px;
   background-color: #f1f4f6;
-  margin-left: -1rem;
-  margin-right: -1rem;
+  margin: 1.25rem 0 0;
 }
 
 @media (min-width: 768px) {
   .mobileMenuDivider {
-    margin-left: -2rem;
-    margin-right: -2rem;
+    margin-left: 0;
+    margin-right: 0;
   }
 }
 
 .mobileMenu {
-  width: 100vw;
-  margin-left: -2rem;
-  margin-right: -2rem;
+  width: 100%;
+  margin: 0;
+  padding: 18px 0 8px;
 }
 
 @media (min-width: 1024px) {
+  .mobileMenuDivider,
   .mobileMenu {
     display: none;
   }
@@ -593,34 +615,84 @@
 
 .mobileMenuList {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  background-color: #f1f4f6;
-  gap: 1px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background-color: #fff;
+  gap: 0;
+  padding: 14px 0 18px;
+}
+
+.mobileMenuSection {
+  padding: 0;
+}
+
+.mobileMenuSection + .mobileMenuSection {
+  margin-top: 10px;
+}
+
+.mobileMenuSectionTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.mobileMenuSectionDivider {
+  width: 100%;
+  height: 1px;
+  margin-top: 10px;
+  background-color: #e5e7eb;
 }
 
 .mobileMenuItem {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 1rem 1.25rem;
-  gap: 0.5rem;
+  justify-content: center;
+  padding: 0;
+  gap: 8px;
   text-align: center;
   background-color: #fff;
   cursor: pointer;
+  border: none;
+  color: #111827;
 }
 
 .mobileMenuImage {
-  width: 2rem;
-  height: 2rem;
-  background-color: #fff;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #eef4fb 0%, #dfeaf3 100%);
+  color: #00a95c;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    inset 0 -4px 0 rgba(0, 194, 103, 0.12),
+    0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.mobileMenuImage svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.mobileMenuFallbackText {
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .mobileMenuText {
-  font-size: 1rem;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  word-break: keep-all;
 }
 
 @media (min-width: 768px) {
   .mobileMenuText {
-    font-size: 1.125rem;
+    font-size: 13px;
   }
 }
 
@@ -704,7 +776,7 @@
 .productsTab {
   flex-shrink: 0;
   cursor: pointer;
-  padding: 0 0.25rem;
+  padding: 0 0.25rem 0.75rem;
   display: inline-flex;
   justify-content: center;
   align-items: center;
@@ -718,6 +790,21 @@
   transition:
     color 0.2s ease-in-out,
     opacity 0.2s ease-in-out;
+}
+
+.productsTab[aria-selected="true"] {
+  position: relative;
+}
+
+.productsTab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.25rem;
+  height: 2px;
+  background: #111827;
+  border-radius: 999px;
 }
 
 @media (min-width: 1024px) {
@@ -759,6 +846,82 @@
   .productsCount {
     display: block;
   }
+}
+
+.mobileProductControls {
+  display: none;
+}
+
+.mobileProductSearchBox {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #dbe1ea;
+  border-radius: 12px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.mobileProductSearchInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: #111827;
+}
+
+.mobileProductSearchInput::placeholder {
+  color: #9ca3af;
+}
+
+.mobileProductSortRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mobileProductSortLabel {
+  flex: 0 0 auto;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.mobileProductSortButton {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid #dbe1ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mobileProductSortButtonActive {
+  border-color: #00a95c;
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.mobileProductSortText {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mobileProductSortButtonActive .mobileProductSortText {
+  color: #047857;
 }
 
 .sortList {
@@ -1216,4 +1379,83 @@
 
 .productCardScrollArea::-webkit-scrollbar {
   display: none;
+}
+
+@media (max-width: 1023px) {
+  .mainContent {
+    flex-basis: 100%;
+    max-width: 100%;
+  }
+
+  .contentBlock {
+    margin-top: 1rem;
+  }
+
+  .productsSection {
+    margin: 1.75rem 0 0;
+  }
+
+  .productsHeader {
+    margin-bottom: 0.75rem;
+  }
+
+  .productsTitle {
+    font-size: 20px;
+  }
+
+  .productsTabs {
+    margin-top: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .productsTabList {
+    justify-content: space-between;
+    gap: 0;
+    margin-right: 0;
+  }
+
+  .productsTab {
+    flex: 1 1 0;
+    padding-bottom: 0.8rem;
+    font-size: 15px;
+  }
+
+  .mobileProductControls {
+    display: block;
+    margin-bottom: 14px;
+  }
+
+  .productsCount,
+  .tableHeader {
+    display: none !important;
+  }
+
+  .tableContainer {
+    overflow: visible;
+  }
+
+  .productTable,
+  .tableBody,
+  .productTable tbody,
+  .productTable tr,
+  .cardTableCell {
+    display: block;
+    width: 100%;
+  }
+
+  .cardTableCell {
+    padding-top: 0;
+  }
+
+  .productCardScrollArea {
+    max-height: none;
+    overflow: visible;
+    cursor: default;
+    padding-right: 0;
+    user-select: auto;
+  }
+
+  .productCardScrollArea:active {
+    cursor: default;
+  }
 }

@@ -3,6 +3,7 @@ import { message } from "antd";
 import { useNavigate } from "react-router-dom";
 import DrawerLayout from "../../../shared/components/DrawerLayout/DrawerLayout";
 import { tradeApi } from "../api/tradeApi";
+import LockerTradeProgressSection from "./LockerTradeProgressSection";
 import type { ProductTradePreview, TradeTab } from "../types/trade.types";
 import styles from "./TradeProgressView.module.css";
 
@@ -86,16 +87,26 @@ const statusAliasMap: Record<string, string> = {
   TR_03: "CANCELED",
   TR_04: "PAID",
   TR_05: "FAILED",
+  TR_06: "DEPOSITED",
+  TR_07: "RETURED",
   TR_08: "PICKEDUP",
+  TR_09: "DISPUTED",
   TR_10: "ORDER_CHECK",
   TR_11: "SHIPPING",
   TR_12: "DELIVERED",
   TR_13: "DIRECT_IN_PROGRESS",
   TR_14: "DIRECT_RECEIVED",
+  TR_15: "BRANCH_SELECTED",
+  TR_16: "DEPOSIT_WAITING",
+
+  CANCELD: "CANCELED",
+  CANCELED: "CANCELED",
+  RETURNED: "RETURED",
+  RETURED: "RETURED",
 };
 
 function formatPrice(value: number) {
-  return `${value.toLocaleString()}원`;
+  return `${Number(value ?? 0).toLocaleString()}원`;
 }
 
 function normalizeStatusCode(statusCode?: string | null) {
@@ -134,12 +145,27 @@ function getResponseStatusCode(result: unknown) {
   );
 }
 
-function getStepIndexByStatusCode(steps: Step[], statusCode: string) {
-  const normalizedStatusCode = normalizeStatusCode(statusCode);
+function getTradeIdValue(result: unknown) {
+  if (!result) return 0;
 
-  const index = steps.findIndex(
-    (step) => step.statusCode === normalizedStatusCode,
-  );
+  if (typeof result === "number") return result;
+
+  if (typeof result === "string") {
+    const value = Number(result);
+    return Number.isNaN(value) ? 0 : value;
+  }
+
+  const data = Array.isArray(result) ? result[0] : result;
+
+  if (typeof data !== "object" || data === null) return 0;
+
+  const obj = data as Record<string, unknown>;
+
+  return Number(obj.TRADE_ID ?? obj.tradeId ?? obj.TRADE_ID_OUT ?? 0);
+}
+
+function getStepIndexByStatusCode(steps: Step[], statusCode: string) {
+  const index = steps.findIndex((step) => step.statusCode === statusCode);
 
   return index >= 0 ? index : 0;
 }
@@ -154,6 +180,12 @@ function getNextStatusCode(steps: Step[], currentStatusCode: string) {
   return steps[currentIndex + 1].statusCode;
 }
 
+function getTradeLabel(tradeType: TradeTab) {
+  if (tradeType === "DIRECT") return "직거래";
+  if (tradeType === "DELIVERY") return "택배거래";
+  return "보관함거래";
+}
+
 export default function TradeProgressView({
   tradeId,
   tradeType,
@@ -166,16 +198,36 @@ export default function TradeProgressView({
   const nav = useNavigate();
   const onStatusChangeRef = useRef(onStatusChange);
 
+  if (tradeType === "LOCKER") {
+    return (
+      <LockerTradeProgressSection
+        tradeId={tradeId}
+        tradeType={tradeType}
+        product={product}
+        initialStatusCode={initialStatusCode}
+        onStatusChange={onStatusChange}
+        onBack={onBack}
+        onClose={onClose}
+      />
+    );
+  }
+
   const defaultStatusCode = tradeType === "DELIVERY" ? "PAID" : "TRADING";
 
+  const [resolvedTradeId, setResolvedTradeId] = useState(tradeId);
   const [currentStatusCode, setCurrentStatusCode] = useState(() =>
     normalizeStatusCode(initialStatusCode ?? defaultStatusCode),
   );
   const [submitting, setSubmitting] = useState(false);
 
   const steps = useMemo(() => {
-    return tradeType === "DELIVERY" ? deliverySteps : directSteps;
+    if (tradeType === "DELIVERY") return deliverySteps;
+    return directSteps;
   }, [tradeType]);
+
+  useEffect(() => {
+    setResolvedTradeId(tradeId);
+  }, [tradeId]);
 
   useEffect(() => {
     onStatusChangeRef.current = onStatusChange;
@@ -188,13 +240,15 @@ export default function TradeProgressView({
   }, [initialStatusCode, defaultStatusCode]);
 
   useEffect(() => {
+    if (tradeType !== "DELIVERY") return;
+
     const accessToken = localStorage.getItem("accessToken");
 
-    if (!accessToken || !tradeId || !product.productId) return;
+    if (!accessToken || !product.productId) return;
 
     let stopped = false;
 
-    const syncTradeStatus = async () => {
+    const syncDeliveryTradeStatus = async () => {
       try {
         const tradeDetail = await tradeApi.getTradeDetail(
           accessToken,
@@ -202,9 +256,25 @@ export default function TradeProgressView({
         );
 
         if (stopped) return;
-        if (!tradeDetail || tradeDetail.TRADE_ID !== tradeId) return;
+        if (!tradeDetail) return;
 
-        const latestStatusCode = normalizeStatusCode(tradeDetail.STATUS_CODE);
+        const detail = Array.isArray(tradeDetail)
+          ? tradeDetail[0]
+          : tradeDetail;
+
+        if (!detail) return;
+
+        if (resolvedTradeId && detail.TRADE_ID !== resolvedTradeId) return;
+
+        if (detail.TRADE_ID) {
+          setResolvedTradeId(Number(detail.TRADE_ID));
+        }
+
+        const latestStatusCode = normalizeStatusCode(
+          detail.STATUS_CODE ??
+            detail.RESULT_STATUS_CODE ??
+            detail.NEXT_STATUS_CODE,
+        );
 
         if (!latestStatusCode) return;
 
@@ -215,19 +285,22 @@ export default function TradeProgressView({
 
         onStatusChangeRef.current?.(latestStatusCode);
       } catch (error) {
-        console.error("거래 상태 동기화 실패:", error);
+        console.error("택배거래 상태 동기화 실패:", error);
       }
     };
 
-    syncTradeStatus();
+    syncDeliveryTradeStatus();
 
-    const timerId = window.setInterval(syncTradeStatus, POLLING_INTERVAL_MS);
+    const timerId = window.setInterval(
+      syncDeliveryTradeStatus,
+      POLLING_INTERVAL_MS,
+    );
 
     return () => {
       stopped = true;
       window.clearInterval(timerId);
     };
-  }, [tradeId, product.productId]);
+  }, [resolvedTradeId, product.productId, tradeType]);
 
   const currentStepIndex = useMemo(() => {
     return getStepIndexByStatusCode(steps, currentStatusCode);
@@ -235,9 +308,39 @@ export default function TradeProgressView({
 
   const lastIndex = steps.length - 1;
   const isCompleteStep = currentStepIndex === lastIndex;
-
   const currentStep = steps[currentStepIndex];
   const nextStatusCode = getNextStatusCode(steps, currentStatusCode);
+
+  const resolveTradeId = async () => {
+    if (resolvedTradeId && resolvedTradeId > 0) {
+      return resolvedTradeId;
+    }
+
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+      message.error("로그인이 필요합니다.");
+      return 0;
+    }
+
+    try {
+      const result = await tradeApi.getTradeId(accessToken, product.productId);
+      const nextTradeId = getTradeIdValue(result);
+
+      if (!nextTradeId) {
+        message.error("거래 ID를 확인할 수 없습니다.");
+        return 0;
+      }
+
+      setResolvedTradeId(nextTradeId);
+
+      return nextTradeId;
+    } catch (error) {
+      console.error(error);
+      message.error("거래 ID 조회에 실패했습니다.");
+      return 0;
+    }
+  };
 
   const handleCancel = async () => {
     const accessToken = localStorage.getItem("accessToken");
@@ -247,11 +350,15 @@ export default function TradeProgressView({
       return;
     }
 
+    const targetTradeId = await resolveTradeId();
+
+    if (!targetTradeId) return;
+
     try {
       setSubmitting(true);
 
       await tradeApi.updateTradeStatus(accessToken, {
-        TRADE_ID: tradeId,
+        TRADE_ID: targetTradeId,
         RESULT_STATUS_CODE: currentStatusCode,
         NEXT_STATUS_CODE: "CANCELED",
         TRADE_TYPE_CODE: tradeType,
@@ -281,11 +388,15 @@ export default function TradeProgressView({
       return;
     }
 
+    const targetTradeId = await resolveTradeId();
+
+    if (!targetTradeId) return;
+
     try {
       setSubmitting(true);
 
       const result = await tradeApi.updateTradeStatus(accessToken, {
-        TRADE_ID: tradeId,
+        TRADE_ID: targetTradeId,
         RESULT_STATUS_CODE: currentStatusCode,
         NEXT_STATUS_CODE: nextStatusCode,
         TRADE_TYPE_CODE: tradeType,
@@ -325,9 +436,11 @@ export default function TradeProgressView({
     handleProgress();
   };
 
-  const buttonText = isCompleteStep
-    ? "확인"
-    : (steps[currentStepIndex + 1]?.title ?? "다음 단계");
+  const getButtonText = () => {
+    if (isCompleteStep) return "확인";
+
+    return steps[currentStepIndex + 1]?.title ?? "다음 단계";
+  };
 
   return (
     <DrawerLayout
@@ -351,7 +464,7 @@ export default function TradeProgressView({
             onClick={handleMainButtonClick}
             disabled={submitting}
           >
-            {submitting ? "처리중..." : buttonText}
+            {submitting ? "처리중..." : getButtonText()}
           </button>
         </div>
       }
@@ -366,13 +479,7 @@ export default function TradeProgressView({
         </div>
 
         <div className={styles.productInfo}>
-          <span className={styles.tradeBadge}>
-            {tradeType === "DIRECT"
-              ? "직거래"
-              : tradeType === "DELIVERY"
-                ? "택배거래"
-                : "보관함거래"}
-          </span>
+          <span className={styles.tradeBadge}>{getTradeLabel(tradeType)}</span>
           <h2>{product.title}</h2>
           <strong>{formatPrice(product.expectedPrice)}</strong>
         </div>

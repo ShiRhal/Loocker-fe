@@ -57,7 +57,15 @@ export type NextTradeStatus =
   | "DELIVERED"
   | "PICKEDUP"
   | "DIRECT_IN_PROGRESS"
-  | "DIRECT_RECEIVED";
+  | "DIRECT_RECEIVED"
+  | "BRANCH_SELECT"
+  | "BRANCH_SELECTED"
+  | "DEPOSIT_WAITING"
+  | "SELLER_DEPOSITED"
+  | "LOCKER_LOCKED"
+  | "BUYER_INSPECTION"
+  | "BUYER_PICKUP"
+  | "LOCKER_RESET";
 
 export type TradeCreateRequest = {
   PRODUCT_ID: number;
@@ -81,7 +89,7 @@ export type TradeDetailResponse = {
 export type TradeUpdateRequest = {
   TRADE_ID: number;
   RESULT_STATUS_CODE?: string;
-  NEXT_STATUS_CODE: string;
+  NEXT_STATUS_CODE: NextTradeStatus | string;
   TRADE_TYPE_CODE: TradeTab;
   USER_ID?: number;
 };
@@ -105,4 +113,47 @@ export type PaymentUpdateRequest = {
   AMOUNT: number;
   ORDER_ID: string;
   PAYMENT_KEY: string;
+};
+
+export type LockerTradeStatus =
+  | "BRANCH_SELECT"
+  | "BRANCH_SELECTED"
+  | "DEPOSIT_WAITING"
+  | "SELLER_DEPOSITED"
+  | "LOCKER_LOCKED"
+  | "BUYER_INSPECTION"
+  | "PAID"
+  | "BUYER_PICKUP"
+  | "COMPLETED"
+  | "LOCKER_RESET";
+
+export type TradeLockerLocationSelectRequest = {
+  TRADE_ID: number;
+  USER_ID: number;
+};
+
+export type TradeLockerLocationRequest = {
+  TRADE_ID: number;
+  KIOSK_ID: number;
+  USER_ID: number;
+};
+
+export type TradeLockerLocationResponse = {
+  KIOSK_ID: number;
+  STATUS_CODE: string;
+  LATITUDE: number;
+  LONGITUDE: number;
+  BRANCH_NAME: string;
+  DETAIL_ADDRESS: string;
+  LOCATION_IMG?: string | null;
+};
+
+export type TradeLockerStateRequest = {
+  KIOSK_ID: number;
+};
+
+export type TradeLockerStateResponse = {
+  KIOSK_ID: number;
+  LOCKER_STATUS: string;
+  LOCKER_ID: number;
 };
