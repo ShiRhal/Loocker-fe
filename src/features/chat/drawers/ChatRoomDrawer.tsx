@@ -37,6 +37,7 @@ export default function ChatRoomDrawer({ room, onBack, onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+
   const messagesRef = useRef<HTMLDivElement | null>(null);
 
   const myUserId = useMemo(() => {
@@ -45,13 +46,23 @@ export default function ChatRoomDrawer({ room, onBack, onClose }: Props) {
     return Number.isFinite(n) ? n : null;
   }, []);
 
+  const scrollToBottom = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      const el = messagesRef.current;
+      if (!el) return;
+      el.scrollTop = el.scrollHeight;
+    });
+  }, []);
+
   const onIncoming = useCallback((msg: ChatMessage) => {
     setMessages((prev) => {
-      // 서버 payload에 ID가 없는 경우(undefined/null)까지 동일 ID로 간주하면
-      // 이후 수신 메시지가 전부 중복으로 처리될 수 있어, ID가 있을 때만 dedupe한다.
-      if (msg.CHAT_MESSAGE_ID != null && prev.some((m) => m.CHAT_MESSAGE_ID === msg.CHAT_MESSAGE_ID)) {
+      if (
+        msg.CHAT_MESSAGE_ID != null &&
+        prev.some((m) => m.CHAT_MESSAGE_ID === msg.CHAT_MESSAGE_ID)
+      ) {
         return prev;
       }
+
       return [...prev, msg];
     });
   }, []);
@@ -65,35 +76,34 @@ export default function ChatRoomDrawer({ room, onBack, onClose }: Props) {
 
   useEffect(() => {
     let cancelled = false;
+
     setLoading(true);
     setError(null);
+
     void reloadMessages()
       .catch((e: unknown) => {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : "메시지를 불러오지 못했습니다.");
+          setError(
+            e instanceof Error ? e.message : "메시지를 불러오지 못했습니다.",
+          );
         }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
   }, [reloadMessages]);
 
   useEffect(() => {
-    // 새 메시지 수신/전송 시 스크롤을 맨 아래로 자동 이동
-    const el = messagesRef.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
-  }, [messages.length, loading]);
+    scrollToBottom();
+  }, [messages.length, loading, scrollToBottom]);
 
   useEffect(() => {
-    // WebSocket 수신 누락/지연 시 상대 메시지를 빠르게 보정하기 위한 안전망
     const timerId = window.setInterval(() => {
-      void reloadMessages().catch(() => {
-        // 일시적인 조회 실패는 다음 주기에 재시도
-      });
+      void reloadMessages().catch(() => {});
     }, 1500);
 
     return () => {
@@ -101,13 +111,35 @@ export default function ChatRoomDrawer({ room, onBack, onClose }: Props) {
     };
   }, [reloadMessages]);
 
+  useEffect(() => {
+    const handleViewportChange = () => {
+      window.setTimeout(scrollToBottom, 50);
+      window.setTimeout(scrollToBottom, 250);
+      window.setTimeout(scrollToBottom, 450);
+    };
+
+    window.visualViewport?.addEventListener("resize", handleViewportChange);
+    window.visualViewport?.addEventListener("scroll", handleViewportChange);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", handleViewportChange);
+      window.visualViewport?.removeEventListener("scroll", handleViewportChange);
+    };
+  }, [scrollToBottom]);
+
+  const handleInputFocus = () => {
+    window.setTimeout(scrollToBottom, 50);
+    window.setTimeout(scrollToBottom, 250);
+    window.setTimeout(scrollToBottom, 450);
+  };
+
   const handleSend = () => {
     const text = draft.trim();
     if (!text || !connected) return;
 
-    // 브로드캐스트 지연/누락이 있어도 즉시 UI에 보이도록 낙관적 반영
     const tempId = -Date.now();
     const nowIso = new Date().toISOString();
+
     setMessages((prev) => [
       ...prev,
       {
@@ -122,11 +154,8 @@ export default function ChatRoomDrawer({ room, onBack, onClose }: Props) {
     sendMessage(text);
     setDraft("");
 
-    // 서버 최종 상태와 동기화 (임시 메시지 -> 실제 메시지 치환)
     window.setTimeout(() => {
-      void reloadMessages().catch(() => {
-        // 재조회 실패 시에도 낙관적 메시지는 유지
-      });
+      void reloadMessages().catch(() => {});
     }, 250);
   };
 
@@ -137,6 +166,7 @@ export default function ChatRoomDrawer({ room, onBack, onClose }: Props) {
         rows={2}
         placeholder="메시지를 입력하세요"
         value={draft}
+        onFocus={handleInputFocus}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
@@ -178,7 +208,6 @@ export default function ChatRoomDrawer({ room, onBack, onClose }: Props) {
         </button>
       }
     >
-
       {loading ? (
         <div className={styles.loading}>메시지 불러오는 중…</div>
       ) : error ? (
@@ -187,14 +216,18 @@ export default function ChatRoomDrawer({ room, onBack, onClose }: Props) {
         <div ref={messagesRef} className={styles.messages}>
           {messages.map((m) => {
             const mine = myUserId !== null && m.SENDER_ID === myUserId;
+
             return (
               <div
                 key={m.CHAT_MESSAGE_ID}
-                className={`${styles.bubble} ${mine ? styles.bubbleMine : styles.bubbleOther}`}
+                className={`${styles.bubble} ${
+                  mine ? styles.bubbleMine : styles.bubbleOther
+                }`}
               >
                 <div>{m.MESSAGE}</div>
                 <div className={styles.meta}>
-                  {mine ? "나" : `${room.TARGET_NICKNAME}`} · {formatTime(m.CREATED_AT)}
+                  {mine ? "나" : `${room.TARGET_NICKNAME}`} ·{" "}
+                  {formatTime(m.CREATED_AT)}
                 </div>
               </div>
             );
