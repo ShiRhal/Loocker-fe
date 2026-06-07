@@ -658,17 +658,29 @@
 }
 
 .mobileMenuImage {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: linear-gradient(180deg, #edf2f7, #dbe5ef);
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #eef4fb 0%, #dfeaf3 100%);
   color: #00a95c;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow:
+    inset 0 -4px 0 rgba(0, 194, 103, 0.12),
+    0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.mobileMenuImage svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.mobileMenuFallbackText {
   font-size: 12px;
   font-weight: 900;
-  box-shadow: inset 0 -4px 0 rgba(0, 194, 103, 0.12);
+  line-height: 1;
 }
 
 .mobileMenuText {

@@ -91,7 +91,7 @@
   .formInner {
     width: 100%;
     box-sizing: border-box;
-    padding: 24px 16px 140px;
+    padding: 24px 16px calc(240px + env(safe-area-inset-bottom));
     gap: 56px;
   }
 
@@ -101,6 +101,11 @@
     box-sizing: border-box;
     padding-left: 16px;
     padding-right: 16px;
+  }
+
+  .submitBar {
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    z-index: 70;
   }
 
   .submitBarInner {
