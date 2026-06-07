@@ -1,53 +1,59 @@
-.page {
+.kioskDepositPage {
   width: 100vw;
   height: 100dvh;
   min-height: 100dvh;
   overflow: hidden;
   background: linear-gradient(180deg, #f7faff 0%, #eef5ff 100%);
-  padding: 10px 14px 14px;
+  padding: calc(8px + env(safe-area-inset-top)) 14px
+    calc(12px + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
-.header {
-  height: 46px;
-  margin-bottom: 6px;
+.kioskDepositHeader {
+  height: 44px;
+  margin-bottom: 5px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.logo {
+.kioskDepositLogo {
   width: 150px;
   height: auto;
   object-fit: contain;
 }
 
-.homeButton {
-  height: 38px;
+.kioskDepositHomeButton {
+  height: 36px;
   padding: 0 16px;
   border: none;
   border-radius: 14px;
   background: #ffffff;
   color: #0064ff;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 900;
   box-shadow: 0 10px 22px rgba(0, 100, 255, 0.13);
   cursor: pointer;
 }
 
-.main {
-  height: calc(100dvh - 66px);
+.kioskDepositHomeButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.kioskDepositMain {
+  height: calc(100dvh - 64px);
   display: flex;
   justify-content: center;
   overflow: hidden;
 }
 
-.card {
+.kioskDepositCard {
   width: min(680px, calc(100vw - 28px));
   height: 100%;
   min-height: 0;
   margin: 0;
-  padding: 18px 20px;
+  padding: 14px 18px 12px;
   border-radius: 26px;
   background: #ffffff;
   box-shadow: 0 22px 54px rgba(0, 100, 255, 0.18);
@@ -57,23 +63,24 @@
   flex-direction: column;
 }
 
-.title {
-  font-size: clamp(23px, 3.2vw, 34px);
+.kioskDepositTitle {
+  font-size: clamp(21px, 2.7vw, 30px);
   font-weight: 900;
   color: #0064ff;
   text-align: center;
-  margin: 0 0 5px;
+  margin: 0 0 3px;
 }
 
-.description {
-  font-size: clamp(13px, 1.8vw, 18px);
+.kioskDepositDescription {
+  font-size: clamp(12px, 1.55vw, 16px);
   font-weight: 800;
   color: #526070;
   text-align: center;
-  margin: 0 0 12px;
+  margin: 0 0 8px;
 }
 
-.summaryBox {
+/* 요약 영역은 기존 유지 */
+.kioskDepositSummaryBox {
   background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
   border: 2px solid #dbeafe;
   border-radius: 20px;
@@ -83,7 +90,7 @@
   flex-shrink: 0;
 }
 
-.summaryTop {
+.kioskDepositSummaryTop {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 150px;
   gap: 14px;
@@ -91,7 +98,7 @@
   margin-bottom: 10px;
 }
 
-.productMini {
+.kioskDepositProductMini {
   min-width: 0;
   display: grid;
   grid-template-columns: 64px 1fr;
@@ -99,7 +106,7 @@
   align-items: center;
 }
 
-.productImageBox {
+.kioskDepositProductImageBox {
   width: 64px;
   height: 64px;
   border-radius: 14px;
@@ -108,13 +115,13 @@
   flex-shrink: 0;
 }
 
-.productImage {
+.kioskDepositProductImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.noImage {
+.kioskDepositNoImage {
   width: 100%;
   height: 100%;
   font-size: 11px;
@@ -125,20 +132,20 @@
   justify-content: center;
 }
 
-.productInfo {
+.kioskDepositProductInfo {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.productInfo span {
+.kioskDepositProductInfo span {
   font-size: 12px;
   font-weight: 800;
   color: #64748b;
 }
 
-.productInfo strong {
+.kioskDepositProductInfo strong {
   font-size: 17px;
   font-weight: 900;
   color: #111827;
@@ -147,14 +154,14 @@
   white-space: nowrap;
 }
 
-.productInfo p {
+.kioskDepositProductPrice {
   font-size: 15px;
   font-weight: 900;
   color: #0064ff;
   margin: 0;
 }
 
-.lockerMini {
+.kioskDepositLockerMini {
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -162,13 +169,13 @@
   gap: 2px;
 }
 
-.lockerMini span {
+.kioskDepositLockerMiniLabel {
   font-size: 12px;
   font-weight: 900;
   color: #64748b;
 }
 
-.lockerMini strong {
+.kioskDepositLockerNumber {
   display: block;
   font-size: clamp(38px, 3vw, 56px);
   font-weight: 1000;
@@ -176,226 +183,227 @@
   line-height: 1;
 }
 
-.progressTrack {
+.kioskDepositProgressTrack {
   width: 100%;
   height: 8px;
   border-radius: 999px;
   background: #dbeafe;
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 7px;
+  flex-shrink: 0;
 }
 
-.progressFill {
+.kioskDepositProgressFill {
   height: 100%;
   border-radius: 999px;
   background: #0064ff;
   transition: width 0.35s ease;
 }
 
-.progressFill0 {
+.kioskDepositProgressFill0 {
   width: 0%;
 }
 
-.progressFill25 {
+.kioskDepositProgressFill25 {
   width: 25%;
 }
 
-.progressFill50 {
+.kioskDepositProgressFill50 {
   width: 50%;
 }
 
-.progressFill75 {
+.kioskDepositProgressFill75 {
   width: 75%;
 }
 
-.progressFill100 {
+.kioskDepositProgressFill100 {
   width: 100%;
 }
 
-.currentStep {
+.kioskDepositCurrentStep {
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
   color: #111827;
   text-align: center;
 }
 
-.panel {
+.kioskDepositPanel {
   flex: 1;
   min-height: 0;
-  border-radius: 24px;
+  border-radius: 22px;
   background: #ffffff;
   border: 3px solid #0064ff;
-  padding: 20px 22px;
+  padding: 14px 18px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   box-sizing: border-box;
   overflow: hidden;
 }
 
-.panelBlue {
+.kioskDepositPanelBlue {
   border-color: #0064ff;
   color: #0064ff;
 }
 
-.panelGreen {
+.kioskDepositPanelGreen {
   border-color: #16a34a;
   color: #16a34a;
 }
 
-.panelOrange {
+.kioskDepositPanelOrange {
   border-color: #ea580c;
   color: #ea580c;
 }
 
-.panelPurple {
+.kioskDepositPanelPurple {
   border-color: #7c3aed;
   color: #7c3aed;
 }
 
-/* 구매자 수령 페이지의 doorIcon 계열을 그대로 1:1 복사 */
-.doorIcon,
-.openDoorIcon,
-.closedDoorIcon {
-  width: min(210px, 38vw);
-  height: min(160px, 26dvh);
+/* 문 열림 / 열린 문 / 문 닫힘 아이콘 */
+.kioskDepositDoorIcon,
+.kioskDepositOpenDoorIcon,
+.kioskDepositClosedDoorIcon {
+  width: min(180px, 32vw);
+  height: min(132px, 20dvh);
   position: relative;
-  margin-bottom: 4px;
-  border-radius: 26px;
+  margin-bottom: 2px;
+  border-radius: 24px;
   background: #eef6ff;
   border: 4px solid #0064ff;
   box-sizing: border-box;
   flex-shrink: 0;
 }
 
-.doorIcon::before,
-.openDoorIcon::before,
-.closedDoorIcon::before {
+.kioskDepositDoorIcon::before,
+.kioskDepositOpenDoorIcon::before,
+.kioskDepositClosedDoorIcon::before {
   content: "";
   position: absolute;
-  left: 36px;
-  top: 28px;
-  width: 132px;
-  height: 100px;
-  border-radius: 16px;
-  border: 4px solid #0064ff;
-  background: #ffffff;
-  box-sizing: border-box;
-}
-
-.doorIcon::after {
-  content: "";
-  position: absolute;
-  left: 86px;
-  top: 72px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #0064ff;
-}
-
-.openDoorIcon::before {
-  transform: perspective(240px) rotateY(-34deg);
-  transform-origin: left center;
-  background: #ffffff;
-}
-
-.openDoorIcon::after {
-  content: "";
-  position: absolute;
-  left: 118px;
-  top: 72px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #0064ff;
-}
-
-.closedDoorIcon::after {
-  content: "✓";
-  position: absolute;
-  right: 22px;
-  bottom: 18px;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: #16a34a;
-  color: #ffffff;
-  font-size: 26px;
-  font-weight: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 촬영 중 단계용 아이콘 */
-.cameraIcon {
-  width: min(210px, 38vw);
-  height: min(160px, 26dvh);
-  position: relative;
-  margin-bottom: 4px;
-  border-radius: 30px;
-  background: #eef4ff;
-  border: 4px solid #0064ff;
-  box-sizing: border-box;
-  flex-shrink: 0;
-}
-
-.cameraIcon::before {
-  content: "";
-  position: absolute;
-  left: 38px;
-  top: 50px;
-  width: 134px;
+  left: 30px;
+  top: 23px;
+  width: 112px;
   height: 82px;
-  border-radius: 22px;
+  border-radius: 15px;
   border: 4px solid #0064ff;
   background: #ffffff;
   box-sizing: border-box;
 }
 
-.cameraIcon::after {
+.kioskDepositDoorIcon::after {
   content: "";
   position: absolute;
-  left: 86px;
-  top: 67px;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 8px solid #0064ff;
-  background: #ffffff;
-  box-sizing: border-box;
-}
-
-.cameraIcon span::before {
-  content: "";
-  position: absolute;
-  left: 58px;
-  top: 32px;
-  width: 58px;
-  height: 26px;
-  border-radius: 16px 16px 0 0;
-  background: #0064ff;
-}
-
-.cameraIcon span::after {
-  content: "";
-  position: absolute;
-  right: 48px;
-  top: 62px;
+  left: 73px;
+  top: 59px;
   width: 16px;
   height: 16px;
   border-radius: 50%;
   background: #0064ff;
 }
 
-/* 사진 확인 단계 미리보기 영역 유지 */
-.captureBox {
+.kioskDepositOpenDoorIcon::before {
+  transform: perspective(240px) rotateY(-34deg);
+  transform-origin: left center;
+  background: #ffffff;
+}
+
+.kioskDepositOpenDoorIcon::after {
+  content: "";
+  position: absolute;
+  left: 100px;
+  top: 59px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #0064ff;
+}
+
+.kioskDepositClosedDoorIcon::after {
+  content: "✓";
+  position: absolute;
+  right: 18px;
+  bottom: 15px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 촬영 중 단계 아이콘 */
+.kioskDepositCameraIcon {
+  width: min(180px, 32vw);
+  height: min(132px, 20dvh);
+  position: relative;
+  margin-bottom: 2px;
+  border-radius: 28px;
+  background: #eef4ff;
+  border: 4px solid #0064ff;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.kioskDepositCameraIcon::before {
+  content: "";
+  position: absolute;
+  left: 32px;
+  top: 42px;
+  width: 114px;
+  height: 68px;
+  border-radius: 20px;
+  border: 4px solid #0064ff;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.kioskDepositCameraIcon::after {
+  content: "";
+  position: absolute;
+  left: 73px;
+  top: 56px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 7px solid #0064ff;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.kioskDepositCameraIcon span::before {
+  content: "";
+  position: absolute;
+  left: 50px;
+  top: 26px;
+  width: 50px;
+  height: 24px;
+  border-radius: 15px 15px 0 0;
+  background: #0064ff;
+}
+
+.kioskDepositCameraIcon span::after {
+  content: "";
+  position: absolute;
+  right: 42px;
+  top: 52px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #0064ff;
+}
+
+/* 사진 촬영/확인 영역은 기존 유지 */
+.kioskDepositCaptureBox {
   width: min(100%, 460px);
   aspect-ratio: 16 / 9;
   border-radius: 18px;
@@ -408,7 +416,7 @@
   box-sizing: border-box;
 }
 
-.captureImage {
+.kioskDepositCaptureImage {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -417,92 +425,102 @@
   background: #ffffff;
 }
 
-.capturePlaceholder {
+.kioskDepositCaptureEmpty {
   width: 100%;
   height: 100%;
   border-radius: 14px;
   background: #eef4ff;
-  color: #0064ff;
-  font-size: 18px;
-  font-weight: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.doneCircle {
-  width: 112px;
-  height: 112px;
+.kioskDepositDoneCircle {
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
   background: #16a34a;
   color: #ffffff;
-  font-size: 64px;
+  font-size: 60px;
   font-weight: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
 }
 
-.panel h2 {
-  margin: 0 0 4px;
-  font-size: clamp(23px, 3.6vw, 34px);
+.kioskDepositPanelTitle {
+  margin: 0 0 2px;
+  font-size: clamp(20px, 3vw, 29px);
   font-weight: 1000;
   color: #111827;
+  line-height: 1.18;
 }
 
-.panel p {
+.kioskDepositPanelDescription {
   margin: 0;
-  font-size: clamp(15px, 2.1vw, 21px);
+  font-size: clamp(13px, 1.75vw, 18px);
   font-weight: 850;
-  line-height: 1.45;
+  line-height: 1.35;
   color: #334155;
 }
 
-.panel span {
-  margin: 4px 0 0;
-  font-size: clamp(12px, 1.6vw, 16px);
+.kioskDepositPanelSubDescription {
+  margin: 2px 0 0;
+  font-size: clamp(11px, 1.45vw, 15px);
   font-weight: 800;
-  line-height: 1.45;
+  line-height: 1.35;
   color: #64748b;
 }
 
-.retryButton,
-.primaryButton,
-.replayButton {
+.kioskDepositRetryButton,
+.kioskDepositPrimaryButton,
+.kioskDepositReplayButton {
   border: none;
   cursor: pointer;
   font-weight: 900;
 }
 
-.retryButton {
+.kioskDepositRetryButton {
   width: 100%;
-  height: 50px;
-  margin-top: 12px;
+  height: 48px;
+  min-height: 48px;
+  flex-shrink: 0;
+  margin-top: 8px;
   border-radius: 16px;
   background: #eef4ff;
   color: #0064ff;
-  font-size: 17px;
+  font-size: 16px;
 }
 
-.primaryButton {
+.kioskDepositPrimaryButton {
   width: 100%;
-  height: 58px;
+  height: 62px;
+  min-height: 62px;
+  flex-shrink: 0;
   border-radius: 18px;
   background: #0064ff;
   color: #ffffff;
   font-size: 20px;
   font-weight: 1000;
-  margin-top: 10px;
+  margin-top: 6px;
   box-shadow: 0 12px 24px rgba(0, 100, 255, 0.2);
 }
 
-.replayButton {
-  height: 42px;
-  min-height: 42px;
+.kioskDepositReplayButton {
+  height: 40px;
+  min-height: 40px;
   border-radius: 16px;
   background: #eef4ff;
   color: #0064ff;
-  font-size: 16px;
+  font-size: 15px;
   flex-shrink: 0;
+}
+
+.kioskDepositRetryButton:disabled,
+.kioskDepositPrimaryButton:disabled,
+.kioskDepositReplayButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
