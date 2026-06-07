@@ -103,6 +103,15 @@ export default function KioskLoginPage() {
           <p className={styles.loginDescription}>
             허용되지 않은 키오스크입니다.
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.setItem("검사하는_KEY_이름", "KIOSK");
+              window.location.reload();
+            }}
+          >
+            임시 키오스크 인증 저장
+          </button>
         </section>
       </main>
     );

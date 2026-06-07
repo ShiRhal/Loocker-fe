@@ -116,7 +116,7 @@ export type KioskLockerUpdateRequest = {
 };
 
 export type KioskLockerImageSelectRequest = {
-  LOCKER_CODE?: string;
+  AUTH_CODE: string;
   TRADE_ID: number;
   KIOSK_CODE: string;
   LOCKER_ID: number;
@@ -314,7 +314,7 @@ export const kioskApi = {
   ): Promise<KioskLockerImageResponse | null> {
     const query = new URLSearchParams();
 
-    query.set("LOCKER_CODE", body.LOCKER_CODE || "LOCKER_001");
+    query.set("AUTH_CODE", body.AUTH_CODE);
     query.set("TRADE_ID", String(body.TRADE_ID));
     query.set("KIOSK_CODE", body.KIOSK_CODE);
     query.set("LOCKER_ID", String(body.LOCKER_ID));

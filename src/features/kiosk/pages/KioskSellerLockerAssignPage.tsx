@@ -384,7 +384,7 @@ export default function KioskSellerDepositLockerAssignPage() {
   async function selectSellerCapturedImage() {
     try {
       const result = await kioskApi.selectLockerImage({
-        LOCKER_CODE: "LOCKER_001",
+        AUTH_CODE: normalizedAuthCode,
         TRADE_ID: tradeId,
         KIOSK_CODE: kioskCode,
         LOCKER_ID: lockerId,
