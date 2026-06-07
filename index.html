@@ -2,12 +2,33 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>Loocker Web</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+
+    <title>루커</title>
     <meta name="description" content="Loocker 중고거래 서비스" />
 
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- iPad / iPhone 홈 화면 앱 설정 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="루커" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+
+    <!-- iPad 홈 화면 아이콘 -->
+    <link rel="apple-touch-icon" href="/Loocker_m.png" />
+
+    <!-- Browser Theme -->
+    <meta name="theme-color" content="#ffffff" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -23,6 +44,7 @@
     <meta name="twitter:description" content="Loocker 중고거래 서비스" />
     <meta name="twitter:image" content="https://loocker.site/favicon.ico" />
   </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

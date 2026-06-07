@@ -1,0 +1,22 @@
+{
+  "name": "루커",
+  "short_name": "루커",
+  "start_url": "/kiosk/login",
+  "scope": "/kiosk/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/Loocker_m.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/Loocker_m.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
