@@ -483,6 +483,10 @@ export default function TradeMethodDrawer({
         return;
       }
 
+      if (activeTab === "LOCKER") {
+        message.success("보관함 거래 신청이 완료되었습니다!");
+      }
+
       setCurrentTradeId(tradeId);
       setCurrentTradeType(activeTab);
       setCurrentStatusCode(getStatusCodeFromResponse(createRes) || "TRADING");

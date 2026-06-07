@@ -891,3 +891,72 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+@media (max-width: 999px) {
+  .leftDrawer {
+    inset: 0;
+    right: auto;
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    border-right: 0;
+    box-shadow: none;
+    z-index: 1600;
+  }
+
+  .mapDrawerHeader {
+    padding: 16px 16px 14px;
+    align-items: flex-start;
+  }
+
+  .mapHeaderTextArea {
+    padding-right: 10px;
+  }
+
+  .mapDrawerTitle {
+    font-size: 18px;
+  }
+
+  .branchSearchInput {
+    height: 40px;
+    margin-top: 10px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+
+  .mapDrawerBody {
+    padding: 12px 14px;
+  }
+
+  .kakaoMap {
+    height: min(54vh, 430px);
+    border-radius: 14px;
+  }
+
+  .branchInfoPanel {
+    margin-top: 12px;
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .branchImage,
+  .branchImageEmpty {
+    height: 120px;
+    border-radius: 12px;
+  }
+
+  .lockerGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .mapDrawerFooter {
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .mapSelectButton {
+    height: 48px;
+    border-radius: 12px;
+    font-size: 15px;
+  }
+}

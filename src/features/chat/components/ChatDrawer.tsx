@@ -23,6 +23,9 @@ export default function ChatDrawer({
   const [selectedRoom, setSelectedRoom] = useState<ChatRoomListItem | null>(
     null,
   );
+  const [drawerHeight, setDrawerHeight] = useState("100dvh");
+  const [drawerTop, setDrawerTop] = useState("0px");
+
   const prevOpenRef = useRef(false);
 
   useEffect(() => {
@@ -35,6 +38,35 @@ export default function ChatDrawer({
     prevOpenRef.current = open;
   }, [open, initialRoom]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const updateViewportSize = () => {
+      const viewport = window.visualViewport;
+
+      if (viewport) {
+        setDrawerHeight(`${Math.round(viewport.height)}px`);
+        setDrawerTop(`${Math.round(viewport.offsetTop)}px`);
+        return;
+      }
+
+      setDrawerHeight(`${window.innerHeight}px`);
+      setDrawerTop("0px");
+    };
+
+    updateViewportSize();
+
+    window.visualViewport?.addEventListener("resize", updateViewportSize);
+    window.visualViewport?.addEventListener("scroll", updateViewportSize);
+    window.addEventListener("resize", updateViewportSize);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", updateViewportSize);
+      window.visualViewport?.removeEventListener("scroll", updateViewportSize);
+      window.removeEventListener("resize", updateViewportSize);
+    };
+  }, [open]);
+
   const handleClose = () => {
     setSelectedRoom(null);
     onClose();
@@ -42,21 +74,37 @@ export default function ChatDrawer({
 
   const normalizedRightOffset = Math.max(0, rightOffset);
 
+  const wrapperStyle: React.CSSProperties = {
+    height: drawerHeight,
+    maxHeight: drawerHeight,
+    top: drawerTop,
+    bottom: "auto",
+  };
+
+  if (normalizedRightOffset > 0) {
+    wrapperStyle.right = normalizedRightOffset;
+    wrapperStyle.insetInlineEnd = normalizedRightOffset;
+  }
+
   const drawerStyles: DrawerProps["styles"] = {
+    wrapper: wrapperStyle,
+    content: {
+      height: drawerHeight,
+      maxHeight: drawerHeight,
+      overflow: "hidden",
+    },
     body: {
       padding: 0,
-      minHeight: "100vh",
+      height: drawerHeight,
+      maxHeight: drawerHeight,
+      minHeight: 0,
       display: "flex",
       flexDirection: "column",
+      overflow: "hidden",
     },
-    header: { display: "none" },
-    wrapper:
-      normalizedRightOffset > 0
-        ? {
-            right: normalizedRightOffset,
-            insetInlineEnd: normalizedRightOffset,
-          }
-        : undefined,
+    header: {
+      display: "none",
+    },
   };
 
   return (
@@ -65,7 +113,7 @@ export default function ChatDrawer({
       onClose={handleClose}
       open={open}
       closable={false}
-      width={640}
+      width="min(640px, 100vw)"
       mask={mask}
       zIndex={normalizedRightOffset > 0 ? 1200 : undefined}
       styles={drawerStyles}
