@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import logoImage from "../../../assets/images/Loocker.png";
 import cameraModuleImage from "../../../assets/images/kiosk/kiosk_camera_module.png";
 import styles from "../styles/kioskBuyerCheck.module.css";
+import { toApiAssetUrl } from "../../../shared/utils/imageUrl";
 
 type BuyerCheckProduct = {
   PRODUCT_ID: number;
@@ -11,7 +12,9 @@ type BuyerCheckProduct = {
   TITLE: string;
   BASE_PRICE: number;
   PRODUCT_STATUS_CODE: string;
-  IMAGE_URL?: string;
+  IMAGE_URL?: string | null;
+  LOCKER_ID?: number;
+  LOCKER_NO?: number;
 };
 
 type BuyerLockerResult = {
@@ -30,7 +33,13 @@ type InspectionLocationState = {
   currentCaptureImageUrl?: string;
 };
 
-type InspectionPhase = "PREPARING" | "COMPARE" | "DONE" | "ERROR";
+type InspectionPhase =
+  | "LOADING_PRODUCTS"
+  | "SELECT_PRODUCT"
+  | "PREPARING"
+  | "COMPARE"
+  | "DONE"
+  | "ERROR";
 
 type CommandStatusResponse = {
   CHECK_STATUS?: "WAITING" | "RUNNING" | "SUCCESS" | "FAILED";
@@ -53,22 +62,6 @@ const LOCKER_CODE =
   localStorage.getItem("LOCKER_CODE") ||
   localStorage.getItem("lockerCode") ||
   "LOCKER_001";
-
-const fallbackProduct: BuyerCheckProduct = {
-  PRODUCT_ID: 101,
-  TRADE_ID: 9001,
-  TITLE: "SONY 4K 캠코더",
-  BASE_PRICE: 24332243,
-  PRODUCT_STATUS_CODE: "보관 완료",
-  IMAGE_URL: cameraModuleImage,
-};
-
-const fallbackLocker: BuyerLockerResult = {
-  TRADE_ID: 9001,
-  PRODUCT_ID: 101,
-  LOCKER_ID: 2,
-  LOCKER_NO: 2,
-};
 
 function formatPrice(price: number) {
   return `${price.toLocaleString()}원`;
@@ -161,6 +154,100 @@ function unwrapResponse<T>(response: unknown): T {
   return response as T;
 }
 
+function normalizeImageUrl(url?: string | null) {
+  if (!url) return "";
+  return toApiAssetUrl(url);
+}
+
+function toNumber(value: unknown, fallback = 0) {
+  const numberValue = Number(value);
+
+  if (Number.isFinite(numberValue)) {
+    return numberValue;
+  }
+
+  return fallback;
+}
+
+function toText(value: unknown, fallback = "") {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  return fallback;
+}
+
+function normalizeBuyerProduct(raw: unknown): BuyerCheckProduct {
+  const item =
+    typeof raw === "object" && raw !== null
+      ? (raw as Record<string, unknown>)
+      : {};
+
+  const productId = toNumber(item.PRODUCT_ID ?? item.productId);
+  const tradeId = toNumber(item.TRADE_ID ?? item.tradeId);
+  const lockerId = toNumber(item.LOCKER_ID ?? item.lockerId);
+  const lockerNo = toNumber(item.LOCKER_NO ?? item.lockerNo, lockerId);
+
+  return {
+    PRODUCT_ID: productId,
+    TRADE_ID: tradeId,
+    TITLE: toText(
+      item.TITLE ?? item.title ?? item.PRODUCT_TITLE ?? item.productTitle,
+      "상품명 없음",
+    ),
+    BASE_PRICE: toNumber(
+      item.BASE_PRICE ?? item.basePrice ?? item.PRICE ?? item.price,
+    ),
+    PRODUCT_STATUS_CODE: toText(
+      item.PRODUCT_STATUS_CODE ??
+        item.productStatusCode ??
+        item.TRADE_STATUS_CODE ??
+        item.tradeStatusCode,
+      "",
+    ),
+    IMAGE_URL: toText(
+      item.IMAGE_URL ??
+        item.imageUrl ??
+        item.PRODUCT_IMAGE_URL ??
+        item.productImageUrl,
+      "",
+    ),
+    LOCKER_ID: lockerId,
+    LOCKER_NO: lockerNo,
+  };
+}
+
+function extractProductArray(response: unknown): unknown[] {
+  const unwrapped = unwrapResponse<unknown>(response);
+
+  if (Array.isArray(unwrapped)) {
+    return unwrapped;
+  }
+
+  if (typeof unwrapped !== "object" || unwrapped === null) {
+    return [];
+  }
+
+  const objectValue = unwrapped as Record<string, unknown>;
+
+  const candidates = [
+    objectValue.list,
+    objectValue.items,
+    objectValue.products,
+    objectValue.productList,
+    objectValue.PRODUCT_LIST,
+    objectValue.BUYER_PRODUCT_LIST,
+    objectValue.data,
+    objectValue.result,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate;
+    }
+  }
+
+  return [];
+}
+
 export default function KioskBuyerInspectionPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -168,13 +255,11 @@ export default function KioskBuyerInspectionPage() {
 
   const state = (location.state || {}) as InspectionLocationState;
 
-  const product = state.product || fallbackProduct;
-  const locker = state.locker || fallbackLocker;
-
   const normalizedAuthCode =
     authCode ||
     state.authCode ||
     sessionStorage.getItem("buyerCheckAuthCode") ||
+    sessionStorage.getItem("buyerInspectionAuthCode") ||
     "";
 
   const normalizedKioskCode =
@@ -184,22 +269,49 @@ export default function KioskBuyerInspectionPage() {
     sessionStorage.getItem("kioskCode") ||
     "";
 
-  const tradeId = locker.TRADE_ID || product.TRADE_ID;
-  const lockerId = locker.LOCKER_ID;
+  const [phase, setPhase] = useState<InspectionPhase>(
+    state.product && state.locker ? "PREPARING" : "LOADING_PRODUCTS",
+  );
 
-  const [phase, setPhase] = useState<InspectionPhase>("PREPARING");
+  const [products, setProducts] = useState<BuyerCheckProduct[]>([]);
+  const [selectedProduct, setSelectedProduct] =
+    useState<BuyerCheckProduct | null>(state.product || null);
+  const [selectedLocker, setSelectedLocker] =
+    useState<BuyerLockerResult | null>(state.locker || null);
+
   const [sellerStoredImageUrl, setSellerStoredImageUrl] = useState(
-    state.sellerStoredImageUrl || product.IMAGE_URL || cameraModuleImage,
+    normalizeImageUrl(state.sellerStoredImageUrl) ||
+      normalizeImageUrl(state.product?.IMAGE_URL) ||
+      cameraModuleImage,
   );
+
   const [currentCaptureImageUrl, setCurrentCaptureImageUrl] = useState(
-    state.currentCaptureImageUrl || cameraModuleImage,
+    normalizeImageUrl(state.currentCaptureImageUrl) || cameraModuleImage,
   );
+
   const [errorMessage, setErrorMessage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const startedRef = useRef(false);
 
   const phaseText = useMemo(() => {
+    if (phase === "LOADING_PRODUCTS") {
+      return {
+        title: "구매 상품을 조회하고 있습니다.",
+        description:
+          "인증 정보를 기준으로 확인 가능한 보관함 거래를 불러옵니다.",
+        subDescription: "잠시만 기다려주세요.",
+      };
+    }
+
+    if (phase === "SELECT_PRODUCT") {
+      return {
+        title: "확인할 물품을 선택해주세요.",
+        description: "구매한 보관함 거래 중 확인할 물품을 선택합니다.",
+        subDescription: "상품을 선택하면 보관함 내부 확인을 시작합니다.",
+      };
+    }
+
     if (phase === "PREPARING") {
       return {
         title: "보관함 내부 확인을 준비 중입니다.",
@@ -234,6 +346,21 @@ export default function KioskBuyerInspectionPage() {
     };
   }, [phase, errorMessage]);
 
+  async function selectBuyerProductList() {
+    const response = await requestJson<unknown>(
+      "/kiosk/buyer/product",
+      {
+        method: "GET",
+      },
+      {
+        AUTH_CODE: normalizedAuthCode,
+        KIOSK_CODE: normalizedKioskCode,
+      },
+    );
+
+    return extractProductArray(response).map(normalizeBuyerProduct);
+  }
+
   async function createBuyerInspectionCommand(
     requestTypeCode: "NORMAL" | "RETRY",
   ) {
@@ -248,7 +375,10 @@ export default function KioskBuyerInspectionPage() {
     });
   }
 
-  async function selectBuyerInspectionStatus() {
+  async function selectBuyerInspectionStatus(
+    tradeId: number,
+    lockerId: number,
+  ) {
     const response = await requestJson<CommandStatusResponse>(
       "/kiosk/locker/command/status/select",
       {
@@ -266,7 +396,7 @@ export default function KioskBuyerInspectionPage() {
     return unwrapResponse<CommandStatusResponse>(response);
   }
 
-  async function updateLockerToBuyerInspectionReady() {
+  async function updateLockerToBuyerInspectionReady(tradeId: number) {
     await requestJson("/kiosk/locker/update", {
       method: "PUT",
       body: JSON.stringify({
@@ -279,7 +409,7 @@ export default function KioskBuyerInspectionPage() {
     });
   }
 
-  async function updateLockerToBuyerItemConfirmed() {
+  async function updateLockerToBuyerItemConfirmed(tradeId: number) {
     await requestJson("/kiosk/locker/update", {
       method: "PUT",
       body: JSON.stringify({
@@ -292,7 +422,7 @@ export default function KioskBuyerInspectionPage() {
     });
   }
 
-  async function selectLockerImages() {
+  async function selectLockerImages(tradeId: number, lockerId: number) {
     const response = await requestJson<LockerImageResponse>(
       "/kiosk/locker/img/select",
       {
@@ -309,11 +439,14 @@ export default function KioskBuyerInspectionPage() {
     return unwrapResponse<LockerImageResponse>(response);
   }
 
-  async function waitUntilBuyerInspectionSuccess() {
+  async function waitUntilBuyerInspectionSuccess(
+    tradeId: number,
+    lockerId: number,
+  ) {
     const maxTryCount = 30;
 
     for (let i = 0; i < maxTryCount; i += 1) {
-      const status = await selectBuyerInspectionStatus();
+      const status = await selectBuyerInspectionStatus(tradeId, lockerId);
 
       if (status.CHECK_STATUS === "SUCCESS") {
         return status;
@@ -322,7 +455,9 @@ export default function KioskBuyerInspectionPage() {
       if (status.CHECK_STATUS === "FAILED") {
         throw new Error(
           status.RESULT_MESSAGE ||
-            `${status.FAILED_COMMAND_TYPE_CODE || "BUYER_INSPECTION_READY"} 명령이 실패했습니다.`,
+            `${
+              status.FAILED_COMMAND_TYPE_CODE || "BUYER_INSPECTION_READY"
+            } 명령이 실패했습니다.`,
         );
       }
 
@@ -332,7 +467,46 @@ export default function KioskBuyerInspectionPage() {
     throw new Error("라즈베리파이 명령 성공 확인 시간이 초과되었습니다.");
   }
 
+  async function loadBuyerProducts() {
+    if (!normalizedAuthCode) {
+      setErrorMessage("AUTH_CODE가 없습니다. QR 인증부터 다시 진행해주세요.");
+      setPhase("ERROR");
+      return;
+    }
+
+    if (!normalizedKioskCode) {
+      setErrorMessage(
+        "KIOSK_CODE가 없습니다. 키오스크 로그인을 다시 진행해주세요.",
+      );
+      setPhase("ERROR");
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      setErrorMessage("");
+      setPhase("LOADING_PRODUCTS");
+
+      const list = await selectBuyerProductList();
+
+      setProducts(list);
+      setPhase("SELECT_PRODUCT");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "구매자 물품 목록 조회 중 알 수 없는 오류가 발생했습니다.";
+
+      setErrorMessage(message);
+      setPhase("ERROR");
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
   async function prepareBuyerInspection(
+    product: BuyerCheckProduct | null,
+    locker: BuyerLockerResult | null,
     requestTypeCode: "NORMAL" | "RETRY" = "NORMAL",
   ) {
     if (!normalizedAuthCode) {
@@ -348,6 +522,15 @@ export default function KioskBuyerInspectionPage() {
       setPhase("ERROR");
       return;
     }
+
+    if (!product || !locker) {
+      setErrorMessage("선택된 상품 또는 보관함 정보가 없습니다.");
+      setPhase("ERROR");
+      return;
+    }
+
+    const tradeId = locker.TRADE_ID || product.TRADE_ID;
+    const lockerId = locker.LOCKER_ID || product.LOCKER_ID || 0;
 
     if (!tradeId || !lockerId) {
       setErrorMessage(
@@ -366,22 +549,22 @@ export default function KioskBuyerInspectionPage() {
 
       await sleep(1000);
 
-      await waitUntilBuyerInspectionSuccess();
+      await waitUntilBuyerInspectionSuccess(tradeId, lockerId);
 
-      await updateLockerToBuyerInspectionReady();
+      await updateLockerToBuyerInspectionReady(tradeId);
 
-      const images = await selectLockerImages();
+      const images = await selectLockerImages(tradeId, lockerId);
 
       setSellerStoredImageUrl(
-        images.SELLER_IMAGE_URL ||
-          state.sellerStoredImageUrl ||
-          product.IMAGE_URL ||
+        normalizeImageUrl(images.SELLER_IMAGE_URL) ||
+          normalizeImageUrl(state.sellerStoredImageUrl) ||
+          normalizeImageUrl(product.IMAGE_URL) ||
           cameraModuleImage,
       );
 
       setCurrentCaptureImageUrl(
-        images.BUYER_IMAGE_URL ||
-          state.currentCaptureImageUrl ||
+        normalizeImageUrl(images.BUYER_IMAGE_URL) ||
+          normalizeImageUrl(state.currentCaptureImageUrl) ||
           cameraModuleImage,
       );
 
@@ -403,7 +586,13 @@ export default function KioskBuyerInspectionPage() {
     if (startedRef.current) return;
 
     startedRef.current = true;
-    prepareBuyerInspection("NORMAL");
+
+    if (state.product && state.locker) {
+      prepareBuyerInspection(state.product, state.locker, "NORMAL");
+      return;
+    }
+
+    loadBuyerProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -411,16 +600,73 @@ export default function KioskBuyerInspectionPage() {
     navigate("/kiosk");
   }
 
+  function handleSelectProduct(product: BuyerCheckProduct) {
+    const lockerId = product.LOCKER_ID || 0;
+    const lockerNo = product.LOCKER_NO || lockerId;
+
+    if (!product.TRADE_ID || !product.PRODUCT_ID || !lockerId) {
+      setErrorMessage(
+        "선택한 상품에 TRADE_ID, PRODUCT_ID, LOCKER_ID 정보가 없습니다.",
+      );
+      setPhase("ERROR");
+      return;
+    }
+
+    const locker: BuyerLockerResult = {
+      TRADE_ID: product.TRADE_ID,
+      PRODUCT_ID: product.PRODUCT_ID,
+      LOCKER_ID: lockerId,
+      LOCKER_NO: lockerNo,
+    };
+
+    setSelectedProduct(product);
+    setSelectedLocker(locker);
+
+    sessionStorage.setItem("buyerInspectionAuthCode", normalizedAuthCode);
+    sessionStorage.setItem("buyerInspectionTradeId", String(product.TRADE_ID));
+    sessionStorage.setItem(
+      "buyerInspectionProductId",
+      String(product.PRODUCT_ID),
+    );
+    sessionStorage.setItem("buyerInspectionProductTitle", product.TITLE);
+    sessionStorage.setItem(
+      "buyerInspectionProductPrice",
+      String(product.BASE_PRICE),
+    );
+    sessionStorage.setItem(
+      "buyerInspectionProductImageUrl",
+      product.IMAGE_URL || "",
+    );
+    sessionStorage.setItem("buyerInspectionLockerId", String(lockerId));
+    sessionStorage.setItem("buyerInspectionLockerNo", String(lockerNo));
+
+    prepareBuyerInspection(product, locker, "NORMAL");
+  }
+
   function handleRetryCapture() {
-    prepareBuyerInspection("RETRY");
+    prepareBuyerInspection(selectedProduct, selectedLocker, "RETRY");
   }
 
   async function handleConfirmItem() {
+    if (!selectedProduct || !selectedLocker) {
+      setErrorMessage("선택된 상품 또는 보관함 정보가 없습니다.");
+      setPhase("ERROR");
+      return;
+    }
+
+    const tradeId = selectedLocker.TRADE_ID || selectedProduct.TRADE_ID;
+
+    if (!tradeId) {
+      setErrorMessage("TRADE_ID가 없습니다. 거래 정보를 다시 확인해주세요.");
+      setPhase("ERROR");
+      return;
+    }
+
     try {
       setIsProcessing(true);
       setErrorMessage("");
 
-      await updateLockerToBuyerItemConfirmed();
+      await updateLockerToBuyerItemConfirmed(tradeId);
 
       setPhase("DONE");
     } catch (error) {
@@ -437,17 +683,26 @@ export default function KioskBuyerInspectionPage() {
   }
 
   function handleMovePickup() {
+    if (!selectedProduct || !selectedLocker) {
+      setErrorMessage("선택된 상품 또는 보관함 정보가 없습니다.");
+      setPhase("ERROR");
+      return;
+    }
+
     navigate("/kiosk/pickup", {
       state: {
         authCode: normalizedAuthCode,
         kioskCode: normalizedKioskCode,
-        product,
-        locker,
+        product: selectedProduct,
+        locker: selectedLocker,
         sellerStoredImageUrl,
         currentCaptureImageUrl,
       },
     });
   }
+
+  const selectedProductImageUrl =
+    normalizeImageUrl(selectedProduct?.IMAGE_URL) || cameraModuleImage;
 
   return (
     <main className={styles.page}>
@@ -470,34 +725,152 @@ export default function KioskBuyerInspectionPage() {
           배정된 보관함의 물품이 구매한 상품과 일치하는지 확인해주세요.
         </p>
 
-        <div className={styles.summaryBox}>
-          <div className={styles.summaryProduct}>
-            <div className={styles.summaryImageBox}>
-              <img
-                src={product.IMAGE_URL || cameraModuleImage}
-                alt={product.TITLE}
-                className={styles.summaryImage}
-              />
+        {selectedProduct && selectedLocker && (
+          <div className={styles.summaryBox}>
+            <div className={styles.summaryProduct}>
+              <div className={styles.summaryImageBox}>
+                <img
+                  src={selectedProductImageUrl}
+                  alt={selectedProduct.TITLE}
+                  className={styles.summaryImage}
+                />
+              </div>
+
+              <div className={styles.summaryInfo}>
+                <span>선택 상품</span>
+                <strong>{selectedProduct.TITLE}</strong>
+                <p>{formatPrice(selectedProduct.BASE_PRICE)}</p>
+              </div>
             </div>
 
-            <div className={styles.summaryInfo}>
-              <span>선택 상품</span>
-              <strong>{product.TITLE}</strong>
-              <p>{formatPrice(product.BASE_PRICE)}</p>
+            <div className={styles.summaryLocker}>
+              <span>확인할 보관함</span>
+              <strong>{selectedLocker.LOCKER_NO}번</strong>
             </div>
           </div>
-
-          <div className={styles.summaryLocker}>
-            <span>확인할 보관함</span>
-            <strong>{locker.LOCKER_NO}번</strong>
-          </div>
-        </div>
+        )}
 
         <div
           className={`${styles.inspectionPanel} ${
             phase === "DONE" ? styles.inspectionPanelDone : ""
           }`}
         >
+          {phase === "LOADING_PRODUCTS" && (
+            <>
+              <div className={styles.prepareImageBox}>
+                <img
+                  src={cameraModuleImage}
+                  alt="상품 조회 중"
+                  className={styles.prepareImage}
+                />
+              </div>
+
+              <h2>{phaseText.title}</h2>
+              <p>{phaseText.description}</p>
+              <span>{phaseText.subDescription}</span>
+
+              <button type="button" className={styles.secondaryButton} disabled>
+                {isProcessing ? "조회 중..." : "조회 준비 중"}
+              </button>
+            </>
+          )}
+
+          {phase === "SELECT_PRODUCT" && (
+            <>
+              <h2>{phaseText.title}</h2>
+              <p>{phaseText.description}</p>
+
+              {products.length === 0 ? (
+                <>
+                  <span className={styles.compareGuide}>
+                    확인 가능한 구매 상품이 없습니다.
+                  </span>
+
+                  <div className={styles.buttonRow}>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={handleGoHome}
+                    >
+                      처음으로
+                    </button>
+
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={loadBuyerProducts}
+                      disabled={isProcessing}
+                    >
+                      다시 조회
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      width: "100%",
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: "16px",
+                      marginTop: "20px",
+                    }}
+                  >
+                    {products.map((item, index) => {
+                      const imageUrl =
+                        normalizeImageUrl(item.IMAGE_URL) || cameraModuleImage;
+
+                      return (
+                        <button
+                          key={`${item.TRADE_ID}-${item.PRODUCT_ID}-${
+                            item.LOCKER_ID || index
+                          }`}
+                          type="button"
+                          className={styles.summaryBox}
+                          style={{
+                            width: "100%",
+                            cursor: "pointer",
+                            border: "none",
+                            textAlign: "left",
+                          }}
+                          onClick={() => handleSelectProduct(item)}
+                          disabled={isProcessing}
+                        >
+                          <div className={styles.summaryProduct}>
+                            <div className={styles.summaryImageBox}>
+                              <img
+                                src={imageUrl}
+                                alt={item.TITLE}
+                                className={styles.summaryImage}
+                              />
+                            </div>
+
+                            <div className={styles.summaryInfo}>
+                              <span>구매 상품</span>
+                              <strong>{item.TITLE}</strong>
+                              <p>{formatPrice(item.BASE_PRICE)}</p>
+                            </div>
+                          </div>
+
+                          <div className={styles.summaryLocker}>
+                            <span>보관함</span>
+                            <strong>
+                              {item.LOCKER_NO || item.LOCKER_ID}번
+                            </strong>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <span className={styles.compareGuide}>
+                    {phaseText.subDescription}
+                  </span>
+                </>
+              )}
+            </>
+          )}
+
           {phase === "PREPARING" && (
             <>
               <div className={styles.prepareImageBox}>
@@ -621,7 +994,18 @@ export default function KioskBuyerInspectionPage() {
                 <button
                   type="button"
                   className={styles.primaryButton}
-                  onClick={() => prepareBuyerInspection("RETRY")}
+                  onClick={() => {
+                    if (selectedProduct && selectedLocker) {
+                      prepareBuyerInspection(
+                        selectedProduct,
+                        selectedLocker,
+                        "RETRY",
+                      );
+                      return;
+                    }
+
+                    loadBuyerProducts();
+                  }}
                   disabled={isProcessing}
                 >
                   {isProcessing ? "재시도 중..." : "다시 시도"}
