@@ -64,6 +64,7 @@ function extractCleanErrorMessage(message?: string) {
     "확인 가능한 구매 상품이 없습니다.",
     "상품 정보가 없습니다.",
     "보관함 정보를 확인할 수 없습니다.",
+    "거래 ID가 없습니다.",
   ];
 
   const matched = knownMessages.find((text) => message.includes(text));
@@ -91,26 +92,6 @@ function extractCleanErrorMessage(message?: string) {
   return firstLine || "요청 처리 중 오류가 발생했습니다.";
 }
 
-function makeTestProduct(): BuyerCheckProductSession {
-  return {
-    PRODUCT_ID: 999001,
-    TRADE_ID: 999001,
-    TITLE: "테스트 상품",
-    BASE_PRICE: 24332243,
-    PRODUCT_STATUS_CODE: "DEPOSITED",
-    IMAGE_URL: "",
-  };
-}
-
-function makeTestLocker(productId: number): BuyerCheckLockerSession {
-  return {
-    TRADE_ID: 999001,
-    PRODUCT_ID: productId,
-    LOCKER_ID: 2,
-    LOCKER_NO: 2,
-  };
-}
-
 export default function KioskBuyerCheckProductPage() {
   const navigate = useNavigate();
   const { authCode } = useParams();
@@ -120,16 +101,14 @@ export default function KioskBuyerCheckProductPage() {
     localStorage.getItem("kioskCode") || getBuyerCheckKioskCode();
 
   const [products, setProducts] = useState<KioskBuyerProduct[]>([]);
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(
-    null,
-  );
+  const [selectedTradeId, setSelectedTradeId] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [lockerLoading, setLockerLoading] = useState(false);
 
   const selectedProduct = useMemo(() => {
-    return products.find((item) => item.PRODUCT_ID === selectedProductId);
-  }, [products, selectedProductId]);
+    return products.find((item) => Number(item.TRADE_ID) === selectedTradeId);
+  }, [products, selectedTradeId]);
 
   function handleGoHome() {
     navigate("/kiosk");
@@ -214,13 +193,22 @@ export default function KioskBuyerCheckProductPage() {
       return;
     }
 
+    const tradeId = Number(selectedProduct.TRADE_ID);
+
+    if (!tradeId) {
+      setMessage(
+        "거래 ID가 없습니다. /kiosk/buyer/product 응답의 TRADE_ID를 확인해주세요.",
+      );
+      return;
+    }
+
     try {
       setLockerLoading(true);
       setMessage("");
 
       const lockerResult = await kioskApi.selectBuyerLocker({
         AUTH_CODE: normalizedAuthCode,
-        TRADE_ID: selectedProduct.PRODUCT_ID,
+        TRADE_ID: tradeId,
         KIOSK_CODE: kioskCode,
       });
 
@@ -242,7 +230,7 @@ export default function KioskBuyerCheckProductPage() {
 
       const normalizedProduct: BuyerCheckProductSession = {
         PRODUCT_ID: selectedProduct.PRODUCT_ID,
-        TRADE_ID: lockerResult.TRADE_ID || 0,
+        TRADE_ID: tradeId,
         TITLE: selectedProduct.TITLE,
         BASE_PRICE: selectedProduct.BASE_PRICE,
         PRODUCT_STATUS_CODE: selectedProduct.PRODUCT_STATUS_CODE || "",
@@ -250,7 +238,7 @@ export default function KioskBuyerCheckProductPage() {
       };
 
       const normalizedLocker: BuyerCheckLockerSession = {
-        TRADE_ID: lockerResult.TRADE_ID || 0,
+        TRADE_ID: tradeId,
         PRODUCT_ID: lockerResult.PRODUCT_ID || selectedProduct.PRODUCT_ID,
         LOCKER_ID: lockerResult.LOCKER_ID,
         LOCKER_NO: lockerResult.LOCKER_NO || lockerResult.LOCKER_ID,
@@ -276,23 +264,6 @@ export default function KioskBuyerCheckProductPage() {
     } finally {
       setLockerLoading(false);
     }
-  }
-
-  function handleForceMove() {
-    if (!normalizedAuthCode || !kioskCode) {
-      setMessage("인증 정보 또는 키오스크 정보가 없습니다.");
-      return;
-    }
-
-    const testProduct = makeTestProduct();
-    const testLocker = makeTestLocker(testProduct.PRODUCT_ID);
-
-    moveToInspection({
-      product: testProduct,
-      locker: testLocker,
-      sellerStoredImageUrl: "",
-      currentCaptureImageUrl: "",
-    });
   }
 
   return (
@@ -324,40 +295,44 @@ export default function KioskBuyerCheckProductPage() {
         {!loading && products.length === 0 && !message && (
           <div className={styles.emptyBox}>
             <p>확인 가능한 구매 상품이 없습니다.</p>
-            <span>
-              테스트를 위해 임시 상품으로 다음 화면으로 이동할 수 있습니다.
-            </span>
+            <span>구매자의 보관함 거래 상품이 조회되지 않았습니다.</span>
           </div>
         )}
 
         {!loading && message && (
           <div className={styles.emptyBox}>
             <p>{message}</p>
-            <span>
-              현재는 테스트 단계이므로 아래 버튼으로 물품 확인 화면을 볼 수
-              있습니다.
-            </span>
+            <span>인증 정보 또는 거래 상태를 다시 확인해주세요.</span>
           </div>
         )}
 
         {!loading && products.length > 0 && (
           <div className={styles.productList}>
             {products.map((product) => {
-              const selected = selectedProductId === product.PRODUCT_ID;
+              const tradeId = Number(product.TRADE_ID);
+              const selected = selectedTradeId === tradeId;
               const imageSrc = product.IMAGE_URL
                 ? toApiAssetUrl(product.IMAGE_URL)
                 : "";
 
               return (
                 <button
-                  key={product.PRODUCT_ID}
+                  key={`${product.PRODUCT_ID}-${tradeId || "no-trade"}`}
                   type="button"
                   className={`${styles.productItem} ${
                     selected ? styles.productItemSelected : ""
                   }`}
                   disabled={lockerLoading}
                   onClick={() => {
-                    setSelectedProductId(product.PRODUCT_ID);
+                    if (!tradeId) {
+                      setSelectedTradeId(null);
+                      setMessage(
+                        "거래 ID가 없는 상품입니다. /kiosk/buyer/product 응답을 확인해주세요.",
+                      );
+                      return;
+                    }
+
+                    setSelectedTradeId(tradeId);
                     setMessage("");
                   }}
                 >
@@ -389,7 +364,7 @@ export default function KioskBuyerCheckProductPage() {
             type="button"
             className={styles.primaryButton}
             onClick={handleNext}
-            disabled={!selectedProductId || lockerLoading}
+            disabled={!selectedTradeId || lockerLoading}
           >
             {lockerLoading ? "보관함 확인 중..." : "선택 상품 보관함 확인"}
           </button>
