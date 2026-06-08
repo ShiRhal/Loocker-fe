@@ -385,9 +385,8 @@ export default function KioskBuyerInspectionPage() {
         method: "GET",
       },
       {
-        LOCKER_CODE,
+        AUTH_CODE: normalizedKioskCode,
         KIOSK_CODE: normalizedKioskCode,
-        TRADE_ID: tradeId,
         LOCKER_ID: lockerId,
         LOCKER_STATUS_NAME: "BUYER_INSPECTION_READY",
       },
