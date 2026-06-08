@@ -11,6 +11,7 @@ import MyPage from "../../features/my/pages/MyPage";
 
 import KioskLoginPage from "../../features/kiosk/pages/KioskLoginPage";
 import KioskHomePage from "../../features/kiosk/pages/KioskHomePage";
+import KioskSettingsPage from "../../features/kiosk/pages/KioskSettingsPage";
 import KioskSellerDepositAuthPage from "../../features/kiosk/pages/KioskSellerDepositAuthPage";
 import KioskSellerProductPage from "../../features/kiosk/pages/KioskSellerProductPage";
 import KioskSellerDepositLockerAssignPage from "../../features/kiosk/pages/KioskSellerLockerAssignPage";
@@ -71,6 +72,15 @@ export default function AppRouter() {
           element={
             <RequireKioskAuth>
               <KioskHomePage />
+            </RequireKioskAuth>
+          }
+        />
+
+        <Route
+          path="/kiosk/settings"
+          element={
+            <RequireKioskAuth>
+              <KioskSettingsPage />
             </RequireKioskAuth>
           }
         />
