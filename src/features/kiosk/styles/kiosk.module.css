@@ -1230,3 +1230,86 @@
   color: #64748b;
   line-height: 1.5;
 }
+
+/* 판매자 입고 문 아이콘 위치 보정 */
+.kioskDepositDoorIcon,
+.kioskDepositOpenDoorIcon,
+.kioskDepositClosedDoorIcon {
+  width: min(210px, 38vw);
+  height: min(160px, 26dvh);
+  position: relative;
+  display: block;
+  margin: 0 auto 4px;
+  border-radius: 26px;
+  background: #eef6ff;
+  border: 4px solid currentColor;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.kioskDepositDoorIcon > span,
+.kioskDepositOpenDoorIcon > span,
+.kioskDepositClosedDoorIcon > span {
+  display: none;
+}
+
+.kioskDepositDoorIcon::before,
+.kioskDepositOpenDoorIcon::before,
+.kioskDepositClosedDoorIcon::before {
+  content: "";
+  position: absolute;
+  left: 36px;
+  top: 28px;
+  width: 132px;
+  height: 100px;
+  border-radius: 16px;
+  border: 4px solid currentColor;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.kioskDepositDoorIcon::after {
+  content: "";
+  position: absolute;
+  left: 86px;
+  top: 72px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.kioskDepositOpenDoorIcon::before {
+  transform: perspective(240px) rotateY(-34deg);
+  transform-origin: left center;
+  background: #ffffff;
+}
+
+.kioskDepositOpenDoorIcon::after {
+  content: "";
+  position: absolute;
+  left: 118px;
+  top: 72px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.kioskDepositClosedDoorIcon::after {
+  content: "✓";
+  position: absolute;
+  right: 22px;
+  bottom: 18px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 26px;
+  font-weight: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
