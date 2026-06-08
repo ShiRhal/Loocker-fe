@@ -4,12 +4,12 @@
   min-height: 100dvh;
   overflow: hidden;
   background: linear-gradient(180deg, #f7faff 0%, #eef5ff 100%);
-  padding: 10px 14px 14px;
+  padding: 8px 12px 12px;
   box-sizing: border-box;
 }
 
 .header {
-  height: 46px;
+  height: 42px;
   margin-bottom: 6px;
   display: flex;
   align-items: center;
@@ -17,19 +17,19 @@
 }
 
 .logo {
-  width: 150px;
+  width: 142px;
   height: auto;
   object-fit: contain;
 }
 
 .homeButton {
-  height: 38px;
+  height: 36px;
   padding: 0 16px;
   border: none;
   border-radius: 14px;
   background: #ffffff;
   color: #0064ff;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 900;
   box-shadow: 0 10px 22px rgba(0, 100, 255, 0.13);
   cursor: pointer;
@@ -43,11 +43,11 @@
 .authCard,
 .productCard,
 .inspectionCard {
-  width: min(680px, calc(100vw - 28px));
-  height: calc(100dvh - 66px);
+  width: min(720px, calc(100vw - 24px));
+  height: calc(100dvh - 60px);
   margin: 0 auto;
-  padding: 18px 20px;
-  border-radius: 26px;
+  padding: 14px 16px;
+  border-radius: 24px;
   background: #ffffff;
   box-shadow: 0 22px 54px rgba(0, 100, 255, 0.18);
   box-sizing: border-box;
@@ -57,19 +57,21 @@
 }
 
 .title {
-  font-size: clamp(24px, 3.3vw, 34px);
+  font-size: clamp(24px, 3.2vw, 34px);
   font-weight: 1000;
   color: #0064ff;
   text-align: center;
-  margin: 0 0 5px;
+  margin: 0 0 4px;
+  line-height: 1.1;
 }
 
 .description {
-  font-size: clamp(13px, 1.8vw, 18px);
+  font-size: clamp(13px, 1.7vw, 17px);
   font-weight: 800;
   color: #526070;
   text-align: center;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
+  line-height: 1.35;
 }
 
 .qrBox {
@@ -161,26 +163,26 @@
 }
 
 .productList {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin: 4px 0 12px;
+  gap: 8px;
+  margin: 4px 0 10px;
   overflow: hidden;
 }
 
 .productItem {
   width: 100%;
-  min-height: 112px;
+  min-height: 94px;
   border: 3px solid #e5edf8;
-  border-radius: 22px;
+  border-radius: 20px;
   background: #ffffff;
-  padding: 12px;
+  padding: 10px;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: 92px 1fr;
-  gap: 14px;
+  grid-template-columns: 78px 1fr;
+  gap: 12px;
   align-items: center;
   text-align: left;
   cursor: pointer;
@@ -197,9 +199,9 @@
 }
 
 .productImageBox {
-  width: 92px;
-  height: 92px;
-  border-radius: 18px;
+  width: 78px;
+  height: 78px;
+  border-radius: 16px;
   background: #ffffff;
   overflow: hidden;
   display: flex;
@@ -210,7 +212,7 @@
 .productImage {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
 }
 
@@ -224,13 +226,14 @@
   align-items: center;
   justify-content: center;
   background: #f1f5f9;
+  text-align: center;
 }
 
 .productInfo {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .productInfo strong {
@@ -256,20 +259,18 @@
 }
 
 .centerMessage {
-  flex: 1;
+  flex: 0 0 auto;
   margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   color: #64748b;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 900;
   text-align: center;
+  line-height: 1.35;
 }
 
 .emptyBox {
   flex: 1;
-  min-height: 280px;
+  min-height: 0;
   border-radius: 24px;
   background: #f8fbff;
   border: 2px dashed #bfdbfe;
@@ -280,20 +281,20 @@
   justify-content: center;
   gap: 10px;
   text-align: center;
-  padding: 24px;
+  padding: 20px;
   box-sizing: border-box;
-  margin-bottom: 12px;
+  margin: 8px 0 10px;
 }
 
 .emptyBox p {
   margin: 0;
-  font-size: 24px;
+  font-size: clamp(20px, 2.5vw, 26px);
   font-weight: 1000;
   color: #111827;
 }
 
 .emptyBox span {
-  font-size: 16px;
+  font-size: clamp(13px, 1.8vw, 16px);
   font-weight: 800;
   color: #64748b;
   line-height: 1.45;
@@ -451,6 +452,104 @@
   display: block;
 }
 
+/* 구매자 물품 확인 비교 영역 */
+.productCard > .productList + .productList {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 8px 0 12px;
+  overflow: hidden;
+}
+
+.productCard > .productList + .productList .productItem {
+  height: 100%;
+  min-height: 0;
+  padding: 10px;
+  border: 2px solid #dbeafe;
+  border-radius: 22px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+  cursor: default;
+  box-shadow: 0 10px 26px rgba(0, 100, 255, 0.08);
+}
+
+.productCard > .productList + .productList .productImageBox {
+  width: 100%;
+  height: min(300px, 33dvh);
+  flex: 1;
+  min-height: 190px;
+  border-radius: 18px;
+  background: #eef4ff;
+  border: 1px solid #dbeafe;
+}
+
+.productCard > .productList + .productList .productImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.productCard > .productList + .productList .noImage {
+  min-height: 190px;
+  border-radius: 18px;
+}
+
+.productCard > .productList + .productList .productInfo {
+  flex: 0 0 auto;
+  align-items: center;
+  text-align: center;
+  gap: 5px;
+}
+
+.productCard > .productList + .productList .productInfo strong {
+  font-size: 0;
+  color: transparent;
+  white-space: normal;
+  overflow: visible;
+}
+
+.productCard
+  > .productList
+  + .productList
+  .productItem:first-child
+  .productInfo
+  strong::after {
+  content: "판매자";
+  font-size: clamp(22px, 2.8vw, 30px);
+  font-weight: 1000;
+  color: #0064ff;
+}
+
+.productCard
+  > .productList
+  + .productList
+  .productItem:nth-child(2)
+  .productInfo
+  strong::after {
+  content: "구매자";
+  font-size: clamp(22px, 2.8vw, 30px);
+  font-weight: 1000;
+  color: #0064ff;
+}
+
+.productCard > .productList + .productList .productInfo span {
+  font-size: clamp(13px, 1.6vw, 16px);
+  font-weight: 850;
+  color: #475569;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.productCard > .productList + .productList .productInfo p {
+  display: none;
+}
+
 .compareGrid {
   width: 100%;
   display: grid;
@@ -490,7 +589,7 @@
 .compareImage {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
 }
 
@@ -521,12 +620,16 @@
 
 .primaryButton {
   width: 100%;
-  height: 58px;
-  border-radius: 18px;
-  background: #0064ff;
+  height: 62px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #0877ff 0%, #0057e7 100%);
   color: #ffffff;
-  font-size: 20px;
-  box-shadow: 0 12px 24px rgba(0, 100, 255, 0.2);
+  font-size: 21px;
+  box-shadow: 0 14px 28px rgba(0, 100, 255, 0.26);
+}
+
+.primaryButton:active {
+  transform: translateY(1px);
 }
 
 .primaryButton:disabled {
@@ -562,4 +665,17 @@
   flex-direction: column;
   gap: 10px;
   flex-shrink: 0;
+  margin-top: auto;
+}
+
+@media (max-width: 600px) {
+  .productCard > .productList + .productList {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .productCard > .productList + .productList .productImageBox {
+    height: 200px;
+    min-height: 180px;
+  }
 }
