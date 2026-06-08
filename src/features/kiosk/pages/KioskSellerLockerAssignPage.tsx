@@ -433,7 +433,7 @@ export default function KioskSellerDepositLockerAssignPage() {
       await createCommandAndDelay("SELLER_UNLOCK_REQUESTED", "NORMAL");
 
       await waitCommandSuccess("SELLER_UNLOCK_REQUESTED");
-
+      await sleep(500);
       await updateLockerState("SELLER_UNLOCK_READY", "DEVICE");
 
       if (cancelledRef.current) return;
@@ -472,7 +472,7 @@ export default function KioskSellerDepositLockerAssignPage() {
       await createCommandAndDelay("SELLER_UNLOCK_REQUESTED", "RETRY");
 
       await waitCommandSuccess("SELLER_UNLOCK_REQUESTED");
-
+      await sleep(500);
       await updateLockerState("SELLER_UNLOCK_READY", "DEVICE");
 
       if (cancelledRef.current) return;
@@ -528,7 +528,7 @@ export default function KioskSellerDepositLockerAssignPage() {
       );
 
       await waitCommandSuccess("SELLER_DOOR_CLOSE_REQUESTED");
-
+      await sleep(500);
       await updateLockerState("SELLER_DOOR_CLOSED", "DEVICE");
 
       if (cancelledRef.current) return;
@@ -554,7 +554,7 @@ export default function KioskSellerDepositLockerAssignPage() {
       );
 
       await waitCommandSuccess("SELLER_LOCK_REQUESTED");
-
+      await sleep(500);
       await updateLockerState("SELLER_LOCKED_PHOTO_SAVED", "DEVICE");
 
       await selectSellerCapturedImage();
@@ -598,7 +598,7 @@ export default function KioskSellerDepositLockerAssignPage() {
       await createCommandAndDelay("SELLER_PHOTO_CONFIRMED", "NORMAL");
 
       await waitCommandSuccess("SELLER_PHOTO_CONFIRMED");
-
+      await sleep(500);
       await updateLockerState("SELLER_PHOTO_CONFIRMED", "KIOSK");
 
       setStep("DONE");
