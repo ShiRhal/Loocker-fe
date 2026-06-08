@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+
 import logoImage from "../../../assets/images/Loocker.png";
 import styles from "../styles/kioskBuyerPickup.module.css";
 import { toApiAssetUrl } from "../../../shared/utils/imageUrl";
@@ -18,7 +19,8 @@ type PickupStep =
   | "OPENING"
   | "OPENED"
   | "CLOSING"
-  | "DONE";
+  | "DONE"
+  | "ERROR";
 
 type PickupProduct = {
   TRADE_ID: number;
@@ -30,7 +32,32 @@ type PickupProduct = {
   IMAGE_URL?: string | null;
 };
 
-const AUTH_TYPE_CODE = "BUYER_PICKUP";
+type PickupLocationState = {
+  authCode?: string;
+  kioskCode?: string;
+  product?: PickupProduct;
+  locker?: {
+    TRADE_ID: number;
+    PRODUCT_ID: number;
+    LOCKER_ID: number;
+    LOCKER_NO: number;
+  };
+};
+
+type CommandStatusResponse = {
+  CHECK_STATUS?: "WAITING" | "RUNNING" | "SUCCESS" | "FAILED";
+  CAN_RETRY?: boolean | string;
+  FAILED_COMMAND_TYPE_CODE?: string;
+  RESULT_MESSAGE?: string;
+  LOCKER_STATUS?: string;
+};
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+
+const LOCKER_CODE =
+  localStorage.getItem("LOCKER_CODE") ||
+  localStorage.getItem("lockerCode") ||
+  "LOCKER_001";
 
 const TOSS_CLIENT_KEY =
   import.meta.env.VITE_TOSS_CLIENT_KEY?.trim() ||
@@ -40,6 +67,12 @@ const TOSS_SCRIPT_URL = "https://js.tosspayments.com/v1/payment";
 
 const FRONT_BASE_URL =
   import.meta.env.VITE_FRONT_BASE_URL ?? window.location.origin;
+
+const STATUS_PAYMENT_CONFIRMED = "PAYMENT_CONFIRMED";
+const STATUS_BUYER_UNLOCK_REQUESTED = "BUYER_UNLOCK_REQUESTED";
+const STATUS_BUYER_UNLOCK_READY = "BUYER_UNLOCK_READY";
+const STATUS_BUYER_PICKUP_DONE = "BUYER_PICKUP_DONE";
+const STATUS_PICKUP_LOCKED_EMPTY_READY = "PICKUP_LOCKED_EMPTY_READY";
 
 function loadTossScript() {
   return new Promise<void>((resolve, reject) => {
@@ -78,6 +111,93 @@ function formatPrice(value?: number) {
 function createOrderId(tradeId: number) {
   const random = Math.random().toString(36).slice(2, 10).toUpperCase();
   return `LOCKER_${tradeId}_${Date.now()}_${random}`;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+function buildApiUrl(path: string, params?: Record<string, string | number>) {
+  const normalizedBase = API_BASE_URL.endsWith("/")
+    ? API_BASE_URL.slice(0, -1)
+    : API_BASE_URL;
+
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  const url = new URL(
+    `${normalizedBase}${normalizedPath}`,
+    window.location.origin,
+  );
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    url.searchParams.set(key, String(value));
+  });
+
+  return url.toString();
+}
+
+async function requestJson<T>(
+  path: string,
+  options?: RequestInit,
+  params?: Record<string, string | number>,
+): Promise<T> {
+  const response = await fetch(buildApiUrl(path, params), {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options?.headers || {}),
+    },
+  });
+
+  const text = await response.text();
+
+  let data: unknown = null;
+
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+  }
+
+  if (!response.ok) {
+    const message =
+      typeof data === "object" &&
+      data !== null &&
+      "message" in data &&
+      typeof (data as { message?: unknown }).message === "string"
+        ? (data as { message: string }).message
+        : `요청에 실패했습니다. status=${response.status}`;
+
+    throw new Error(message);
+  }
+
+  return data as T;
+}
+
+function unwrapResponse<T>(response: unknown): T {
+  if (
+    typeof response === "object" &&
+    response !== null &&
+    "data" in response &&
+    (response as { data?: unknown }).data
+  ) {
+    return (response as { data: T }).data;
+  }
+
+  if (
+    typeof response === "object" &&
+    response !== null &&
+    "result" in response &&
+    (response as { result?: unknown }).result
+  ) {
+    return (response as { result: T }).result;
+  }
+
+  return response as T;
 }
 
 function getSessionNumber(keys: string[], fallback: number) {
@@ -172,21 +292,53 @@ function getCustomerName() {
   );
 }
 
-function makeFakeAuthCode() {
-  return `BUYER_PICKUP_${Date.now().toString(36).toUpperCase()}`;
-}
-
 export default function KioskBuyerPickupPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  const product = useMemo(() => getPickupProductFromSession(), []);
-  const authCode = useMemo(() => makeFakeAuthCode(), []);
+  const state = (location.state || {}) as PickupLocationState;
+
+  const product = useMemo<PickupProduct>(() => {
+    const sessionProduct = getPickupProductFromSession();
+
+    if (!state.product) {
+      return sessionProduct;
+    }
+
+    return {
+      ...sessionProduct,
+      ...state.product,
+      TRADE_ID: state.locker?.TRADE_ID || state.product.TRADE_ID,
+      PRODUCT_ID: state.locker?.PRODUCT_ID || state.product.PRODUCT_ID,
+      LOCKER_ID: state.locker?.LOCKER_ID || state.product.LOCKER_ID,
+      LOCKER_NO: state.locker?.LOCKER_NO || state.product.LOCKER_NO,
+    };
+  }, [state.product, state.locker]);
+
+  const normalizedAuthCode =
+    state.authCode ||
+    sessionStorage.getItem("buyerPickupAuthCode") ||
+    sessionStorage.getItem("buyerCheckAuthCode") ||
+    sessionStorage.getItem("buyerInspectionAuthCode") ||
+    "";
+
+  const normalizedKioskCode =
+    state.kioskCode ||
+    localStorage.getItem("KIOSK_CODE") ||
+    localStorage.getItem("kioskCode") ||
+    sessionStorage.getItem("kioskCode") ||
+    "";
+
+  const tradeId = product.TRADE_ID;
+  const lockerId = product.LOCKER_ID || 0;
 
   const [step, setStep] = useState<PickupStep>("CHECKING");
   const [message, setMessage] = useState("수령 가능 상태를 확인하고 있습니다.");
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
+  const openingStartedRef = useRef(false);
   const isPaidRedirect = searchParams.get("paid") === "1";
 
   const productImageUrl = product.IMAGE_URL
@@ -198,19 +350,179 @@ export default function KioskBuyerPickupPage() {
   const serviceFee = Math.floor(product.BASE_PRICE * 0.05);
   const totalPaymentAmount = product.BASE_PRICE + serviceFee;
 
-  const qrUrl = `${window.location.origin}/m/login/${authCode}`;
+  const qrUrl = normalizedAuthCode
+    ? `${window.location.origin}/m/login/${normalizedAuthCode}`
+    : `${window.location.origin}/m/login`;
 
-  useEffect(() => {
-    if (isPaidRedirect) {
+  async function updateLockerState(
+    nextStatus: string,
+    roleType: "KIOSK" | "DEVICE",
+  ) {
+    await requestJson("/kiosk/locker/update", {
+      method: "PUT",
+      body: JSON.stringify({
+        TRADE_ID: tradeId,
+        AUTH_CODE: normalizedAuthCode,
+        NEXT_STATUS: nextStatus,
+        ROLE_TYPE: roleType,
+        RESULT_STATUS_CODE: "",
+      }),
+    });
+  }
+
+  async function createLockerCommand(
+    nextStatus: string,
+    requestTypeCode: "NORMAL" | "RETRY" = "NORMAL",
+  ) {
+    await requestJson("/kiosk/locker/command/create", {
+      method: "PUT",
+      body: JSON.stringify({
+        AUTH_CODE: normalizedAuthCode,
+        KIOSK_CODE: normalizedKioskCode,
+        NEXT_STATUS: nextStatus,
+        REQUEST_TYPE_CODE: requestTypeCode,
+      }),
+    });
+  }
+
+  async function selectCommandStatus(lockerStatusName: string) {
+    const response = await requestJson<CommandStatusResponse>(
+      "/kiosk/locker/command/status/select",
+      {
+        method: "GET",
+      },
+      {
+        LOCKER_CODE,
+        KIOSK_CODE: normalizedKioskCode,
+        TRADE_ID: tradeId,
+        LOCKER_ID: lockerId,
+        LOCKER_STATUS_NAME: lockerStatusName,
+      },
+    );
+
+    return unwrapResponse<CommandStatusResponse>(response);
+  }
+
+  async function waitUntilCommandSuccess(lockerStatusName: string) {
+    const maxTryCount = 30;
+
+    for (let i = 0; i < maxTryCount; i += 1) {
+      const status = await selectCommandStatus(lockerStatusName);
+
+      if (status.CHECK_STATUS === "SUCCESS") {
+        return status;
+      }
+
+      if (status.CHECK_STATUS === "FAILED") {
+        throw new Error(
+          status.RESULT_MESSAGE ||
+            `${status.FAILED_COMMAND_TYPE_CODE || lockerStatusName} 명령이 실패했습니다.`,
+        );
+      }
+
+      await sleep(1000);
+    }
+
+    throw new Error("라즈베리파이 명령 성공 확인 시간이 초과되었습니다.");
+  }
+
+  function validateRequiredData() {
+    if (!normalizedAuthCode) {
+      throw new Error(
+        "AUTH_CODE가 없습니다. 구매자 인증부터 다시 진행해주세요.",
+      );
+    }
+
+    if (!normalizedKioskCode) {
+      throw new Error(
+        "KIOSK_CODE가 없습니다. 키오스크 로그인을 다시 진행해주세요.",
+      );
+    }
+
+    if (!tradeId || !lockerId) {
+      throw new Error(
+        "TRADE_ID 또는 LOCKER_ID가 없습니다. 거래 정보를 다시 확인해주세요.",
+      );
+    }
+  }
+
+  async function startPickupAfterPayment(
+    requestTypeCode: "NORMAL" | "RETRY" = "NORMAL",
+  ) {
+    try {
+      validateRequiredData();
+
+      setIsProcessing(true);
       setStep("OPENING");
       setMessage("결제가 확인되었습니다. 보관함 문을 여는 중입니다.");
 
-      const timer = window.setTimeout(() => {
-        setStep("OPENED");
-        setMessage("보관함 문이 열렸습니다. 물품을 수령해주세요.");
-      }, 2000);
+      await updateLockerState(STATUS_PAYMENT_CONFIRMED, "KIOSK");
 
-      return () => window.clearTimeout(timer);
+      await createLockerCommand(STATUS_BUYER_UNLOCK_REQUESTED, requestTypeCode);
+
+      await sleep(1000);
+
+      await waitUntilCommandSuccess(STATUS_BUYER_UNLOCK_REQUESTED);
+
+      await updateLockerState(STATUS_BUYER_UNLOCK_READY, "DEVICE");
+
+      setStep("OPENED");
+      setMessage("보관함 문이 열렸습니다. 물품을 수령해주세요.");
+    } catch (error) {
+      const nextMessage =
+        error instanceof Error
+          ? error.message
+          : "보관함 문 열림 처리 중 알 수 없는 오류가 발생했습니다.";
+
+      setStep("ERROR");
+      setMessage(nextMessage);
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  async function completePickup() {
+    try {
+      validateRequiredData();
+
+      setIsProcessing(true);
+      setStep("CLOSING");
+      setMessage("문 닫힘을 확인하고 있습니다.");
+
+      await updateLockerState(STATUS_BUYER_PICKUP_DONE, "KIOSK");
+
+      await createLockerCommand(STATUS_BUYER_PICKUP_DONE, "NORMAL");
+
+      await sleep(1000);
+
+      await waitUntilCommandSuccess(STATUS_BUYER_PICKUP_DONE);
+
+      await updateLockerState(STATUS_PICKUP_LOCKED_EMPTY_READY, "DEVICE");
+
+      setStep("DONE");
+      setMessage(
+        "수령이 완료되었습니다. 보관함이 비어 있음 상태로 초기화됩니다.",
+      );
+    } catch (error) {
+      const nextMessage =
+        error instanceof Error
+          ? error.message
+          : "수령 완료 처리 중 알 수 없는 오류가 발생했습니다.";
+
+      setStep("ERROR");
+      setMessage(nextMessage);
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  useEffect(() => {
+    if (isPaidRedirect) {
+      if (openingStartedRef.current) return;
+
+      openingStartedRef.current = true;
+      startPickupAfterPayment("NORMAL");
+      return;
     }
 
     const timer = window.setTimeout(() => {
@@ -231,6 +543,7 @@ export default function KioskBuyerPickupPage() {
     }, 700);
 
     return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPaidRedirect]);
 
   function handleGoHome() {
@@ -238,7 +551,10 @@ export default function KioskBuyerPickupPage() {
   }
 
   function handleForceAuthComplete() {
-    sessionStorage.setItem("buyerPickupAuthCode", authCode);
+    if (normalizedAuthCode) {
+      sessionStorage.setItem("buyerPickupAuthCode", normalizedAuthCode);
+    }
+
     sessionStorage.setItem("buyerPickupAuthStatus", "VERIFIED");
 
     setStep("PAYMENT");
@@ -278,8 +594,8 @@ export default function KioskBuyerPickupPage() {
         orderId,
         orderName: `${product.TITLE} 보관함 거래 결제`,
         customerName: getCustomerName(),
-        successUrl: `${FRONT_BASE_URL}/kiosk/pickup/payment/success?tradeId=${product.TRADE_ID}`,
-        failUrl: `${FRONT_BASE_URL}/kiosk/pickup/payment/fail?tradeId=${product.TRADE_ID}`,
+        successUrl: `${FRONT_BASE_URL}/kiosk/pickup?paid=1&tradeId=${product.TRADE_ID}`,
+        failUrl: `${FRONT_BASE_URL}/kiosk/pickup?paid=0&tradeId=${product.TRADE_ID}`,
       });
     } catch (error) {
       console.error(error);
@@ -310,25 +626,22 @@ export default function KioskBuyerPickupPage() {
       }),
     );
 
-    setStep("OPENING");
-    setMessage("테스트 결제 완료 처리되었습니다. 보관함 문을 여는 중입니다.");
-
-    window.setTimeout(() => {
-      setStep("OPENED");
-      setMessage("보관함 문이 열렸습니다. 물품을 수령해주세요.");
-    }, 2000);
+    openingStartedRef.current = true;
+    startPickupAfterPayment("NORMAL");
   }
 
   function handlePickupDone() {
-    setStep("CLOSING");
-    setMessage("문 닫힘을 확인하고 있습니다.");
+    completePickup();
+  }
 
-    window.setTimeout(() => {
-      setStep("DONE");
-      setMessage(
-        "수령이 완료되었습니다. 보관함이 비어 있음 상태로 초기화됩니다.",
-      );
-    }, 2000);
+  function handleRetry() {
+    if (step === "OPENING") {
+      startPickupAfterPayment("RETRY");
+      return;
+    }
+
+    setStep("PAYMENT");
+    setMessage("결제 후 물품 수령을 다시 진행해주세요.");
   }
 
   function handleFinish() {
@@ -454,7 +767,7 @@ export default function KioskBuyerPickupPage() {
                 className={styles.secondaryButton}
                 type="button"
                 onClick={handleForcePaymentSuccess}
-                disabled={paymentLoading}
+                disabled={paymentLoading || isProcessing}
               >
                 테스트 결제 완료
               </button>
@@ -463,7 +776,7 @@ export default function KioskBuyerPickupPage() {
                 className={styles.primaryButton}
                 type="button"
                 onClick={handleRequestPayment}
-                disabled={paymentLoading}
+                disabled={paymentLoading || isProcessing}
               >
                 {paymentLoading ? "결제 요청 중..." : "토스 결제하기"}
               </button>
@@ -496,8 +809,9 @@ export default function KioskBuyerPickupPage() {
               className={styles.primaryButton}
               type="button"
               onClick={handlePickupDone}
+              disabled={isProcessing}
             >
-              물품을 수령했습니다
+              {isProcessing ? "처리 중..." : "물품을 수령했습니다"}
             </button>
           </div>
         )}
@@ -528,6 +842,37 @@ export default function KioskBuyerPickupPage() {
             >
               처음으로 돌아가기
             </button>
+          </div>
+        )}
+
+        {step === "ERROR" && (
+          <div className={styles.panel}>
+            <div className={styles.doneCircle}>!</div>
+
+            <h1>수령 처리 중 오류가 발생했습니다</h1>
+            <p>{message}</p>
+            <span>
+              명령 상태 또는 보관함 상태를 확인한 뒤 다시 시도해주세요.
+            </span>
+
+            <div className={styles.buttonRow}>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                onClick={handleGoHome}
+              >
+                처음으로
+              </button>
+
+              <button
+                className={styles.primaryButton}
+                type="button"
+                onClick={handleRetry}
+                disabled={isProcessing}
+              >
+                다시 시도
+              </button>
+            </div>
           </div>
         )}
       </section>
