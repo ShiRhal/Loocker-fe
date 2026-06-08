@@ -37,11 +37,13 @@ export type KioskSellerLockerAssignResponse = {
 };
 
 export type KioskBuyerProduct = {
+  TRADE_ID?: number;
   TITLE: string;
   PRODUCT_ID: number;
   CREATED_AT?: string;
   IMAGE_URL?: string | null;
   PRODUCT_STATUS_CODE?: string;
+  TRADE_STATUS_CODE?: string;
   BASE_PRICE: number;
 };
 
@@ -240,13 +242,13 @@ export const kioskApi = {
 
   async selectBuyerLocker(body: {
     AUTH_CODE: string;
-    PRODUCT_ID: number;
+    TRADE_ID: number;
     KIOSK_CODE: string;
   }): Promise<KioskBuyerLockerResponse> {
     const query = new URLSearchParams();
 
     query.set("AUTH_CODE", body.AUTH_CODE);
-    query.set("PRODUCT_ID", String(body.PRODUCT_ID));
+    query.set("TRADE_ID", String(body.TRADE_ID));
     query.set("KIOSK_CODE", body.KIOSK_CODE);
 
     const res = await kioskapi(`/buyer/locker?${query.toString()}`, {

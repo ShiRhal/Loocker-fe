@@ -331,15 +331,6 @@ export default function KioskBuyerCheckAuthPage() {
           {authResultTime && <span>인증 시간: {authResultTime}</span>}
         </div>
 
-        <button
-          type="button"
-          className={styles.primaryButton}
-          onClick={handleForceMove}
-          disabled={!authCode}
-        >
-          테스트용 상품 선택으로 이동
-        </button>
-
         {qrUrl && !completed && (
           <button
             type="button"

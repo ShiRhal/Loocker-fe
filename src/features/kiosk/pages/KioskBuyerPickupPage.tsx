@@ -722,14 +722,6 @@ export default function KioskBuyerPickupPage() {
               현재는 UI 테스트 단계이므로 강제 인증 완료 버튼으로 이동할 수
               있습니다.
             </span>
-
-            <button
-              className={styles.primaryButton}
-              type="button"
-              onClick={handleForceAuthComplete}
-            >
-              테스트용 인증 완료
-            </button>
           </div>
         )}
 

@@ -220,7 +220,7 @@ export default function KioskBuyerCheckProductPage() {
 
       const lockerResult = await kioskApi.selectBuyerLocker({
         AUTH_CODE: normalizedAuthCode,
-        PRODUCT_ID: selectedProduct.PRODUCT_ID,
+        TRADE_ID: selectedProduct.PRODUCT_ID,
         KIOSK_CODE: kioskCode,
       });
 
@@ -392,15 +392,6 @@ export default function KioskBuyerCheckProductPage() {
             disabled={!selectedProductId || lockerLoading}
           >
             {lockerLoading ? "보관함 확인 중..." : "선택 상품 보관함 확인"}
-          </button>
-
-          <button
-            type="button"
-            className={styles.secondaryButton}
-            onClick={handleForceMove}
-            disabled={lockerLoading}
-          >
-            테스트용 물품 확인 화면으로 이동
           </button>
         </div>
       </section>
