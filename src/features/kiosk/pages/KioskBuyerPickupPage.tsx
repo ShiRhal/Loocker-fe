@@ -45,19 +45,20 @@ type PickupLocationState = {
 };
 
 type CommandStatusResponse = {
-  CHECK_STATUS?: "WAITING" | "RUNNING" | "SUCCESS" | "FAILED";
+  CHECK_STATUS?: "WAITING" | "RUNNING" | "SUCCESS" | "FAILED" | string;
   CAN_RETRY?: boolean | string;
   FAILED_COMMAND_TYPE_CODE?: string;
   RESULT_MESSAGE?: string;
   LOCKER_STATUS?: string;
+
+  checkStatus?: string;
+  canRetry?: boolean | string;
+  failedCommandTypeCode?: string;
+  resultMessage?: string;
+  lockerStatus?: string;
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
-
-const LOCKER_CODE =
-  localStorage.getItem("LOCKER_CODE") ||
-  localStorage.getItem("lockerCode") ||
-  "LOCKER_001";
 
 const TOSS_CLIENT_KEY =
   import.meta.env.VITE_TOSS_CLIENT_KEY?.trim() ||
@@ -198,6 +199,30 @@ function unwrapResponse<T>(response: unknown): T {
   }
 
   return response as T;
+}
+
+function unwrapCommandStatusResponse(response: unknown): CommandStatusResponse {
+  const unwrapped = unwrapResponse<
+    CommandStatusResponse | CommandStatusResponse[]
+  >(response);
+
+  if (Array.isArray(unwrapped)) {
+    return unwrapped[0] || {};
+  }
+
+  return unwrapped || {};
+}
+
+function getCheckStatus(status: CommandStatusResponse) {
+  return String(status.CHECK_STATUS || status.checkStatus || "").toUpperCase();
+}
+
+function getResultMessage(status: CommandStatusResponse) {
+  return status.RESULT_MESSAGE || status.resultMessage || "";
+}
+
+function getFailedCommandType(status: CommandStatusResponse) {
+  return status.FAILED_COMMAND_TYPE_CODE || status.failedCommandTypeCode || "";
 }
 
 function getSessionNumber(keys: string[], fallback: number) {
@@ -386,21 +411,22 @@ export default function KioskBuyerPickupPage() {
   }
 
   async function selectCommandStatus(lockerStatusName: string) {
-    const response = await requestJson<CommandStatusResponse>(
+    const response = await requestJson<
+      CommandStatusResponse | CommandStatusResponse[]
+    >(
       "/kiosk/locker/command/status/select",
       {
         method: "GET",
       },
       {
-        LOCKER_CODE,
+        AUTH_CODE: normalizedAuthCode,
         KIOSK_CODE: normalizedKioskCode,
-        TRADE_ID: tradeId,
         LOCKER_ID: lockerId,
         LOCKER_STATUS_NAME: lockerStatusName,
       },
     );
 
-    return unwrapResponse<CommandStatusResponse>(response);
+    return unwrapCommandStatusResponse(response);
   }
 
   async function waitUntilCommandSuccess(lockerStatusName: string) {
@@ -408,15 +434,16 @@ export default function KioskBuyerPickupPage() {
 
     for (let i = 0; i < maxTryCount; i += 1) {
       const status = await selectCommandStatus(lockerStatusName);
+      const checkStatus = getCheckStatus(status);
 
-      if (status.CHECK_STATUS === "SUCCESS") {
+      if (checkStatus === "SUCCESS") {
         return status;
       }
 
-      if (status.CHECK_STATUS === "FAILED") {
+      if (checkStatus === "FAILED") {
         throw new Error(
-          status.RESULT_MESSAGE ||
-            `${status.FAILED_COMMAND_TYPE_CODE || lockerStatusName} 명령이 실패했습니다.`,
+          getResultMessage(status) ||
+            `${getFailedCommandType(status) || lockerStatusName} 명령이 실패했습니다.`,
         );
       }
 
@@ -464,6 +491,8 @@ export default function KioskBuyerPickupPage() {
 
       await waitUntilCommandSuccess(STATUS_BUYER_UNLOCK_REQUESTED);
 
+      await sleep(500);
+
       await updateLockerState(STATUS_BUYER_UNLOCK_READY, "DEVICE");
 
       setStep("OPENED");
@@ -496,6 +525,8 @@ export default function KioskBuyerPickupPage() {
       await sleep(1000);
 
       await waitUntilCommandSuccess(STATUS_BUYER_PICKUP_DONE);
+
+      await sleep(500);
 
       await updateLockerState(STATUS_PICKUP_LOCKED_EMPTY_READY, "DEVICE");
 
