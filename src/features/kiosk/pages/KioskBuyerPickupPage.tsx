@@ -5,6 +5,13 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import logoImage from "../../../assets/images/Loocker.png";
 import styles from "../styles/kioskBuyerPickup.module.css";
 import { toApiAssetUrl } from "../../../shared/utils/imageUrl";
+import {
+  kioskApi,
+  type KioskLockerCommandStatusSelectResponse,
+  type KioskLockerNextStatus,
+  type KioskLockerRequestTypeCode,
+  type KioskLockerRoleType,
+} from "../api/kioskApi";
 
 declare global {
   interface Window {
@@ -44,22 +51,6 @@ type PickupLocationState = {
   };
 };
 
-type CommandStatusResponse = {
-  CHECK_STATUS?: "WAITING" | "RUNNING" | "SUCCESS" | "FAILED" | string;
-  CAN_RETRY?: boolean | string;
-  FAILED_COMMAND_TYPE_CODE?: string;
-  RESULT_MESSAGE?: string;
-  LOCKER_STATUS?: string;
-
-  checkStatus?: string;
-  canRetry?: boolean | string;
-  failedCommandTypeCode?: string;
-  resultMessage?: string;
-  lockerStatus?: string;
-};
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
-
 const TOSS_CLIENT_KEY =
   import.meta.env.VITE_TOSS_CLIENT_KEY?.trim() ||
   "test_ck_QbgMGZzorzzY5z652y7Krl5E1em4";
@@ -69,11 +60,13 @@ const TOSS_SCRIPT_URL = "https://js.tosspayments.com/v1/payment";
 const FRONT_BASE_URL =
   import.meta.env.VITE_FRONT_BASE_URL ?? window.location.origin;
 
-const STATUS_PAYMENT_CONFIRMED = "PAYMENT_CONFIRMED";
-const STATUS_BUYER_UNLOCK_REQUESTED = "BUYER_UNLOCK_REQUESTED";
-const STATUS_BUYER_UNLOCK_READY = "BUYER_UNLOCK_READY";
-const STATUS_BUYER_PICKUP_DONE = "BUYER_PICKUP_DONE";
-const STATUS_PICKUP_LOCKED_EMPTY_READY = "PICKUP_LOCKED_EMPTY_READY";
+const STATUS_PAYMENT_CONFIRMED: KioskLockerNextStatus = "PAYMENT_CONFIRMED";
+const STATUS_BUYER_UNLOCK_REQUESTED: KioskLockerNextStatus =
+  "BUYER_UNLOCK_REQUESTED";
+const STATUS_BUYER_UNLOCK_READY: KioskLockerNextStatus = "BUYER_UNLOCK_READY";
+const STATUS_BUYER_PICKUP_DONE: KioskLockerNextStatus = "BUYER_PICKUP_DONE";
+const STATUS_PICKUP_LOCKED_EMPTY_READY: KioskLockerNextStatus =
+  "PICKUP_LOCKED_EMPTY_READY";
 
 function loadTossScript() {
   return new Promise<void>((resolve, reject) => {
@@ -120,108 +113,15 @@ function sleep(ms: number) {
   });
 }
 
-function buildApiUrl(path: string, params?: Record<string, string | number>) {
-  const normalizedBase = API_BASE_URL.endsWith("/")
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL;
-
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-
-  const url = new URL(
-    `${normalizedBase}${normalizedPath}`,
-    window.location.origin,
-  );
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    url.searchParams.set(key, String(value));
-  });
-
-  return url.toString();
-}
-
-async function requestJson<T>(
-  path: string,
-  options?: RequestInit,
-  params?: Record<string, string | number>,
-): Promise<T> {
-  const response = await fetch(buildApiUrl(path, params), {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers || {}),
-    },
-  });
-
-  const text = await response.text();
-
-  let data: unknown = null;
-
-  if (text) {
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = text;
-    }
-  }
-
-  if (!response.ok) {
-    const message =
-      typeof data === "object" &&
-      data !== null &&
-      "message" in data &&
-      typeof (data as { message?: unknown }).message === "string"
-        ? (data as { message: string }).message
-        : `요청에 실패했습니다. status=${response.status}`;
-
-    throw new Error(message);
-  }
-
-  return data as T;
-}
-
-function unwrapResponse<T>(response: unknown): T {
-  if (
-    typeof response === "object" &&
-    response !== null &&
-    "data" in response &&
-    (response as { data?: unknown }).data
-  ) {
-    return (response as { data: T }).data;
-  }
-
-  if (
-    typeof response === "object" &&
-    response !== null &&
-    "result" in response &&
-    (response as { result?: unknown }).result
-  ) {
-    return (response as { result: T }).result;
-  }
-
-  return response as T;
-}
-
-function unwrapCommandStatusResponse(response: unknown): CommandStatusResponse {
-  const unwrapped = unwrapResponse<
-    CommandStatusResponse | CommandStatusResponse[]
-  >(response);
-
-  if (Array.isArray(unwrapped)) {
-    return unwrapped[0] || {};
-  }
-
-  return unwrapped || {};
-}
-
-function getCheckStatus(status: CommandStatusResponse) {
+function getCheckStatus(status: KioskLockerCommandStatusSelectResponse) {
   return String(status.CHECK_STATUS || status.checkStatus || "").toUpperCase();
 }
 
-function getResultMessage(status: CommandStatusResponse) {
+function getResultMessage(status: KioskLockerCommandStatusSelectResponse) {
   return status.RESULT_MESSAGE || status.resultMessage || "";
 }
 
-function getFailedCommandType(status: CommandStatusResponse) {
+function getFailedCommandType(status: KioskLockerCommandStatusSelectResponse) {
   return status.FAILED_COMMAND_TYPE_CODE || status.failedCommandTypeCode || "";
 }
 
@@ -317,6 +217,26 @@ function getCustomerName() {
   );
 }
 
+function extractCleanErrorMessage(message?: string) {
+  if (!message) return "요청 처리 중 오류가 발생했습니다.";
+
+  const sqlServerExceptionMatch = message.match(
+    /SQLServerException:\s*([^;\r\n]+)/,
+  );
+
+  if (sqlServerExceptionMatch?.[1]) {
+    return sqlServerExceptionMatch[1].trim();
+  }
+
+  const causeMatch = message.match(/Cause:\s*([^;\r\n]+)/);
+
+  if (causeMatch?.[1]) {
+    return causeMatch[1].trim();
+  }
+
+  return message.split("\n")[0]?.trim() || "요청 처리 중 오류가 발생했습니다.";
+}
+
 export default function KioskBuyerPickupPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -355,8 +275,9 @@ export default function KioskBuyerPickupPage() {
     sessionStorage.getItem("kioskCode") ||
     "";
 
-  const tradeId = product.TRADE_ID;
-  const lockerId = product.LOCKER_ID || 0;
+  const tradeId = Number(product.TRADE_ID);
+  const productId = Number(product.PRODUCT_ID);
+  const lockerId = Number(product.LOCKER_ID || 0);
 
   const [step, setStep] = useState<PickupStep>("CHECKING");
   const [message, setMessage] = useState("수령 가능 상태를 확인하고 있습니다.");
@@ -364,7 +285,9 @@ export default function KioskBuyerPickupPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const openingStartedRef = useRef(false);
+
   const isPaidRedirect = searchParams.get("paid") === "1";
+  const isFailRedirect = searchParams.get("paid") === "0";
 
   const productImageUrl = product.IMAGE_URL
     ? toApiAssetUrl(product.IMAGE_URL)
@@ -379,57 +302,107 @@ export default function KioskBuyerPickupPage() {
     ? `${window.location.origin}/m/login/${normalizedAuthCode}`
     : `${window.location.origin}/m/login`;
 
-  async function updateLockerState(
-    nextStatus: string,
-    roleType: "KIOSK" | "DEVICE",
-  ) {
-    await requestJson("/kiosk/locker/update", {
-      method: "PUT",
-      body: JSON.stringify({
-        TRADE_ID: tradeId,
-        AUTH_CODE: normalizedAuthCode,
-        NEXT_STATUS: nextStatus,
-        ROLE_TYPE: roleType,
-        RESULT_STATUS_CODE: "",
+  function validateRequiredData() {
+    if (!normalizedAuthCode) {
+      throw new Error(
+        "AUTH_CODE가 없습니다. 구매자 인증부터 다시 진행해주세요.",
+      );
+    }
+
+    if (!normalizedKioskCode) {
+      throw new Error(
+        "KIOSK_CODE가 없습니다. 키오스크 로그인을 다시 진행해주세요.",
+      );
+    }
+
+    if (!tradeId || !productId || !lockerId) {
+      throw new Error(
+        "TRADE_ID, PRODUCT_ID 또는 LOCKER_ID가 없습니다. 거래 정보를 다시 확인해주세요.",
+      );
+    }
+  }
+
+  function savePickupPaymentSession(orderId: string) {
+    sessionStorage.setItem("buyerPickupAuthCode", normalizedAuthCode);
+    sessionStorage.setItem("buyerPickupTradeId", String(tradeId));
+    sessionStorage.setItem("buyerPickupProductId", String(productId));
+    sessionStorage.setItem("buyerPickupProductTitle", product.TITLE);
+    sessionStorage.setItem(
+      "buyerPickupProductPrice",
+      String(product.BASE_PRICE || 0),
+    );
+    sessionStorage.setItem("buyerPickupProductImageUrl", productImageUrl);
+    sessionStorage.setItem("buyerPickupLockerId", String(lockerId));
+    sessionStorage.setItem(
+      "buyerPickupLockerNo",
+      String(product.LOCKER_NO || product.LOCKER_ID || lockerId),
+    );
+
+    sessionStorage.setItem(
+      "pendingKioskPickupPayment",
+      JSON.stringify({
+        authCode: normalizedAuthCode,
+        kioskCode: normalizedKioskCode,
+        productId,
+        tradeId,
+        lockerId,
+        baseAmount: product.BASE_PRICE,
+        serviceFee,
+        amount: totalPaymentAmount,
+        orderId,
+        createdAt: Date.now(),
       }),
+    );
+  }
+
+  async function createLockerPay() {
+    await kioskApi.createLockerPay({
+      AUTH_CODE: normalizedAuthCode,
+      PRODUCT_ID: productId,
+      TRADE_ID: tradeId,
+      KIOSK_CODE: normalizedKioskCode,
+    });
+  }
+
+  async function updateLockerState(
+    nextStatus: KioskLockerNextStatus,
+    roleType: KioskLockerRoleType,
+  ) {
+    await kioskApi.updateLockerState({
+      TRADE_ID: tradeId,
+      AUTH_CODE: normalizedAuthCode,
+      NEXT_STATUS: nextStatus,
+      ROLE_TYPE: roleType,
+      RESULT_STATUS_CODE: "",
     });
   }
 
   async function createLockerCommand(
-    nextStatus: string,
-    requestTypeCode: "NORMAL" | "RETRY" = "NORMAL",
+    nextStatus: KioskLockerNextStatus,
+    requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
   ) {
-    await requestJson("/kiosk/locker/command/create", {
-      method: "PUT",
-      body: JSON.stringify({
-        AUTH_CODE: normalizedAuthCode,
-        KIOSK_CODE: normalizedKioskCode,
-        NEXT_STATUS: nextStatus,
-        REQUEST_TYPE_CODE: requestTypeCode,
-      }),
+    await kioskApi.createLockerCommand({
+      AUTH_CODE: normalizedAuthCode,
+      KIOSK_CODE: normalizedKioskCode,
+      NEXT_STATUS: nextStatus,
+      REQUEST_TYPE_CODE: requestTypeCode,
     });
   }
 
-  async function selectCommandStatus(lockerStatusName: string) {
-    const response = await requestJson<
-      CommandStatusResponse | CommandStatusResponse[]
-    >(
-      "/kiosk/locker/command/status/select",
-      {
-        method: "GET",
-      },
-      {
-        AUTH_CODE: normalizedAuthCode,
-        KIOSK_CODE: normalizedKioskCode,
-        LOCKER_ID: lockerId,
-        LOCKER_STATUS_NAME: lockerStatusName,
-      },
-    );
+  async function selectCommandStatus(lockerStatusName: KioskLockerNextStatus) {
+    const response = await kioskApi.selectLockerCommandStatus({
+      AUTH_CODE: normalizedAuthCode,
+      KIOSK_CODE: normalizedKioskCode,
+      LOCKER_ID: lockerId,
+      LOCKER_STATUS_NAME: lockerStatusName,
+    });
 
-    return unwrapCommandStatusResponse(response);
+    return response[0] || {};
   }
 
-  async function waitUntilCommandSuccess(lockerStatusName: string) {
+  async function waitUntilCommandSuccess(
+    lockerStatusName: KioskLockerNextStatus,
+  ) {
     const maxTryCount = 30;
 
     for (let i = 0; i < maxTryCount; i += 1) {
@@ -453,28 +426,8 @@ export default function KioskBuyerPickupPage() {
     throw new Error("라즈베리파이 명령 성공 확인 시간이 초과되었습니다.");
   }
 
-  function validateRequiredData() {
-    if (!normalizedAuthCode) {
-      throw new Error(
-        "AUTH_CODE가 없습니다. 구매자 인증부터 다시 진행해주세요.",
-      );
-    }
-
-    if (!normalizedKioskCode) {
-      throw new Error(
-        "KIOSK_CODE가 없습니다. 키오스크 로그인을 다시 진행해주세요.",
-      );
-    }
-
-    if (!tradeId || !lockerId) {
-      throw new Error(
-        "TRADE_ID 또는 LOCKER_ID가 없습니다. 거래 정보를 다시 확인해주세요.",
-      );
-    }
-  }
-
   async function startPickupAfterPayment(
-    requestTypeCode: "NORMAL" | "RETRY" = "NORMAL",
+    requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
   ) {
     try {
       validateRequiredData();
@@ -482,6 +435,8 @@ export default function KioskBuyerPickupPage() {
       setIsProcessing(true);
       setStep("OPENING");
       setMessage("결제가 확인되었습니다. 보관함 문을 여는 중입니다.");
+
+      await createLockerPay();
 
       await updateLockerState(STATUS_PAYMENT_CONFIRMED, "KIOSK");
 
@@ -504,7 +459,7 @@ export default function KioskBuyerPickupPage() {
           : "보관함 문 열림 처리 중 알 수 없는 오류가 발생했습니다.";
 
       setStep("ERROR");
-      setMessage(nextMessage);
+      setMessage(extractCleanErrorMessage(nextMessage));
     } finally {
       setIsProcessing(false);
     }
@@ -541,7 +496,7 @@ export default function KioskBuyerPickupPage() {
           : "수령 완료 처리 중 알 수 없는 오류가 발생했습니다.";
 
       setStep("ERROR");
-      setMessage(nextMessage);
+      setMessage(extractCleanErrorMessage(nextMessage));
     } finally {
       setIsProcessing(false);
     }
@@ -553,6 +508,12 @@ export default function KioskBuyerPickupPage() {
 
       openingStartedRef.current = true;
       startPickupAfterPayment("NORMAL");
+      return;
+    }
+
+    if (isFailRedirect) {
+      setStep("PAYMENT");
+      setMessage("결제가 취소되었거나 실패했습니다. 다시 결제를 진행해주세요.");
       return;
     }
 
@@ -575,7 +536,7 @@ export default function KioskBuyerPickupPage() {
 
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPaidRedirect]);
+  }, [isPaidRedirect, isFailRedirect]);
 
   function handleGoHome() {
     navigate("/kiosk", { replace: true });
@@ -594,8 +555,16 @@ export default function KioskBuyerPickupPage() {
 
   async function handleRequestPayment() {
     try {
+      validateRequiredData();
+
       setPaymentLoading(true);
-      setMessage("");
+      setMessage("결제 정보를 생성하고 있습니다.");
+
+      const orderId = createOrderId(tradeId);
+
+      savePickupPaymentSession(orderId);
+
+      await createLockerPay();
 
       await loadTossScript();
 
@@ -603,36 +572,21 @@ export default function KioskBuyerPickupPage() {
         throw new Error("TossPayments 객체를 찾을 수 없습니다.");
       }
 
-      const orderId = createOrderId(product.TRADE_ID);
       const tossPayments = window.TossPayments(TOSS_CLIENT_KEY);
-
-      sessionStorage.setItem(
-        "pendingKioskPickupPayment",
-        JSON.stringify({
-          productId: product.PRODUCT_ID,
-          tradeId: product.TRADE_ID,
-          lockerId: product.LOCKER_ID,
-          baseAmount: product.BASE_PRICE,
-          serviceFee,
-          amount: totalPaymentAmount,
-          orderId,
-          createdAt: Date.now(),
-        }),
-      );
 
       await tossPayments.requestPayment("카드", {
         amount: totalPaymentAmount,
         orderId,
         orderName: `${product.TITLE} 보관함 거래 결제`,
         customerName: getCustomerName(),
-        successUrl: `${FRONT_BASE_URL}/kiosk/pickup?paid=1&tradeId=${product.TRADE_ID}`,
-        failUrl: `${FRONT_BASE_URL}/kiosk/pickup?paid=0&tradeId=${product.TRADE_ID}`,
+        successUrl: `${FRONT_BASE_URL}/kiosk/pickup?paid=1&tradeId=${tradeId}`,
+        failUrl: `${FRONT_BASE_URL}/kiosk/pickup?paid=0&tradeId=${tradeId}`,
       });
     } catch (error) {
       console.error(error);
       setMessage(
         error instanceof Error
-          ? error.message
+          ? extractCleanErrorMessage(error.message)
           : "결제창이 닫혔거나 결제가 중단되었습니다.",
       );
     } finally {
@@ -641,21 +595,9 @@ export default function KioskBuyerPickupPage() {
   }
 
   function handleForcePaymentSuccess() {
-    const orderId = createOrderId(product.TRADE_ID);
+    const orderId = createOrderId(tradeId);
 
-    sessionStorage.setItem(
-      "pendingKioskPickupPayment",
-      JSON.stringify({
-        productId: product.PRODUCT_ID,
-        tradeId: product.TRADE_ID,
-        lockerId: product.LOCKER_ID,
-        baseAmount: product.BASE_PRICE,
-        serviceFee,
-        amount: totalPaymentAmount,
-        orderId,
-        createdAt: Date.now(),
-      }),
-    );
+    savePickupPaymentSession(orderId);
 
     openingStartedRef.current = true;
     startPickupAfterPayment("NORMAL");
@@ -753,6 +695,14 @@ export default function KioskBuyerPickupPage() {
               현재는 UI 테스트 단계이므로 강제 인증 완료 버튼으로 이동할 수
               있습니다.
             </span>
+
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              onClick={handleForceAuthComplete}
+            >
+              테스트 인증 완료
+            </button>
           </div>
         )}
 

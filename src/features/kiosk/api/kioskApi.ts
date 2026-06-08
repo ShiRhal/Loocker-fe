@@ -140,6 +140,13 @@ export type KioskLockerImageResponse = {
   fileUrl?: string | null;
 };
 
+export type KioskLockerPayCreateRequest = {
+  AUTH_CODE: string;
+  PRODUCT_ID: number;
+  TRADE_ID: number;
+  KIOSK_CODE: string;
+};
+
 function unwrapFirst<T>(data: T | T[]): T {
   return Array.isArray(data) ? data[0] : data;
 }
@@ -328,5 +335,17 @@ export const kioskApi = {
     if (!res) return null;
 
     return unwrapFirst<KioskLockerImageResponse>(res);
+  },
+
+  async createLockerPay(body: KioskLockerPayCreateRequest): Promise<void> {
+    await kioskapi("/locker/pay/create", {
+      method: "PUT",
+      json: {
+        AUTH_CODE: body.AUTH_CODE,
+        PRODUCT_ID: body.PRODUCT_ID,
+        TRADE_ID: body.TRADE_ID,
+        KIOSK_CODE: body.KIOSK_CODE,
+      },
+    });
   },
 };
