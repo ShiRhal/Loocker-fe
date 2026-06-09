@@ -98,7 +98,7 @@ function loadTossScript() {
 }
 
 function formatPrice(value?: number) {
-  if (typeof value !== "number") return "-";
+  if (typeof value !== "number" || value <= 0) return "-";
   return `${value.toLocaleString()}원`;
 }
 
@@ -125,7 +125,7 @@ function getFailedCommandType(status: KioskLockerCommandStatusSelectResponse) {
   return status.FAILED_COMMAND_TYPE_CODE || status.failedCommandTypeCode || "";
 }
 
-function getSessionNumber(keys: string[], fallback: number) {
+function getSessionNumber(keys: string[], fallback = 0) {
   for (const key of keys) {
     const value = Number(sessionStorage.getItem(key) || "");
 
@@ -137,62 +137,80 @@ function getSessionNumber(keys: string[], fallback: number) {
   return fallback;
 }
 
-function getSessionText(keys: string[], fallback: string) {
+function getSessionText(keys: string[], fallback = "") {
   for (const key of keys) {
-    const value = sessionStorage.getItem(key);
+    const value = sessionStorage.getItem(key)?.trim();
 
-    if (value) {
-      return value;
+    if (!value) continue;
+
+    if (key.startsWith("buyerPickup") && value === "테스트 상품") {
+      continue;
     }
+
+    return value;
   }
 
   return fallback;
 }
 
+function toSafeAssetUrl(value?: string | null) {
+  if (!value) return "";
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  if (value.startsWith("/api/")) {
+    return value;
+  }
+
+  return toApiAssetUrl(value);
+}
+
 function getPickupProductFromSession(): PickupProduct {
   const tradeId = getSessionNumber(
-    ["buyerPickupTradeId", "buyerCheckTradeId", "buyerInspectionTradeId"],
-    1,
+    ["buyerInspectionTradeId", "buyerCheckTradeId", "buyerPickupTradeId"],
+    0,
   );
 
   const productId = getSessionNumber(
-    ["buyerPickupProductId", "buyerCheckProductId", "buyerInspectionProductId"],
-    1,
+    ["buyerInspectionProductId", "buyerCheckProductId", "buyerPickupProductId"],
+    0,
   );
 
   const title = getSessionText(
     [
-      "buyerPickupProductTitle",
-      "buyerCheckProductTitle",
       "buyerInspectionProductTitle",
+      "buyerCheckProductTitle",
+      "buyerPickupProductTitle",
     ],
-    "테스트 상품",
+    "",
   );
 
   const price = getSessionNumber(
     [
-      "buyerPickupProductPrice",
-      "buyerCheckProductPrice",
       "buyerInspectionProductPrice",
+      "buyerCheckProductPrice",
+      "buyerPickupProductPrice",
     ],
-    1000,
+    0,
   );
 
   const lockerId = getSessionNumber(
-    ["buyerPickupLockerId", "buyerCheckLockerId", "buyerInspectionLockerId"],
-    1,
+    ["buyerInspectionLockerId", "buyerCheckLockerId", "buyerPickupLockerId"],
+    0,
   );
 
   const lockerNo = getSessionNumber(
-    ["buyerPickupLockerNo", "buyerCheckLockerNo", "buyerInspectionLockerNo"],
+    ["buyerInspectionLockerNo", "buyerCheckLockerNo", "buyerPickupLockerNo"],
     lockerId,
   );
 
   const imageUrl = getSessionText(
     [
-      "buyerPickupProductImageUrl",
-      "buyerCheckProductImageUrl",
       "buyerInspectionProductImageUrl",
+      "buyerCheckProductImageUrl",
+      "buyerPickupProductImageUrl",
     ],
     "",
   );
@@ -247,17 +265,32 @@ export default function KioskBuyerPickupPage() {
   const product = useMemo<PickupProduct>(() => {
     const sessionProduct = getPickupProductFromSession();
 
-    if (!state.product) {
-      return sessionProduct;
-    }
-
     return {
-      ...sessionProduct,
-      ...state.product,
-      TRADE_ID: state.locker?.TRADE_ID || state.product.TRADE_ID,
-      PRODUCT_ID: state.locker?.PRODUCT_ID || state.product.PRODUCT_ID,
-      LOCKER_ID: state.locker?.LOCKER_ID || state.product.LOCKER_ID,
-      LOCKER_NO: state.locker?.LOCKER_NO || state.product.LOCKER_NO,
+      TRADE_ID:
+        state.locker?.TRADE_ID ||
+        state.product?.TRADE_ID ||
+        sessionProduct.TRADE_ID,
+
+      PRODUCT_ID:
+        state.locker?.PRODUCT_ID ||
+        state.product?.PRODUCT_ID ||
+        sessionProduct.PRODUCT_ID,
+
+      TITLE: state.product?.TITLE || sessionProduct.TITLE,
+
+      BASE_PRICE: state.product?.BASE_PRICE || sessionProduct.BASE_PRICE,
+
+      LOCKER_ID:
+        state.locker?.LOCKER_ID ||
+        state.product?.LOCKER_ID ||
+        sessionProduct.LOCKER_ID,
+
+      LOCKER_NO:
+        state.locker?.LOCKER_NO ||
+        state.product?.LOCKER_NO ||
+        sessionProduct.LOCKER_NO,
+
+      IMAGE_URL: state.product?.IMAGE_URL || sessionProduct.IMAGE_URL,
     };
   }, [state.product, state.locker]);
 
@@ -279,6 +312,15 @@ export default function KioskBuyerPickupPage() {
   const productId = Number(product.PRODUCT_ID);
   const lockerId = Number(product.LOCKER_ID || 0);
 
+  const hasRequiredPickupData =
+    !!normalizedAuthCode &&
+    !!normalizedKioskCode &&
+    !!tradeId &&
+    !!productId &&
+    !!lockerId &&
+    !!product.TITLE &&
+    !!product.BASE_PRICE;
+
   const [step, setStep] = useState<PickupStep>("CHECKING");
   const [message, setMessage] = useState("수령 가능 상태를 확인하고 있습니다.");
   const [paymentLoading, setPaymentLoading] = useState(false);
@@ -290,34 +332,22 @@ export default function KioskBuyerPickupPage() {
   const isFailRedirect = searchParams.get("paid") === "0";
 
   const productImageUrl = product.IMAGE_URL
-    ? toApiAssetUrl(product.IMAGE_URL)
+    ? toSafeAssetUrl(product.IMAGE_URL)
     : "";
 
   const lockerNo = product.LOCKER_NO || product.LOCKER_ID || "-";
 
-  const serviceFee = Math.floor(product.BASE_PRICE * 0.05);
-  const totalPaymentAmount = product.BASE_PRICE + serviceFee;
+  const serviceFee = Math.floor((product.BASE_PRICE || 0) * 0.05);
+  const totalPaymentAmount = (product.BASE_PRICE || 0) + serviceFee;
 
   const qrUrl = normalizedAuthCode
     ? `${window.location.origin}/m/login/${normalizedAuthCode}`
     : `${window.location.origin}/m/login`;
 
   function validateRequiredData() {
-    if (!normalizedAuthCode) {
+    if (!hasRequiredPickupData) {
       throw new Error(
-        "AUTH_CODE가 없습니다. 구매자 인증부터 다시 진행해주세요.",
-      );
-    }
-
-    if (!normalizedKioskCode) {
-      throw new Error(
-        "KIOSK_CODE가 없습니다. 키오스크 로그인을 다시 진행해주세요.",
-      );
-    }
-
-    if (!tradeId || !productId || !lockerId) {
-      throw new Error(
-        "TRADE_ID, PRODUCT_ID 또는 LOCKER_ID가 없습니다. 거래 정보를 다시 확인해주세요.",
+        "수령할 상품 정보가 없습니다. 구매자 물품 확인 단계부터 다시 진행해주세요.",
       );
     }
   }
@@ -503,6 +533,14 @@ export default function KioskBuyerPickupPage() {
   }
 
   useEffect(() => {
+    if (!hasRequiredPickupData) {
+      setStep("ERROR");
+      setMessage(
+        "수령할 상품 정보가 없습니다. 구매자 물품 확인 단계부터 다시 진행해주세요.",
+      );
+      return;
+    }
+
     if (isPaidRedirect) {
       if (openingStartedRef.current) return;
 
@@ -536,10 +574,21 @@ export default function KioskBuyerPickupPage() {
 
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPaidRedirect, isFailRedirect]);
+  }, [isPaidRedirect, isFailRedirect, hasRequiredPickupData]);
 
   function handleGoHome() {
     navigate("/kiosk", { replace: true });
+  }
+
+  function handleGoInspection() {
+    if (normalizedAuthCode) {
+      navigate(`/kiosk/buyer/check/inspection/${normalizedAuthCode}`, {
+        replace: true,
+      });
+      return;
+    }
+
+    navigate("/kiosk/check", { replace: true });
   }
 
   function handleForceAuthComplete() {
@@ -595,12 +644,23 @@ export default function KioskBuyerPickupPage() {
   }
 
   function handleForcePaymentSuccess() {
-    const orderId = createOrderId(tradeId);
+    try {
+      validateRequiredData();
 
-    savePickupPaymentSession(orderId);
+      const orderId = createOrderId(tradeId);
 
-    openingStartedRef.current = true;
-    startPickupAfterPayment("NORMAL");
+      savePickupPaymentSession(orderId);
+
+      openingStartedRef.current = true;
+      startPickupAfterPayment("NORMAL");
+    } catch (error) {
+      setStep("ERROR");
+      setMessage(
+        error instanceof Error
+          ? extractCleanErrorMessage(error.message)
+          : "결제 테스트 처리 중 오류가 발생했습니다.",
+      );
+    }
   }
 
   function handlePickupDone() {
@@ -608,6 +668,11 @@ export default function KioskBuyerPickupPage() {
   }
 
   function handleRetry() {
+    if (!hasRequiredPickupData) {
+      handleGoInspection();
+      return;
+    }
+
     if (step === "OPENING") {
       startPickupAfterPayment("RETRY");
       return;
@@ -648,32 +713,34 @@ export default function KioskBuyerPickupPage() {
       </header>
 
       <section className={styles.card}>
-        <div className={styles.summaryBox}>
-          <div className={styles.summaryProduct}>
-            <div className={styles.summaryImageBox}>
-              {productImageUrl ? (
-                <img
-                  className={styles.summaryImage}
-                  src={productImageUrl}
-                  alt={product.TITLE}
-                />
-              ) : (
-                <div className={styles.noImage}>NO IMAGE</div>
-              )}
+        {hasRequiredPickupData && (
+          <div className={styles.summaryBox}>
+            <div className={styles.summaryProduct}>
+              <div className={styles.summaryImageBox}>
+                {productImageUrl ? (
+                  <img
+                    className={styles.summaryImage}
+                    src={productImageUrl}
+                    alt={product.TITLE}
+                  />
+                ) : (
+                  <div className={styles.noImage}>NO IMAGE</div>
+                )}
+              </div>
+
+              <div className={styles.summaryInfo}>
+                <span>수령 상품</span>
+                <strong>{product.TITLE}</strong>
+                <p>{formatPrice(product.BASE_PRICE)}</p>
+              </div>
             </div>
 
-            <div className={styles.summaryInfo}>
-              <span>수령 상품</span>
-              <strong>{product.TITLE}</strong>
-              <p>{formatPrice(product.BASE_PRICE)}</p>
+            <div className={styles.summaryLocker}>
+              <span>보관함 번호</span>
+              <strong>{lockerNo}번</strong>
             </div>
           </div>
-
-          <div className={styles.summaryLocker}>
-            <span>보관함 번호</span>
-            <strong>{lockerNo}번</strong>
-          </div>
-        </div>
+        )}
 
         {step === "CHECKING" && (
           <div className={styles.panel}>
@@ -822,10 +889,18 @@ export default function KioskBuyerPickupPage() {
           <div className={styles.panel}>
             <div className={styles.doneCircle}>!</div>
 
-            <h1>수령 처리 중 오류가 발생했습니다</h1>
+            <h1>
+              {hasRequiredPickupData
+                ? "수령 처리 중 오류가 발생했습니다"
+                : "수령 상품 정보가 없습니다"}
+            </h1>
+
             <p>{message}</p>
+
             <span>
-              명령 상태 또는 보관함 상태를 확인한 뒤 다시 시도해주세요.
+              {hasRequiredPickupData
+                ? "명령 상태 또는 보관함 상태를 확인한 뒤 다시 시도해주세요."
+                : "구매자 물품 확인 단계부터 다시 진행해주세요."}
             </span>
 
             <div className={styles.buttonRow}>
@@ -843,7 +918,7 @@ export default function KioskBuyerPickupPage() {
                 onClick={handleRetry}
                 disabled={isProcessing}
               >
-                다시 시도
+                {hasRequiredPickupData ? "다시 시도" : "물품 확인으로 이동"}
               </button>
             </div>
           </div>
