@@ -51,6 +51,19 @@ type PickupLocationState = {
   };
 };
 
+type PendingKioskPickupPayment = {
+  authCode?: string;
+  kioskCode?: string;
+  productId?: number;
+  tradeId?: number;
+  lockerId?: number;
+  baseAmount?: number;
+  serviceFee?: number;
+  amount?: number;
+  orderId?: string;
+  createdAt?: number;
+};
+
 const TOSS_CLIENT_KEY =
   import.meta.env.VITE_TOSS_CLIENT_KEY?.trim() ||
   "test_ck_QbgMGZzorzzY5z652y7Krl5E1em4";
@@ -152,19 +165,39 @@ function getSessionText(keys: string[], fallback = "") {
 
   return fallback;
 }
-
 function toSafeAssetUrl(value?: string | null) {
   if (!value) return "";
 
-  if (value.startsWith("http://") || value.startsWith("https://")) {
-    return value;
+  const rawValue = value.trim();
+
+  if (!rawValue) return "";
+
+  if (rawValue.startsWith("http://") || rawValue.startsWith("https://")) {
+    try {
+      const url = new URL(rawValue);
+
+      url.pathname = url.pathname
+        .replace(/^(\/api)+\/uploads\//, "/api/uploads/")
+        .replace(/^\/uploads\//, "/api/uploads/");
+
+      return url.toString();
+    } catch {
+      return rawValue
+        .replace("/api/api/uploads/", "/api/uploads/")
+        .replace("/uploads/", "/api/uploads/");
+    }
   }
 
-  if (value.startsWith("/api/")) {
-    return value;
+  const normalizedValue = rawValue
+    .replace(/^(\/api)+\/uploads\//, "/api/uploads/")
+    .replace(/^\/uploads\//, "/api/uploads/")
+    .replace(/^uploads\//, "/api/uploads/");
+
+  if (normalizedValue.startsWith("/api/uploads/")) {
+    return `${window.location.origin}${normalizedValue}`;
   }
 
-  return toApiAssetUrl(value);
+  return toApiAssetUrl(normalizedValue);
 }
 
 function getPickupProductFromSession(): PickupProduct {
@@ -253,6 +286,18 @@ function extractCleanErrorMessage(message?: string) {
   }
 
   return message.split("\n")[0]?.trim() || "요청 처리 중 오류가 발생했습니다.";
+}
+
+function getPendingPayment(): PendingKioskPickupPayment | null {
+  try {
+    const raw = sessionStorage.getItem("pendingKioskPickupPayment");
+
+    if (!raw) return null;
+
+    return JSON.parse(raw) as PendingKioskPickupPayment;
+  } catch {
+    return null;
+  }
 }
 
 export default function KioskBuyerPickupPage() {
@@ -394,6 +439,63 @@ export default function KioskBuyerPickupPage() {
     });
   }
 
+  async function createLockerPayIfNeeded() {
+    try {
+      await createLockerPay();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error || "");
+
+      if (message.includes("이미 생성된 결제 정보가 있습니다")) {
+        return;
+      }
+
+      throw error;
+    }
+  }
+
+  async function paidLockerPay() {
+    const pendingPayment = getPendingPayment();
+
+    const amount = Number(
+      searchParams.get("amount") ||
+        pendingPayment?.amount ||
+        totalPaymentAmount ||
+        0,
+    );
+
+    const orderId =
+      searchParams.get("orderId") || pendingPayment?.orderId || "";
+
+    const paymentKey =
+      searchParams.get("paymentKey") ||
+      `TEST_PAYMENT_KEY_${orderId || tradeId}`;
+
+    sessionStorage.setItem(
+      "kioskPickupPaymentResult",
+      JSON.stringify({
+        PAYMENT_KEY: paymentKey,
+        ORDER_ID: orderId,
+        AMOUNT: amount,
+        TRADE_ID: tradeId,
+        PRODUCT_ID: productId,
+        LOCKER_ID: lockerId,
+        BASE_AMOUNT: Number(pendingPayment?.baseAmount || product.BASE_PRICE),
+        SERVICE_FEE: Number(pendingPayment?.serviceFee || serviceFee),
+      }),
+    );
+
+    await kioskApi.paidLockerPay({
+      AUTH_CODE: normalizedAuthCode,
+      SUCCESS: 1,
+      TRADE_ID: tradeId,
+      AMOUNT: amount,
+      ORDER_ID: orderId,
+      PAYMENT_KEY: paymentKey,
+      KIOSK_CODE: normalizedKioskCode,
+    });
+  }
+
   async function updateLockerState(
     nextStatus: KioskLockerNextStatus,
     roleType: KioskLockerRoleType,
@@ -466,7 +568,7 @@ export default function KioskBuyerPickupPage() {
       setStep("OPENING");
       setMessage("결제가 확인되었습니다. 보관함 문을 여는 중입니다.");
 
-      await createLockerPay();
+      await paidLockerPay();
 
       await updateLockerState(STATUS_PAYMENT_CONFIRMED, "KIOSK");
 
@@ -613,7 +715,7 @@ export default function KioskBuyerPickupPage() {
 
       savePickupPaymentSession(orderId);
 
-      await createLockerPay();
+      await createLockerPayIfNeeded();
 
       await loadTossScript();
 
@@ -643,7 +745,7 @@ export default function KioskBuyerPickupPage() {
     }
   }
 
-  function handleForcePaymentSuccess() {
+  async function handleForcePaymentSuccess() {
     try {
       validateRequiredData();
 
@@ -651,8 +753,10 @@ export default function KioskBuyerPickupPage() {
 
       savePickupPaymentSession(orderId);
 
+      await createLockerPayIfNeeded();
+
       openingStartedRef.current = true;
-      startPickupAfterPayment("NORMAL");
+      await startPickupAfterPayment("NORMAL");
     } catch (error) {
       setStep("ERROR");
       setMessage(

@@ -147,6 +147,16 @@ export type KioskLockerPayCreateRequest = {
   KIOSK_CODE: string;
 };
 
+export type KioskLockerPayPaidRequest = {
+  AUTH_CODE: string;
+  SUCCESS: number;
+  TRADE_ID: number;
+  AMOUNT: number;
+  ORDER_ID: string;
+  PAYMENT_KEY: string;
+  KIOSK_CODE: string;
+};
+
 function unwrapFirst<T>(data: T | T[]): T {
   return Array.isArray(data) ? data[0] : data;
 }
@@ -344,6 +354,21 @@ export const kioskApi = {
         AUTH_CODE: body.AUTH_CODE,
         PRODUCT_ID: body.PRODUCT_ID,
         TRADE_ID: body.TRADE_ID,
+        KIOSK_CODE: body.KIOSK_CODE,
+      },
+    });
+  },
+
+  async paidLockerPay(body: KioskLockerPayPaidRequest): Promise<void> {
+    await kioskapi("/locker/pay/paid", {
+      method: "PUT",
+      json: {
+        AUTH_CODE: body.AUTH_CODE,
+        SUCCESS: body.SUCCESS,
+        TRADE_ID: body.TRADE_ID,
+        AMOUNT: body.AMOUNT,
+        ORDER_ID: body.ORDER_ID,
+        PAYMENT_KEY: body.PAYMENT_KEY,
         KIOSK_CODE: body.KIOSK_CODE,
       },
     });
