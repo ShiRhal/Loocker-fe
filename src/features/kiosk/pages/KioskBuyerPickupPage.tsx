@@ -570,8 +570,6 @@ export default function KioskBuyerPickupPage() {
 
       await paidLockerPay();
 
-      await updateLockerState(STATUS_PAYMENT_CONFIRMED, "KIOSK");
-
       await createLockerCommand(STATUS_BUYER_UNLOCK_REQUESTED, requestTypeCode);
 
       await sleep(1000);
