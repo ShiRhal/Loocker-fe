@@ -1,7 +1,6 @@
 import { useState } from "react";
 import styles from "./ProductTradeSection.module.css";
 import DirectLocationDrawer from "./DirectLocationDrawer";
-import LockerTradeDrawer from "./LockerTradeDrawer";
 
 type ProductTradeSectionProps = {
   tradeType: string[];
@@ -16,15 +15,15 @@ export default function ProductTradeSection({
   onTradeTypeChange,
   onCityChange,
 }: ProductTradeSectionProps) {
-  const [activeDrawer, setActiveDrawer] = useState<
-    "direct-location" | "locker" | null
-  >(null);
+  const [activeDrawer, setActiveDrawer] = useState<"direct-location" | null>(
+    null,
+  );
 
   const isDirectChecked = tradeType.includes("DIRECT");
   const isLockerChecked = tradeType.includes("LOCKER");
   const isDeliveryChecked = tradeType.includes("DELIVERY");
 
-  const openDrawer = (drawer: "direct-location" | "locker") => {
+  const openDrawer = (drawer: "direct-location") => {
     setActiveDrawer(drawer);
   };
 
@@ -47,9 +46,7 @@ export default function ProductTradeSection({
       openDrawer("direct-location");
     }
 
-    if (type === "LOCKER") {
-      openDrawer("locker");
-    }
+    // LOCKER 선택 시 사이드 드로어 열지 않음
   };
 
   const handleCitySelect = (selectedCity: string) => {
@@ -167,20 +164,8 @@ export default function ProductTradeSection({
                     보관함 거래
                   </label>
 
-                  <span className={styles.badge}>수수료 10%</span>
+                  <span className={styles.badge}>수수료 5%</span>
                 </div>
-
-                {isLockerChecked && (
-                  <div className={styles.locationButtonRow}>
-                    <button
-                      type="button"
-                      className={styles.locationButton}
-                      onClick={() => openDrawer("locker")}
-                    >
-                      + 보관함 설정
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -196,10 +181,6 @@ export default function ProductTradeSection({
                 onBack={closeDrawer}
                 onSelectCity={handleCitySelect}
               />
-            )}
-
-            {activeDrawer === "locker" && (
-              <LockerTradeDrawer onBack={closeDrawer} />
             )}
           </aside>
         </div>
