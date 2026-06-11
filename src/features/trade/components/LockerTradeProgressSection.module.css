@@ -1,22 +1,92 @@
-.main {
-  padding: 16px 20px 24px;
-  gap: 14px;
-  background: #f5f6f8;
+:global(:root) {
+  --locker-primary: #3182f6;
+  --locker-primary-soft: #e8f3ff;
+  --locker-primary-soft-hover: #d9ebff;
+
+  --locker-black: #111;
+  --locker-text: #111;
+  --locker-sub-text: #666;
+  --locker-muted-text: #777;
+  --locker-light-text: #999;
+
+  --locker-bg: #f5f6f8;
+  --locker-panel-bg: #fff;
+  --locker-border: #e2e6ec;
+  --locker-border-light: #eceef1;
+
+  --locker-radius-sm: 12px;
+  --locker-radius-md: 14px;
+  --locker-radius-lg: 16px;
+  --locker-radius-xl: 18px;
+
+  --locker-shadow-drawer: -8px 0 24px rgba(0, 0, 0, 0.12);
+  --locker-shadow-overlay: 0 8px 22px rgba(15, 23, 42, 0.2);
 }
+
+/* =========================================================
+   Common
+========================================================= */
+
+.main,
+.leftDrawer {
+  color: var(--locker-text);
+}
+
+.main *,
+.leftDrawer * {
+  box-sizing: border-box;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px 24px;
+  background: var(--locker-bg);
+}
+
+.productCard,
+.progressCard,
+.descriptionBox,
+.lockerActionBox,
+.branchInfoPanel,
+.selectedBranchLockerItem,
+.lockerItem {
+  background: var(--locker-panel-bg);
+  border: 1px solid var(--locker-border);
+}
+
+.productCard,
+.progressCard,
+.descriptionBox,
+.lockerActionBox {
+  border-radius: var(--locker-radius-lg);
+}
+
+button {
+  font-family: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* =========================================================
+   Product summary card
+========================================================= */
 
 .productCard {
   display: flex;
   gap: 14px;
   padding: 16px;
-  background: #fff;
-  border-radius: 16px;
-  border: 1px solid #eceef1;
+  border-color: var(--locker-border-light);
 }
 
 .imageBox {
   width: 84px;
   height: 84px;
-  border-radius: 12px;
+  border-radius: var(--locker-radius-sm);
   overflow: hidden;
   background: #eef0f3;
   flex-shrink: 0;
@@ -31,8 +101,8 @@
 .noImage {
   width: 100%;
   height: 100%;
+  color: var(--locker-light-text);
   font-size: 12px;
-  color: #999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -47,33 +117,35 @@
 
 .tradeBadge {
   width: fit-content;
+  margin-bottom: 8px;
   padding: 4px 8px;
   border-radius: 999px;
   background: #f1f3f5;
   color: #555;
   font-size: 12px;
   font-weight: 700;
-  margin-bottom: 8px;
 }
 
 .productInfo h2 {
   margin: 0 0 8px;
-  font-size: 16px;
-  line-height: 1.35;
   color: #222;
+  font-size: 16px;
   font-weight: 800;
+  line-height: 1.35;
 }
 
 .productInfo strong {
+  color: var(--locker-black);
   font-size: 17px;
-  color: #111;
 }
 
+/* =========================================================
+   Progress card
+========================================================= */
+
 .progressCard {
-  background: #fff;
-  border-radius: 16px;
-  border: 1px solid #eceef1;
   padding: 20px 18px;
+  border-color: var(--locker-border-light);
 }
 
 .progressHeader {
@@ -85,16 +157,20 @@
 
 .progressHeader h3 {
   margin: 0;
+  color: var(--locker-text);
   font-size: 18px;
-  color: #111;
   font-weight: 800;
 }
 
 .progressHeader p {
   margin: 0;
+  color: var(--locker-muted-text);
   font-size: 13px;
-  color: #777;
 }
+
+/* =========================================================
+   Step progress
+========================================================= */
 
 .stepBar {
   display: flex;
@@ -107,10 +183,10 @@
 .stepItem {
   flex: 1;
   position: relative;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 0;
 }
 
 .stepItem:not(:last-child)::after {
@@ -118,15 +194,15 @@
   position: absolute;
   top: 18px;
   left: calc(50% + 18px);
+  z-index: 0;
   width: calc(100% - 36px);
   height: 3px;
   background: #d7dbe2;
-  z-index: 0;
 }
 
 .stepItem.done::after,
 .stepItem.current::after {
-  background: #3182f6;
+  background: var(--locker-primary);
 }
 
 .stepCircle {
@@ -134,88 +210,92 @@
   z-index: 1;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
   border: 3px solid #cfd4dc;
+  border-radius: 50%;
   background: #fff;
   color: #a0a6b0;
+  font-size: 15px;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
-  font-size: 15px;
-  font-weight: 800;
 }
 
 .stepItem.active .stepCircle {
-  border-color: #3182f6;
-  color: #3182f6;
+  border-color: var(--locker-primary);
+  color: var(--locker-primary);
 }
 
 .stepItem.current .stepCircle {
-  background: #3182f6;
+  border-color: var(--locker-primary);
+  background: var(--locker-primary);
   color: #fff;
-  border-color: #3182f6;
 }
 
 .stepLabel {
   margin-top: 10px;
-  font-size: 13px;
   color: #8b929c;
+  font-size: 13px;
   font-weight: 700;
-  text-align: center;
   line-height: 1.3;
+  text-align: center;
   word-break: keep-all;
 }
 
 .stepItem.active .stepLabel {
-  color: #3182f6;
+  color: var(--locker-primary);
 }
 
 .statusBadge {
   margin-top: 8px;
   padding: 3px 9px;
   border-radius: 999px;
-  background: #3182f6;
+  background: var(--locker-primary);
   color: #fff;
   font-size: 12px;
   font-weight: 700;
 }
 
+/* =========================================================
+   Description box
+========================================================= */
+
 .descriptionBox {
   display: flex;
   gap: 14px;
   padding: 18px;
-  border: 1px solid #e2e6ec;
-  border-radius: 16px;
-  background: #fff;
 }
 
 .descriptionIcon {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: #3182f6;
+  background: var(--locker-primary);
   color: #fff;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
 .descriptionBox h4 {
   margin: 2px 0 8px;
+  color: var(--locker-text);
   font-size: 17px;
-  line-height: 1.4;
-  color: #111;
   font-weight: 800;
+  line-height: 1.4;
 }
 
 .descriptionBox p {
   margin: 0;
+  color: var(--locker-sub-text);
   font-size: 14px;
   line-height: 1.55;
-  color: #666;
 }
+
+/* =========================================================
+   Footer buttons
+========================================================= */
 
 .footerButtonRow {
   display: flex;
@@ -223,40 +303,42 @@
 }
 
 .subButton,
+.mainButton,
+.lockerSubActionButton,
+.mapSelectButton,
+.branchOverlaySelectButton {
+  border: 0;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.subButton,
 .mainButton {
   height: 50px;
-  border-radius: 12px;
-  border: 0;
+  border-radius: var(--locker-radius-sm);
   font-size: 15px;
-  font-weight: 800;
-  cursor: pointer;
 }
 
 .subButton {
   flex: 0 0 110px;
+  border: 1px solid #dfe2e6;
   background: #fff;
   color: #333;
-  border: 1px solid #dfe2e6;
 }
 
 .mainButton {
   flex: 1;
-  background: #111;
+  background: var(--locker-black);
   color: #fff;
 }
 
-.mainButton:disabled,
-.subButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+/* =========================================================
+   Locker action area
+========================================================= */
 
 .lockerActionBox {
   margin-top: 16px;
   padding: 18px;
-  border-radius: 16px;
-  border: 1px solid #e2e6ec;
-  background: #fff;
 }
 
 .lockerActionHeader {
@@ -268,16 +350,16 @@
 
 .lockerActionTitle {
   margin: 0;
+  color: var(--locker-text);
   font-size: 17px;
   font-weight: 900;
-  color: #111;
 }
 
 .lockerActionDesc {
   margin: 6px 0 0;
+  color: var(--locker-sub-text);
   font-size: 13px;
   line-height: 1.45;
-  color: #666;
 }
 
 .lockerActionButtonRow {
@@ -289,30 +371,26 @@
 
 .lockerSubActionButton {
   height: 46px;
-  border: 0;
-  border-radius: 12px;
-  background: #111;
+  border-radius: var(--locker-radius-sm);
+  background: var(--locker-black);
   color: #fff;
   font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.lockerSubActionButton:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
 }
 
 .lockerNoticeBox {
   margin-top: 16px;
   padding: 16px;
-  border-radius: 14px;
-  background: #f5f6f8;
+  border-radius: var(--locker-radius-md);
+  background: var(--locker-bg);
   color: #555;
   font-size: 14px;
   font-weight: 700;
   text-align: center;
 }
+
+/* =========================================================
+   Selected branch summary
+========================================================= */
 
 .selectedBranchCard {
   margin-top: 12px;
@@ -328,19 +406,20 @@
   margin-top: 12px;
 }
 
-.selectedBranchImage {
-  width: 110px;
-  height: 88px;
-  border-radius: 2px;
-  object-fit: cover;
-  background: #eef0f3;
-  flex-shrink: 0;
-}
-
+.selectedBranchImage,
 .selectedBranchImageEmpty {
   width: 110px;
   height: 88px;
   border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.selectedBranchImage {
+  object-fit: cover;
+  background: #eef0f3;
+}
+
+.selectedBranchImageEmpty {
   background: #333;
   color: #fff;
   font-size: 34px;
@@ -348,10 +427,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
-.selectedBranchInfoWrap {
+.selectedBranchInfoWrap,
+.selectedBranchInfoText {
   min-width: 0;
   flex: 1;
 }
@@ -363,53 +442,59 @@
   gap: 10px;
 }
 
-.selectedBranchInfoText {
-  min-width: 0;
-  flex: 1;
-}
-
 .selectedBranchName {
+  color: var(--locker-text);
   font-size: 15px;
   font-weight: 900;
-  color: #111;
   line-height: 1.35;
 }
 
 .selectedBranchAddress {
   margin-top: 5px;
+  color: var(--locker-sub-text);
   font-size: 13px;
-  color: #666;
   line-height: 1.35;
+}
+
+.selectedBranchStatus,
+.branchStatus,
+.branchOverlayStatus {
+  width: fit-content;
+  border-radius: 999px;
+  background: var(--locker-primary-soft);
+  color: var(--locker-primary);
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .selectedBranchStatus {
   flex-shrink: 0;
   padding: 4px 10px;
-  border-radius: 999px;
-  background: #e8f3ff;
-  color: #3182f6;
   font-size: 11px;
   font-weight: 900;
 }
 
-.branchMiniMap {
-  width: 100%;
-  height: 132px;
-  margin-top: 12px;
-  border-radius: 0;
-  overflow: hidden;
-  border: 1px solid #e2e6ec;
-  background: #eef0f3;
-}
+/* =========================================================
+   Mini map
+========================================================= */
 
+.branchMiniMap,
 .branchMiniMapEmpty {
   width: 100%;
   height: 132px;
   margin-top: 12px;
   border-radius: 0;
-  border: 1px solid #e2e6ec;
+  border: 1px solid var(--locker-border);
+  overflow: hidden;
+}
+
+.branchMiniMap {
+  background: #eef0f3;
+}
+
+.branchMiniMapEmpty {
   background: #f1f3f5;
-  color: #777;
+  color: var(--locker-muted-text);
   font-size: 13px;
   font-weight: 800;
   display: flex;
@@ -417,18 +502,48 @@
   justify-content: center;
 }
 
+/* =========================================================
+   Locker status grid
+========================================================= */
+
 .selectedBranchLockerSection {
   margin-top: 14px;
 }
 
-.selectedBranchLockerTitle {
-  margin-bottom: 10px;
-  font-size: 14px;
-  font-weight: 900;
-  color: #111;
+.selectedBranchLockerHeader,
+.lockerStateHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.selectedBranchLockerGrid {
+.selectedBranchLockerHeader {
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.lockerStateHeader {
+  margin: 18px 0 10px;
+}
+
+.selectedBranchLockerTitle,
+.lockerStateTitle {
+  color: var(--locker-text);
+  font-weight: 900;
+}
+
+.selectedBranchLockerTitle {
+  margin: 0;
+  font-size: 14px;
+}
+
+.lockerStateTitle {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.selectedBranchLockerGrid,
+.lockerGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
@@ -437,92 +552,180 @@
 .selectedBranchLockerItem {
   min-height: 84px;
   padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid #e2e6ec;
-  background: #fff;
-}
-
-.selectedBranchLockerIcon {
-  font-size: 17px;
-  line-height: 1;
-  color: #3182f6;
-}
-
-.selectedBranchLockerNo {
-  margin-top: 9px;
-  font-size: 14px;
-  font-weight: 900;
-  color: #111;
-}
-
-.selectedBranchLockerStatus {
-  margin-top: 5px;
-  font-size: 13px;
-  color: #666;
-}
-
-.lockerStateHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 18px 0 10px;
-}
-
-.lockerStateTitle {
-  font-size: 15px;
-  font-weight: 800;
-  color: #111;
-}
-
-.lockerGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  border-radius: var(--locker-radius-sm);
 }
 
 .lockerItem {
   padding: 14px;
-  border-radius: 14px;
-  border: 1px solid #e2e6ec;
-  background: #fff;
+  border-radius: var(--locker-radius-md);
 }
 
+.selectedBranchLockerIcon,
 .lockerIcon {
-  font-size: 22px;
-  line-height: 1;
-  color: #3182f6;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filledStatusIcon {
+  width: 23px;
+  height: 23px;
+  display: block;
+  fill: currentColor;
+}
+
+.strokeStatusIcon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lockerIconAvailable {
+  background: var(--locker-primary-soft);
+  color: var(--locker-primary);
+}
+
+.lockerIconInUse {
+  background: #fff4db;
+  color: #f59f00;
+}
+
+.lockerIconBroken {
+  background: #ffe3e3;
+  color: #e03131;
+}
+
+.lockerIconUnknown {
+  background: #f1f3f5;
+  color: #868e96;
+}
+
+.lockerStatusTextAvailable {
+  color: var(--locker-primary);
+  font-weight: 800;
+}
+
+.lockerStatusTextInUse {
+  color: #f08c00;
+  font-weight: 800;
+}
+
+.lockerStatusTextBroken {
+  color: #e03131;
+  font-weight: 800;
+}
+
+.lockerStatusTextUnknown {
+  color: #868e96;
+  font-weight: 800;
+}
+
+.selectedBranchLockerNo,
+.lockerNo {
+  color: var(--locker-text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.selectedBranchLockerNo {
+  margin-top: 9px;
 }
 
 .lockerNo {
   margin-top: 8px;
-  font-size: 14px;
   font-weight: 800;
-  color: #111;
+}
+
+.selectedBranchLockerStatus,
+.lockerStatus {
+  color: var(--locker-sub-text);
+  font-size: 13px;
+}
+
+.selectedBranchLockerStatus {
+  margin-top: 5px;
 }
 
 .lockerStatus {
   margin-top: 6px;
-  font-size: 13px;
-  color: #666;
 }
+
+/* =========================================================
+   Refresh buttons
+========================================================= */
+
+.lockerRefreshIconButton,
+.mapRefreshButton,
+.mapCloseButton {
+  border: 0;
+  border-radius: 50%;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lockerRefreshIconButton,
+.mapRefreshButton {
+  background: var(--locker-primary-soft);
+  color: var(--locker-primary);
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.lockerRefreshIconButton {
+  width: 30px;
+  height: 30px;
+}
+
+.mapRefreshButton,
+.mapCloseButton {
+  width: 34px;
+  height: 34px;
+}
+
+.lockerRefreshIconButton:hover,
+.mapRefreshButton:hover {
+  background: var(--locker-primary-soft-hover);
+}
+
+.mapCloseButton {
+  background: var(--locker-bg);
+  color: var(--locker-sub-text);
+  font-size: 24px;
+}
+
+/* =========================================================
+   Left map drawer
+========================================================= */
 
 .leftDrawer {
   position: fixed;
   top: 0;
   right: 640px;
+  z-index: 1300;
   width: 560px;
   height: 100vh;
   background: #fff;
-  z-index: 1300;
-  border-right: 1px solid #e2e6ec;
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+  border-right: 1px solid var(--locker-border);
+  box-shadow: var(--locker-shadow-drawer);
   display: flex;
   flex-direction: column;
 }
 
 .mapDrawerHeader {
   padding: 24px 26px 20px;
-  border-bottom: 1px solid #eceef1;
+  border-bottom: 1px solid var(--locker-border-light);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -534,26 +737,18 @@
   padding-right: 16px;
 }
 
-.mapDrawerTitle {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 900;
-  color: #111;
-}
-
-.mapCloseButton {
-  width: 34px;
-  height: 34px;
-  border: 0;
-  border-radius: 50%;
-  background: #f5f6f8;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-  color: #666;
+.mapHeaderButtonGroup {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+}
+
+.mapDrawerTitle {
+  margin: 0;
+  color: var(--locker-text);
+  font-size: 22px;
+  font-weight: 900;
 }
 
 .branchSearchInput {
@@ -562,13 +757,12 @@
   margin-top: 14px;
   padding: 0 14px;
   border: 1px solid #dfe2e6;
-  border-radius: 12px;
+  border-radius: var(--locker-radius-sm);
   background: #fff;
-  color: #111;
+  color: var(--locker-text);
   font-size: 14px;
   font-weight: 600;
   outline: none;
-  box-sizing: border-box;
 }
 
 .branchSearchInput::placeholder {
@@ -576,7 +770,7 @@
 }
 
 .branchSearchInput:focus {
-  border-color: #3182f6;
+  border-color: var(--locker-primary);
   box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.12);
 }
 
@@ -590,25 +784,27 @@
 .kakaoMap {
   width: 100%;
   height: 420px;
-  border-radius: 18px;
+  border-radius: var(--locker-radius-xl);
   overflow: hidden;
+  border: 1px solid var(--locker-border);
   background: #eef0f3;
-  border: 1px solid #e2e6ec;
 }
+
+/* =========================================================
+   Branch info panel
+========================================================= */
 
 .branchInfoPanel {
   margin-top: 18px;
   padding: 18px;
-  border-radius: 18px;
-  border: 1px solid #e2e6ec;
-  background: #fff;
+  border-radius: var(--locker-radius-xl);
 }
 
 .branchEmptyText {
   height: 130px;
-  border-radius: 16px;
-  background: #f5f6f8;
-  color: #777;
+  border-radius: var(--locker-radius-lg);
+  background: var(--locker-bg);
+  color: var(--locker-muted-text);
   font-size: 15px;
   font-weight: 800;
   display: flex;
@@ -616,27 +812,27 @@
   justify-content: center;
 }
 
-.branchImage {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-  border-radius: 14px;
-  background: #eef0f3;
-  margin-bottom: 14px;
-}
-
+.branchImage,
 .branchImageEmpty {
   width: 100%;
   height: 150px;
-  border-radius: 14px;
+  margin-bottom: 14px;
+  border-radius: var(--locker-radius-md);
+}
+
+.branchImage {
+  object-fit: cover;
+  background: #eef0f3;
+}
+
+.branchImageEmpty {
   background: #f1f3f5;
-  color: #999;
+  color: var(--locker-light-text);
   font-size: 13px;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 14px;
 }
 
 .branchTopRow {
@@ -647,64 +843,69 @@
 }
 
 .branchName {
+  color: var(--locker-text);
   font-size: 17px;
   font-weight: 800;
-  color: #111;
 }
 
 .branchAddress {
   margin-top: 5px;
+  color: var(--locker-sub-text);
   font-size: 14px;
-  color: #666;
 }
 
 .branchStatus {
   flex-shrink: 0;
   display: inline-block;
   padding: 5px 9px;
-  border-radius: 999px;
-  background: #e8f3ff;
-  color: #3182f6;
   font-size: 12px;
-  font-weight: 800;
 }
+
+/* =========================================================
+   Map drawer footer
+========================================================= */
 
 .mapDrawerFooter {
   padding: 18px 26px 22px;
-  border-top: 1px solid #eceef1;
+  border-top: 1px solid var(--locker-border-light);
   background: #fff;
 }
 
 .mapSelectButton {
   width: 100%;
   height: 54px;
-  border: 0;
-  border-radius: 14px;
-  background: #111;
+  border-radius: var(--locker-radius-md);
+  background: var(--locker-black);
   color: #fff;
   font-size: 16px;
   font-weight: 900;
-  cursor: pointer;
 }
 
 .mapSelectButton:disabled {
   background: #9b9b9b;
-  cursor: not-allowed;
 }
+
+/* =========================================================
+   Chat placeholder
+========================================================= */
 
 .chatPlaceholder {
   flex: 1;
   margin: 16px;
-  border-radius: 16px;
   border: 1px dashed #d7dbe2;
+  border-radius: var(--locker-radius-lg);
   background: #f8f9fb;
-  color: #777;
+  color: var(--locker-muted-text);
   font-size: 15px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
+/* =========================================================
+   Kakao branch overlay
+========================================================= */
 
 .branchOverlay {
   position: relative;
@@ -715,31 +916,33 @@
 .branchOverlayCard {
   position: relative;
   width: 235px;
-  border-radius: 14px;
-  background: #fff;
   border: 1px solid #dfe6f3;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.2);
+  border-radius: var(--locker-radius-md);
+  background: #fff;
+  box-shadow: var(--locker-shadow-overlay);
 }
 
 .branchOverlayInner {
   display: flex;
   align-items: stretch;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: var(--locker-radius-md);
+}
+
+.branchOverlayImage,
+.branchOverlayImageEmpty {
+  width: 76px;
+  height: 96px;
+  flex-shrink: 0;
 }
 
 .branchOverlayImage {
-  width: 76px;
-  height: 96px;
   object-fit: cover;
   display: block;
-  flex-shrink: 0;
   background: #eef0f3;
 }
 
 .branchOverlayImageEmpty {
-  width: 76px;
-  height: 96px;
   background: #f1f3f5;
   color: #9aa1aa;
   font-size: 11px;
@@ -747,7 +950,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
 .branchOverlayBody {
@@ -758,26 +960,27 @@
   flex-direction: column;
 }
 
-.branchOverlayTitle {
-  font-size: 16px;
-  line-height: 1.3;
-  color: #111;
-  font-weight: 800;
-  margin-bottom: 4px;
+.branchOverlayTitle,
+.branchOverlayAddress {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.branchOverlayTitle {
+  margin-bottom: 4px;
+  color: var(--locker-text);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
 .branchOverlayAddress {
-  font-size: 13px;
-  line-height: 1.35;
-  color: #555;
-  font-weight: 500;
   margin-bottom: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: #555;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
 }
 
 .branchOverlayBottomRow {
@@ -789,26 +992,18 @@
 }
 
 .branchOverlayStatus {
-  width: fit-content;
   padding: 3px 8px;
-  border-radius: 999px;
-  background: #eaf3ff;
   color: #2276f2;
   font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
 }
 
 .branchOverlaySelectButton {
   height: 26px;
   padding: 0 10px;
-  border: 0;
   border-radius: 999px;
-  background: #111;
+  background: var(--locker-black);
   color: #fff;
   font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
   white-space: nowrap;
 }
 
@@ -827,81 +1022,21 @@
   border-bottom: 1px solid #dfe6f3;
   transform: translateX(-50%) rotate(45deg);
 }
-.selectedBranchLockerHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
-}
 
-.lockerRefreshIconButton {
-  width: 30px;
-  height: 30px;
-  border: 0;
-  border-radius: 50%;
-  background: #e8f3ff;
-  color: #3182f6;
-  font-size: 19px;
-  font-weight: 900;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.lockerRefreshIconButton:hover {
-  background: #d9ebff;
-}
-
-.lockerRefreshIconButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.mapHeaderButtonGroup {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.mapRefreshButton {
-  width: 34px;
-  height: 34px;
-  border: 0;
-  border-radius: 50%;
-  background: #e8f3ff;
-  color: #3182f6;
-  font-size: 19px;
-  font-weight: 900;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mapRefreshButton:hover {
-  background: #d9ebff;
-}
-
-.mapRefreshButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* =========================================================
+   Mobile
+========================================================= */
 
 @media (max-width: 999px) {
   .leftDrawer {
     inset: 0;
     right: auto;
+    z-index: 1600;
     width: 100vw;
     max-width: none;
     height: 100dvh;
     border-right: 0;
     box-shadow: none;
-    z-index: 1600;
   }
 
   .mapDrawerHeader {
@@ -930,19 +1065,19 @@
 
   .kakaoMap {
     height: min(54vh, 430px);
-    border-radius: 14px;
+    border-radius: var(--locker-radius-md);
   }
 
   .branchInfoPanel {
     margin-top: 12px;
     padding: 14px;
-    border-radius: 14px;
+    border-radius: var(--locker-radius-md);
   }
 
   .branchImage,
   .branchImageEmpty {
     height: 120px;
-    border-radius: 12px;
+    border-radius: var(--locker-radius-sm);
   }
 
   .lockerGrid {
@@ -956,7 +1091,7 @@
 
   .mapSelectButton {
     height: 48px;
-    border-radius: 12px;
+    border-radius: var(--locker-radius-sm);
     font-size: 15px;
   }
 }
