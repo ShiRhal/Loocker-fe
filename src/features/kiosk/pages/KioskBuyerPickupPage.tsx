@@ -557,7 +557,6 @@ export default function KioskBuyerPickupPage() {
 
     throw new Error("라즈베리파이 명령 성공 확인 시간이 초과되었습니다.");
   }
-
   async function startPickupAfterPayment(
     requestTypeCode: KioskLockerRequestTypeCode = "NORMAL",
   ) {
@@ -568,16 +567,27 @@ export default function KioskBuyerPickupPage() {
       setStep("OPENING");
       setMessage("결제가 확인되었습니다. 보관함 문을 여는 중입니다.");
 
+      // 1. 결제 성공 처리
+      // 여기서 백엔드가 PAYMENT PAID 처리 + PAYMENT_CONFIRMED 상태까지 자동 처리함
       await paidLockerPay();
 
+      // 2. 라즈베리파이 문 열림 명령 생성
       await createLockerCommand(STATUS_BUYER_UNLOCK_REQUESTED, requestTypeCode);
 
+      // 3. 보관함 상태를 BUYER_UNLOCK_REQUESTED로 변경
+      // 이 호출이 빠져 있어서 바로 BUYER_UNLOCK_READY로 가면서 허용되지 않은 상태 전이가 뜬 것
+      await updateLockerState(STATUS_BUYER_UNLOCK_REQUESTED, "KIOSK");
+
+      // 4. 라즈베리파이가 명령을 가져갈 시간
       await sleep(1000);
 
+      // 5. BUYER_UNLOCK_REQUESTED에 매핑된 명령 SUCCESS 확인
       await waitUntilCommandSuccess(STATUS_BUYER_UNLOCK_REQUESTED);
 
+      // 6. DB 반영 대기
       await sleep(500);
 
+      // 7. DEVICE 전이로 BUYER_UNLOCK_READY 변경
       await updateLockerState(STATUS_BUYER_UNLOCK_READY, "DEVICE");
 
       setStep("OPENED");
