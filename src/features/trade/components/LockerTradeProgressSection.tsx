@@ -16,6 +16,12 @@ import styles from "./LockerTradeProgressSection.module.css";
 import { getOrCreateChatRoomForProduct } from "../../chat/api/chatApi";
 import { useChatDrawer } from "../../chat/context/ChatDrawerContext";
 
+declare global {
+  interface Window {
+    kakao?: any;
+  }
+}
+
 type Step = {
   title: string;
   description: string;
@@ -50,9 +56,9 @@ const lockerSteps: Step[] = [
     title: "지점 확정",
     description: "판매자와 협의하여 지점을 확정할 차례입니다.",
     buyerDescription:
-      "판매자와 협의 하에 보관함 지점을 확정할 차례입니다. 이후 판매자의 키오스크 보관 절차를 기다려주세요.",
+      "판매자가 보관함 지점을 확정했습니다. 이후 판매자의 키오스크 보관 절차를 기다려주세요.",
     sellerDescription:
-      "선택한 지점을 구매자와 협의 하에 확정할 차례입니다. 이후 해당 지점에 방문하여 물품 보관을 진행해주세요.",
+      "선택한 지점을 확정했습니다. 보관 대기 버튼을 눌러 키오스크 보관 단계로 진행해주세요.",
     statusCode: "BRANCH_SELECTED",
   },
   {
@@ -61,7 +67,7 @@ const lockerSteps: Step[] = [
     buyerDescription:
       "판매자가 키오스크에서 물품을 보관하는 중입니다. 보관이 완료되면 보관함 내부 사진이 화면에 표시됩니다.",
     sellerDescription:
-      "키오스크에서 본인 인증 후 물품을 보관해주세요. 이후 보관이 완려되면 보관함 내부 사진이 화면에 표시됩니다.",
+      "키오스크에서 본인 인증 후 물품을 보관해주세요. 이후 보관이 완료되면 보관함 내부 사진이 화면에 표시됩니다.",
     statusCode: "DEPOSIT_WAITING",
   },
   {
@@ -86,9 +92,9 @@ const lockerSteps: Step[] = [
     title: "수령 완료",
     description: "구매자가 보관함에서 상품을 수령했습니다.",
     buyerDescription:
-      "물품 수령이 완료되었습니다. 문제가 없다면 거래 완료 버튼을 누르거나 24시간이 지나면 자동으로 거래가 최종으로 완료됩니다.",
+      "물품 수령이 완료되었습니다. 문제가 없다면 거래 완료 버튼을 누르거나 24시간이 지나면 자동으로 거래가 최종 완료됩니다.",
     sellerDescription:
-      "구매자가 물품을 수령했습니다. 최종 거래 완료는 구매자 승인 혹은 24시간이 지나면 자동으로 처리됩니다. ",
+      "구매자가 물품을 수령했습니다. 최종 거래 완료는 구매자 승인 혹은 24시간이 지나면 자동으로 처리됩니다.",
     statusCode: "PICKEDUP",
   },
   {
@@ -615,7 +621,6 @@ function MiniBranchMap({ location }: MiniBranchMapProps) {
 
 export default function LockerTradeProgressSection({
   tradeId,
-  tradeType,
   product,
   onBack,
   onClose,
@@ -1087,6 +1092,52 @@ export default function LockerTradeProgressSection({
     }
   };
 
+  const handleCreateDepositWaiting = async () => {
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+      message.error("로그인이 필요합니다.");
+      return;
+    }
+
+    if (!isSeller) {
+      message.error("판매자만 보관 대기 단계로 변경할 수 있습니다.");
+      return;
+    }
+
+    const targetTradeId = await resolveTradeId();
+
+    if (!targetTradeId) return;
+
+    try {
+      setSubmitting(true);
+
+      const result = await tradeApi.updateTradeStatus(accessToken, {
+        TRADE_ID: targetTradeId,
+        RESULT_STATUS_CODE: "BRANCH_SELECTED",
+        NEXT_STATUS_CODE: "DEPOSIT_WAITING",
+        TRADE_TYPE_CODE: "LOCKER",
+      });
+
+      const responseStatusCode = getResponseStatusCode(result);
+
+      const nextUiStatusCode =
+        responseStatusCode && responseStatusCode !== "BRANCH_SELECTED"
+          ? responseStatusCode
+          : "DEPOSIT_WAITING";
+
+      setCurrentStatusCode(nextUiStatusCode);
+      onStatusChangeRef.current?.(nextUiStatusCode);
+
+      message.success("보관 대기 상태로 변경되었습니다.");
+    } catch (error) {
+      console.error(error);
+      message.error("보관 대기 처리에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleOpenChatRoom = async () => {
     const accessToken = localStorage.getItem("accessToken");
 
@@ -1189,22 +1240,23 @@ export default function LockerTradeProgressSection({
       return;
     }
 
+    if (isLockerBranchConfirmStep) {
+      handleCreateDepositWaiting();
+      return;
+    }
+
     if (canCompleteTrade) {
       handleProgress();
       return;
     }
 
-    if (isLockerBranchConfirmStep) {
-      return;
-    }
-
     if (isKioskAutoStep || isLockerDepositWaitingStep) {
-      message.info("현재 화면에서 직접 변경할 수 없는 단계입니다.");
+      message.info("이 단계는 키오스크와 백엔드에서 자동으로 처리됩니다.");
       return;
     }
 
     if (isLockerPickedupStep && !isBuyer) {
-      message.info("현재 화면에서 직접 변경할 수 없는 단계입니다.");
+      message.info("거래 완료는 구매자 화면에서만 처리할 수 있습니다.");
       return;
     }
 
@@ -1216,7 +1268,7 @@ export default function LockerTradeProgressSection({
 
     if (isLockerBranchSelectStep) return "지점 확정";
 
-    if (isLockerBranchConfirmStep) return "키오스크 보관 진행";
+    if (isLockerBranchConfirmStep) return "보관 대기";
 
     if (isLockerDepositWaitingStep) return "보관 대기중";
 
@@ -1575,8 +1627,8 @@ export default function LockerTradeProgressSection({
           {isLockerBranchConfirmStep &&
             renderAutoStepActionBox(
               "지점 확정",
-              "선택한 지점이 확정되었습니다. 키오스크에서 본인 인증 후 물품 보관을 진행하면 보관 대기 상태가 자동으로 반영됩니다.",
-              "판매자가 보관함 지점을 확정했습니다. 판매자의 키오스크 보관 절차를 기다려주세요.",
+              "선택한 지점이 확정되었습니다. 보관 대기 버튼을 눌러 키오스크 보관 단계로 진행해주세요.",
+              "판매자가 보관함 지점을 확정했습니다. 판매자가 보관 대기 단계로 넘긴 뒤 키오스크에서 물품 보관을 진행합니다.",
             )}
 
           {isLockerDepositWaitingStep &&
