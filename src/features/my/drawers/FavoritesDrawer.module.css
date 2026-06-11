@@ -250,3 +250,56 @@
   font-size: 14px;
   color: #8c8c8c;
 }
+
+/* 판매내역 / 구매내역 / 찜내역 카드형 리스트 */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f5f6f8;
+}
+
+.searchSection {
+  padding: 18px 20px 10px;
+  background: #f5f6f8;
+}
+
+.search {
+  background-color: #fff;
+  border: 1px solid #e1e4ea;
+  border-radius: 12px;
+}
+
+.listContainer {
+  padding: 10px 20px 24px;
+  background: #f5f6f8;
+  overflow-y: auto;
+}
+
+.cardList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cardListItem {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .searchSection {
+    padding: 16px 14px 8px;
+  }
+
+  .listContainer {
+    padding: 8px 14px 20px;
+  }
+
+  .cardList {
+    gap: 12px;
+  }
+}
