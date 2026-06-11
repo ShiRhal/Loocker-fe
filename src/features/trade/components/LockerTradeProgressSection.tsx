@@ -50,7 +50,7 @@ const lockerSteps: Step[] = [
   {
     title: "보관 대기",
     description:
-      "판매자가 키오스크에서 본인 인증 후 상품을 보관함에 보관합니다..",
+      "판매자가 키오스크에서 본인 인증 후 상품을 보관함에 보관합니다.",
     statusCode: "DEPOSIT_WAITING",
   },
   {
@@ -671,7 +671,7 @@ export default function LockerTradeProgressSection({
   }, [product.productId]);
 
   useEffect(() => {
-    if (currentStatusCode !== "DEPOSIT_WAITING") {
+    if (currentStatusCode !== "DEPOSITED") {
       setLockerImages(null);
       return;
     }
@@ -745,10 +745,12 @@ export default function LockerTradeProgressSection({
   const isLockerBranchSelectStep = currentStatusCode === "BRANCH_SELECT";
   const isLockerBranchConfirmStep = currentStatusCode === "BRANCH_SELECTED";
   const isLockerDepositWaitingStep = currentStatusCode === "DEPOSIT_WAITING";
+  const isLockerDepositedStep = currentStatusCode === "DEPOSITED";
 
   const shouldHideDescriptionBox =
     currentStatusCode === "BRANCH_SELECTED" ||
-    currentStatusCode === "DEPOSIT_WAITING";
+    currentStatusCode === "DEPOSIT_WAITING" ||
+    currentStatusCode === "DEPOSITED";
 
   const saveLockerLocation = async (
     accessToken: string,
@@ -1202,38 +1204,45 @@ export default function LockerTradeProgressSection({
 
     return (
       <div className={styles.lockerImageCard}>
-        <h4 className={styles.lockerImageTitle}>보관함 촬영 사진</h4>
-
-        <div className={styles.lockerImageBlock}>
-          <div className={styles.lockerImageLabel}>판매자 촬영 사진</div>
-
-          {sellerImageUrl ? (
-            <img
-              src={toApiAssetUrl(sellerImageUrl)}
-              alt="판매자 촬영 사진"
-              className={styles.lockerTradeImage}
-            />
-          ) : (
-            <div className={styles.lockerImageEmpty}>
-              판매자 촬영 사진을 불러오는 중입니다.
-            </div>
-          )}
+        <div className={styles.lockerImageHeader}>
+          <h4 className={styles.lockerImageTitle}>보관함 촬영 사진</h4>
+          <p className={styles.lockerImageDesc}>
+            키오스크에서 촬영된 판매자 보관 사진과 구매자 수령 사진입니다.
+          </p>
         </div>
 
-        <div className={styles.lockerImageBlock}>
-          <div className={styles.lockerImageLabel}>구매자 촬영 사진</div>
+        <div className={styles.lockerImageGrid}>
+          <div className={styles.lockerImageBlock}>
+            <div className={styles.lockerImageLabel}>판매자 보관 사진</div>
 
-          {buyerImageUrl ? (
-            <img
-              src={toApiAssetUrl(buyerImageUrl)}
-              alt="구매자 촬영 사진"
-              className={styles.lockerTradeImage}
-            />
-          ) : (
-            <div className={styles.lockerImageEmpty}>
-              구매자 촬영 사진이 아직 없습니다.
-            </div>
-          )}
+            {sellerImageUrl ? (
+              <img
+                src={toApiAssetUrl(sellerImageUrl)}
+                alt="판매자 보관 사진"
+                className={styles.lockerTradeImage}
+              />
+            ) : (
+              <div className={styles.lockerImageEmpty}>
+                판매자 보관 사진을 불러오는 중입니다.
+              </div>
+            )}
+          </div>
+
+          <div className={styles.lockerImageBlock}>
+            <div className={styles.lockerImageLabel}>구매자 수령 사진</div>
+
+            {buyerImageUrl ? (
+              <img
+                src={toApiAssetUrl(buyerImageUrl)}
+                alt="구매자 수령 사진"
+                className={styles.lockerTradeImage}
+              />
+            ) : (
+              <div className={styles.lockerImageEmpty}>
+                구매자 수령 사진이 아직 없습니다.
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1407,6 +1416,23 @@ export default function LockerTradeProgressSection({
                   <p className={styles.lockerActionDesc}>
                     판매자가 키오스크에서 본인 인증 후 상품을 보관하면 다음
                     단계로 진행됩니다.
+                  </p>
+                </div>
+              </div>
+
+              {renderBranchSelectCard()}
+              {renderBranchActionButtons()}
+            </div>
+          )}
+
+          {isLockerDepositedStep && (
+            <div className={styles.lockerActionBox}>
+              <div className={styles.lockerActionHeader}>
+                <div>
+                  <h4 className={styles.lockerActionTitle}>보관 완료</h4>
+                  <p className={styles.lockerActionDesc}>
+                    판매자가 상품을 보관함에 보관했습니다. 촬영된 사진을 확인할
+                    수 있습니다.
                   </p>
                 </div>
               </div>

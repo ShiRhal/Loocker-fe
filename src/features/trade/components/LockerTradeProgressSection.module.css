@@ -960,3 +960,81 @@
     font-size: 15px;
   }
 }
+
+.lockerImageCard {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid #e5e8ef;
+}
+
+.lockerImageHeader {
+  margin-bottom: 14px;
+}
+
+.lockerImageTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #202632;
+}
+
+.lockerImageDesc {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: #7b8494;
+  line-height: 1.45;
+}
+
+.lockerImageGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.lockerImageBlock {
+  min-width: 0;
+}
+
+.lockerImageLabel {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4b5563;
+}
+
+.lockerTradeImage {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid #e5e8ef;
+  background: #f5f7fb;
+}
+
+.lockerImageEmpty {
+  width: 100%;
+  height: 180px;
+  border-radius: 14px;
+  border: 1px dashed #cfd6e4;
+  background: #f7f9fc;
+  color: #8a94a6;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 12px;
+}
+
+@media (max-width: 560px) {
+  .lockerImageGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .lockerTradeImage,
+  .lockerImageEmpty {
+    height: 220px;
+  }
+}
