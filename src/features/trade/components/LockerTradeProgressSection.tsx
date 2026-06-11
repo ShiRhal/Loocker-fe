@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { message } from "antd";
 import { useNavigate } from "react-router-dom";
 import DrawerLayout from "../../../shared/components/DrawerLayout/DrawerLayout";
-import { tradeApi } from "../api/tradeApi";
+import { tradeApi, type TradeLockerImageResponse } from "../api/tradeApi";
 import { toApiAssetUrl } from "../../../shared/utils/imageUrl";
 import LockerMapDrawer from "./LockerMapDrawer";
 import type {
@@ -31,6 +31,9 @@ type Props = {
   initialStatusCode?: string | null;
   onStatusChange?: (statusCode: string) => void;
 };
+
+const LOCKER_STATUS_POLLING_INTERVAL_MS = 2000;
+const LOCKER_IMAGE_POLLING_INTERVAL_MS = 3000;
 
 const lockerSteps: Step[] = [
   {
@@ -267,6 +270,51 @@ function getLocationNumber(
   return null;
 }
 
+function getLockerImageData(result: unknown): TradeLockerImageResponse | null {
+  if (!result) return null;
+
+  if (Array.isArray(result)) {
+    const merged: TradeLockerImageResponse = {};
+
+    result.forEach((item) => {
+      if (typeof item !== "object" || item === null) return;
+
+      const obj = item as TradeLockerImageResponse;
+
+      if (obj.TRADE_ID) merged.TRADE_ID = obj.TRADE_ID;
+      if (obj.LOCKER_ID) merged.LOCKER_ID = obj.LOCKER_ID;
+
+      if (obj.SELLER_IMAGE_URL || obj.sellerImageUrl) {
+        merged.SELLER_IMAGE_URL = obj.SELLER_IMAGE_URL ?? obj.sellerImageUrl;
+      }
+
+      if (obj.BUYER_IMAGE_URL || obj.buyerImageUrl) {
+        merged.BUYER_IMAGE_URL = obj.BUYER_IMAGE_URL ?? obj.buyerImageUrl;
+      }
+
+      const imageTypeCode = String(
+        obj.IMAGE_TYPE_CODE ?? obj.imageTypeCode ?? "",
+      ).toUpperCase();
+
+      const imageUrl = obj.IMAGE_URL ?? obj.imageUrl ?? "";
+
+      if (imageTypeCode.includes("SELLER") && imageUrl) {
+        merged.SELLER_IMAGE_URL = imageUrl;
+      }
+
+      if (imageTypeCode.includes("BUYER") && imageUrl) {
+        merged.BUYER_IMAGE_URL = imageUrl;
+      }
+    });
+
+    return merged;
+  }
+
+  if (typeof result !== "object" || result === null) return null;
+
+  return result as TradeLockerImageResponse;
+}
+
 function loadKakaoMapScript() {
   return new Promise<void>((resolve, reject) => {
     if (window.kakao?.maps) {
@@ -447,6 +495,8 @@ export default function LockerTradeProgressSection({
   );
   const [lockerStateLoading, setLockerStateLoading] = useState(false);
   const [hasSavedLockerLocation, setHasSavedLockerLocation] = useState(false);
+  const [lockerImages, setLockerImages] =
+    useState<TradeLockerImageResponse | null>(null);
 
   useEffect(() => {
     setResolvedTradeId(tradeId);
@@ -570,7 +620,7 @@ export default function LockerTradeProgressSection({
 
     let stopped = false;
 
-    const syncLockerTradeStatusOnce = async () => {
+    const syncLockerTradeStatus = async () => {
       try {
         const tradeDetail = await tradeApi.getTradeDetail(
           accessToken,
@@ -608,12 +658,60 @@ export default function LockerTradeProgressSection({
       }
     };
 
-    syncLockerTradeStatusOnce();
+    syncLockerTradeStatus();
+
+    const timerId = window.setInterval(() => {
+      syncLockerTradeStatus();
+    }, LOCKER_STATUS_POLLING_INTERVAL_MS);
 
     return () => {
       stopped = true;
+      window.clearInterval(timerId);
     };
   }, [product.productId]);
+
+  useEffect(() => {
+    if (currentStatusCode !== "DEPOSIT_WAITING") {
+      setLockerImages(null);
+      return;
+    }
+
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) return;
+
+    let stopped = false;
+
+    const fetchLockerImages = async () => {
+      const targetTradeId = resolvedTradeId || (await resolveTradeId());
+
+      if (!targetTradeId) return;
+
+      try {
+        const result = await tradeApi.getTradeLockerImages(accessToken, {
+          TRADE_ID: targetTradeId,
+          USER_ID: 0,
+        });
+
+        if (stopped) return;
+
+        setLockerImages(getLockerImageData(result));
+      } catch (error) {
+        console.error("보관함 이미지 조회 실패:", error);
+      }
+    };
+
+    fetchLockerImages();
+
+    const timerId = window.setInterval(() => {
+      fetchLockerImages();
+    }, LOCKER_IMAGE_POLLING_INTERVAL_MS);
+
+    return () => {
+      stopped = true;
+      window.clearInterval(timerId);
+    };
+  }, [currentStatusCode, resolvedTradeId, resolveTradeId]);
 
   useEffect(() => {
     if (
@@ -1095,6 +1193,52 @@ export default function LockerTradeProgressSection({
     );
   };
 
+  const renderLockerImageCard = () => {
+    const sellerImageUrl =
+      lockerImages?.SELLER_IMAGE_URL ?? lockerImages?.sellerImageUrl ?? "";
+
+    const buyerImageUrl =
+      lockerImages?.BUYER_IMAGE_URL ?? lockerImages?.buyerImageUrl ?? "";
+
+    return (
+      <div className={styles.lockerImageCard}>
+        <h4 className={styles.lockerImageTitle}>보관함 촬영 사진</h4>
+
+        <div className={styles.lockerImageBlock}>
+          <div className={styles.lockerImageLabel}>판매자 촬영 사진</div>
+
+          {sellerImageUrl ? (
+            <img
+              src={toApiAssetUrl(sellerImageUrl)}
+              alt="판매자 촬영 사진"
+              className={styles.lockerTradeImage}
+            />
+          ) : (
+            <div className={styles.lockerImageEmpty}>
+              판매자 촬영 사진을 불러오는 중입니다.
+            </div>
+          )}
+        </div>
+
+        <div className={styles.lockerImageBlock}>
+          <div className={styles.lockerImageLabel}>구매자 촬영 사진</div>
+
+          {buyerImageUrl ? (
+            <img
+              src={toApiAssetUrl(buyerImageUrl)}
+              alt="구매자 촬영 사진"
+              className={styles.lockerTradeImage}
+            />
+          ) : (
+            <div className={styles.lockerImageEmpty}>
+              구매자 촬영 사진이 아직 없습니다.
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const isMainButtonDisabled =
     submitting ||
     (isLockerBranchSelectStep && (!isSeller || !selectedLocation?.KIOSK_ID)) ||
@@ -1269,6 +1413,7 @@ export default function LockerTradeProgressSection({
 
               {renderBranchSelectCard()}
               {renderBranchActionButtons()}
+              {renderLockerImageCard()}
             </div>
           )}
         </section>

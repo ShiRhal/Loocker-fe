@@ -15,6 +15,28 @@ import type {
   TradeUpdateResponse,
 } from "../types/trade.types";
 
+export type TradeLockerImageRequest = {
+  TRADE_ID: number;
+  USER_ID?: number;
+};
+
+export type TradeLockerImageResponse = {
+  TRADE_ID?: number;
+  LOCKER_ID?: number;
+
+  SELLER_IMAGE_URL?: string | null;
+  BUYER_IMAGE_URL?: string | null;
+
+  sellerImageUrl?: string | null;
+  buyerImageUrl?: string | null;
+
+  IMAGE_TYPE_CODE?: string | null;
+  IMAGE_URL?: string | null;
+
+  imageTypeCode?: string | null;
+  imageUrl?: string | null;
+};
+
 function getPrimaryImage(images: ProductDetailResponse["IMAGE"]) {
   if (!images || images.length === 0) return "";
 
@@ -156,10 +178,6 @@ export const tradeApi = {
     });
   },
 
-  /**
-   * 지도에서 처음 지점 선택할 때 사용하는 전체 지점 목록 조회 API
-   * 선택 이력이 없어도 호출 가능해야 하는 API
-   */
   async getTradeLockerLocationList(
     accessToken: string,
   ): Promise<TradeLockerLocationResponse[]> {
@@ -171,11 +189,6 @@ export const tradeApi = {
     });
   },
 
-  /**
-   * 이미 선택된 보관함 지점 조회 API
-   * 지점 선택 이후, 보관대기 화면에서 사용
-   * 선택 이력이 없으면 백에서 "지점을 선택한 이력이 없는 거래입니다." 발생 가능
-   */
   async getTradeLockerLocation(
     accessToken: string,
     body: TradeLockerLocationSelectRequest,
@@ -238,6 +251,23 @@ export const tradeApi = {
     });
 
     return await webapi(`/trade/locker/state/select?${query}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  },
+
+  async getTradeLockerImages(
+    accessToken: string,
+    body: TradeLockerImageRequest,
+  ): Promise<TradeLockerImageResponse | TradeLockerImageResponse[] | null> {
+    const query = makeQuery({
+      TRADE_ID: body.TRADE_ID,
+      USER_ID: body.USER_ID ?? 0,
+    });
+
+    return await webapi(`/trade/locker/img/select?${query}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
