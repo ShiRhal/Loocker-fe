@@ -678,7 +678,7 @@ export default function KioskBuyerInspectionPage() {
             <img
               src={cameraModuleImage}
               alt="카메라 모듈"
-              style={{ width: 96, height: 96, objectFit: "contain" }}
+              className={styles.cameraModuleImage}
             />
             <p>{message}</p>
             <span>라즈베리파이 명령 성공 여부를 확인하고 있습니다.</span>
