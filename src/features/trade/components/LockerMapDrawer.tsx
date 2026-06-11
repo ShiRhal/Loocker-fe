@@ -23,19 +23,135 @@ type LockerMapDrawerProps = {
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
 
-function getLockerStatusLabel(status?: string) {
+type LockerStatusVariant = "available" | "inUse" | "broken" | "unknown";
+
+function getLockerStatusVariant(status?: string): LockerStatusVariant {
   switch (status) {
     case "AVAILABLE":
     case "EMPTY":
-    case "LO_01":
-      return "비어있음";
+      return "available";
+
     case "IN_USE":
-      return "사용 중";
+      return "inUse";
+
     case "BROKEN":
+      return "broken";
+
+    default:
+      return "unknown";
+  }
+}
+
+function getLockerStatusLabel(status?: string) {
+  switch (getLockerStatusVariant(status)) {
+    case "available":
+      return "비어있음";
+    case "inUse":
+      return "사용 중";
+    case "broken":
       return "고장";
     default:
       return status || "상태 미확인";
   }
+}
+
+function getLockerIconVariantClassName(status?: string) {
+  switch (getLockerStatusVariant(status)) {
+    case "available":
+      return styles.lockerIconAvailable;
+    case "inUse":
+      return styles.lockerIconInUse;
+    case "broken":
+      return styles.lockerIconBroken;
+    default:
+      return styles.lockerIconUnknown;
+  }
+}
+
+function getLockerStatusTextClassName(status?: string) {
+  switch (getLockerStatusVariant(status)) {
+    case "available":
+      return styles.lockerStatusTextAvailable;
+    case "inUse":
+      return styles.lockerStatusTextInUse;
+    case "broken":
+      return styles.lockerStatusTextBroken;
+    default:
+      return styles.lockerStatusTextUnknown;
+  }
+}
+
+function LockerStatusIcon({
+  status,
+  className,
+}: {
+  status?: string;
+  className: string;
+}) {
+  const variant = getLockerStatusVariant(status);
+
+  return (
+    <span
+      className={`${className} ${getLockerIconVariantClassName(status)}`}
+      role="img"
+      aria-label={getLockerStatusLabel(status)}
+    >
+      {variant === "available" && (
+        <svg
+          className={styles.filledStatusIcon}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <g fill="currentColor" stroke="none">
+            <path d="M3.7 7.7 8.9 4.9 11.65 7.25 6.45 10.15 3.7 7.7Z" />
+            <path d="M20.3 7.7 15.1 4.9 12.35 7.25 17.55 10.15 20.3 7.7Z" />
+            <path d="M6.15 11.05 11.25 13.75V19.15L6.15 16.45V11.05Z" />
+            <path d="M17.85 11.05 12.75 13.75V19.15L17.85 16.45V11.05Z" />
+            <path
+              d="M7.25 10.65 12 8.05 16.75 10.65 12 13.2 7.25 10.65Z"
+              opacity="0.72"
+            />
+          </g>
+        </svg>
+      )}
+
+      {variant === "inUse" && (
+        <svg
+          className={styles.strokeStatusIcon}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M7 10.25h10A2.25 2.25 0 0 1 19.25 12.5V18A2.25 2.25 0 0 1 17 20.25H7A2.25 2.25 0 0 1 4.75 18v-5.5A2.25 2.25 0 0 1 7 10.25Z" />
+          <path d="M8.5 10.25V8a3.5 3.5 0 0 1 7 0v2.25" />
+          <path d="M12 14.25v2" />
+        </svg>
+      )}
+
+      {variant === "broken" && (
+        <svg
+          className={styles.strokeStatusIcon}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M12 3.75 21 19.25H3L12 3.75Z" />
+          <path d="M12 9v4.5" />
+          <path d="M12 16.75h.01" />
+        </svg>
+      )}
+
+      {variant === "unknown" && (
+        <svg
+          className={styles.strokeStatusIcon}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M12 21.25a9.25 9.25 0 1 0 0-18.5 9.25 9.25 0 0 0 0 18.5Z" />
+          <path d="M9.75 9.25a2.35 2.35 0 1 1 3.53 2.03c-.8.48-1.28.92-1.28 1.97" />
+          <path d="M12 16.75h.01" />
+        </svg>
+      )}
+    </span>
+  );
 }
 
 function getBranchStatusLabel(status?: string) {
@@ -214,51 +330,51 @@ export default function LockerMapDrawer({
   }, [open, readonly, initialSelectedLocation, fetchLockerStates]);
 
   const fetchLocations = useCallback(
-  async (showSuccessMessage = false) => {
+    async (showSuccessMessage = false) => {
+      if (!open) return;
+
+      try {
+        setLoading(true);
+
+        const data = await tradeApi.getTradeLockerLocationList(accessToken);
+        const nextLocations = Array.isArray(data) ? data : [];
+
+        setLocations(nextLocations);
+
+        setSelectedLocation((prev) => {
+          if (!prev?.KIOSK_ID) return prev;
+
+          return (
+            nextLocations.find(
+              (location) => location.KIOSK_ID === prev.KIOSK_ID,
+            ) ?? prev
+          );
+        });
+
+        window.setTimeout(() => {
+          if (!mapRef.current) return;
+
+          mapRef.current.relayout();
+        }, 100);
+
+        if (showSuccessMessage) {
+          message.success("보관함 지점 목록을 새로고침했습니다.");
+        }
+      } catch (error) {
+        console.error(error);
+        message.error("보관함 지점 목록을 불러오지 못했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [accessToken, open],
+  );
+
+  useEffect(() => {
     if (!open) return;
 
-    try {
-      setLoading(true);
-
-      const data = await tradeApi.getTradeLockerLocationList(accessToken);
-      const nextLocations = Array.isArray(data) ? data : [];
-
-      setLocations(nextLocations);
-
-      setSelectedLocation((prev) => {
-        if (!prev?.KIOSK_ID) return prev;
-
-        return (
-          nextLocations.find(
-            (location) => location.KIOSK_ID === prev.KIOSK_ID,
-          ) ?? prev
-        );
-      });
-
-      window.setTimeout(() => {
-        if (!mapRef.current) return;
-
-        mapRef.current.relayout();
-      }, 100);
-
-      if (showSuccessMessage) {
-        message.success("보관함 지점 목록을 새로고침했습니다.");
-      }
-    } catch (error) {
-      console.error(error);
-      message.error("보관함 지점 목록을 불러오지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  },
-  [accessToken, open],
-);
-
-useEffect(() => {
-  if (!open) return;
-
-  void fetchLocations(false);
-}, [open, fetchLocations]);
+    void fetchLocations(false);
+  }, [open, fetchLocations]);
 
   useEffect(() => {
     if (!open) return;
@@ -484,25 +600,25 @@ useEffect(() => {
         </div>
 
         <div className={styles.mapHeaderButtonGroup}>
-  <button
-    type="button"
-    className={styles.mapRefreshButton}
-    onClick={() => void fetchLocations(true)}
-    disabled={loading}
-    aria-label="보관함 지점 목록 새로고침"
-    title="보관함 지점 목록 새로고침"
-  >
-    ↻
-  </button>
+          <button
+            type="button"
+            className={styles.mapRefreshButton}
+            onClick={() => void fetchLocations(true)}
+            disabled={loading}
+            aria-label="보관함 지점 목록 새로고침"
+            title="보관함 지점 목록 새로고침"
+          >
+            ↻
+          </button>
 
-  <button
-    type="button"
-    className={styles.mapCloseButton}
-    onClick={onClose}
-  >
-    ×
-  </button>
-</div>
+          <button
+            type="button"
+            className={styles.mapCloseButton}
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       <div className={styles.mapDrawerBody}>
@@ -553,11 +669,20 @@ useEffect(() => {
                   key={`${locker.KIOSK_ID}-${locker.LOCKER_ID}`}
                   className={styles.lockerItem}
                 >
-                  <div className={styles.lockerIcon}>▣</div>
+                  <LockerStatusIcon
+                    status={locker.LOCKER_STATUS}
+                    className={styles.lockerIcon}
+                  />
+
                   <div className={styles.lockerNo}>
                     {locker.LOCKER_ID}번 보관함
                   </div>
-                  <div className={styles.lockerStatus}>
+
+                  <div
+                    className={`${styles.lockerStatus} ${getLockerStatusTextClassName(
+                      locker.LOCKER_STATUS,
+                    )}`}
+                  >
                     {getLockerStatusLabel(locker.LOCKER_STATUS)}
                   </div>
                 </div>

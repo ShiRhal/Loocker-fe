@@ -217,19 +217,135 @@ function getVisibleSteps(steps: Step[], currentIndex: number) {
   return steps.slice(currentIndex - 2, currentIndex + 3);
 }
 
-function getLockerStatusLabel(status?: string) {
+type LockerStatusVariant = "available" | "inUse" | "broken" | "unknown";
+
+function getLockerStatusVariant(status?: string): LockerStatusVariant {
   switch (status) {
     case "AVAILABLE":
     case "EMPTY":
-    case "LO_01":
-      return "비어있음";
+      return "available";
+
     case "IN_USE":
-      return "사용 중";
+      return "inUse";
+
     case "BROKEN":
+      return "broken";
+
+    default:
+      return "unknown";
+  }
+}
+
+function getLockerStatusLabel(status?: string) {
+  switch (getLockerStatusVariant(status)) {
+    case "available":
+      return "비어있음";
+    case "inUse":
+      return "사용 중";
+    case "broken":
       return "고장";
     default:
       return status || "상태 미확인";
   }
+}
+
+function getLockerIconVariantClassName(status?: string) {
+  switch (getLockerStatusVariant(status)) {
+    case "available":
+      return styles.lockerIconAvailable;
+    case "inUse":
+      return styles.lockerIconInUse;
+    case "broken":
+      return styles.lockerIconBroken;
+    default:
+      return styles.lockerIconUnknown;
+  }
+}
+
+function getLockerStatusTextClassName(status?: string) {
+  switch (getLockerStatusVariant(status)) {
+    case "available":
+      return styles.lockerStatusTextAvailable;
+    case "inUse":
+      return styles.lockerStatusTextInUse;
+    case "broken":
+      return styles.lockerStatusTextBroken;
+    default:
+      return styles.lockerStatusTextUnknown;
+  }
+}
+
+function LockerStatusIcon({
+  status,
+  className,
+}: {
+  status?: string;
+  className: string;
+}) {
+  const variant = getLockerStatusVariant(status);
+
+  return (
+    <span
+      className={`${className} ${getLockerIconVariantClassName(status)}`}
+      role="img"
+      aria-label={getLockerStatusLabel(status)}
+    >
+      {variant === "available" && (
+        <svg
+          className={styles.filledStatusIcon}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <g fill="currentColor" stroke="none">
+            <path d="M3.7 7.7 8.9 4.9 11.65 7.25 6.45 10.15 3.7 7.7Z" />
+            <path d="M20.3 7.7 15.1 4.9 12.35 7.25 17.55 10.15 20.3 7.7Z" />
+            <path d="M6.15 11.05 11.25 13.75V19.15L6.15 16.45V11.05Z" />
+            <path d="M17.85 11.05 12.75 13.75V19.15L17.85 16.45V11.05Z" />
+            <path
+              d="M7.25 10.65 12 8.05 16.75 10.65 12 13.2 7.25 10.65Z"
+              opacity="0.72"
+            />
+          </g>
+        </svg>
+      )}
+
+      {variant === "inUse" && (
+        <svg
+          className={styles.strokeStatusIcon}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M7 10.25h10A2.25 2.25 0 0 1 19.25 12.5V18A2.25 2.25 0 0 1 17 20.25H7A2.25 2.25 0 0 1 4.75 18v-5.5A2.25 2.25 0 0 1 7 10.25Z" />
+          <path d="M8.5 10.25V8a3.5 3.5 0 0 1 7 0v2.25" />
+          <path d="M12 14.25v2" />
+        </svg>
+      )}
+
+      {variant === "broken" && (
+        <svg
+          className={styles.strokeStatusIcon}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M12 3.75 21 19.25H3L12 3.75Z" />
+          <path d="M12 9v4.5" />
+          <path d="M12 16.75h.01" />
+        </svg>
+      )}
+
+      {variant === "unknown" && (
+        <svg
+          className={styles.strokeStatusIcon}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M12 21.25a9.25 9.25 0 1 0 0-18.5 9.25 9.25 0 0 0 0 18.5Z" />
+          <path d="M9.75 9.25a2.35 2.35 0 1 1 3.53 2.03c-.8.48-1.28.92-1.28 1.97" />
+          <path d="M12 16.75h.01" />
+        </svg>
+      )}
+    </span>
+  );
 }
 
 function getBranchStatusLabel(status?: string) {
@@ -1151,12 +1267,20 @@ export default function LockerTradeProgressSection({
                 key={`${locker.KIOSK_ID}-${locker.LOCKER_ID}`}
                 className={styles.selectedBranchLockerItem}
               >
-                <div className={styles.selectedBranchLockerIcon}>▣</div>
+                <LockerStatusIcon
+                  status={locker.LOCKER_STATUS}
+                  className={styles.selectedBranchLockerIcon}
+                />
+
                 <div>
                   <div className={styles.selectedBranchLockerNo}>
                     {locker.LOCKER_ID}번 보관함
                   </div>
-                  <div className={styles.selectedBranchLockerStatus}>
+                  <div
+                    className={`${styles.selectedBranchLockerStatus} ${getLockerStatusTextClassName(
+                      locker.LOCKER_STATUS,
+                    )}`}
+                  >
                     {getLockerStatusLabel(locker.LOCKER_STATUS)}
                   </div>
                 </div>
