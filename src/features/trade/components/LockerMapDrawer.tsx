@@ -23,6 +23,13 @@ type LockerMapDrawerProps = {
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
 
+/**
+ * 성결대학교 기준 좌표
+ * 선택된 지점이 없을 때 지도 첫 중심으로 사용
+ */
+const SUNGKYUL_UNIVERSITY_LATITUDE = 37.380028;
+const SUNGKYUL_UNIVERSITY_LONGITUDE = 126.928639;
+
 type LockerStatusVariant = "available" | "inUse" | "broken" | "unknown";
 
 function getLockerStatusVariant(status?: string): LockerStatusVariant {
@@ -79,6 +86,22 @@ function getLockerStatusTextClassName(status?: string) {
     default:
       return styles.lockerStatusTextUnknown;
   }
+}
+
+/**
+ * DB LOCKER_ID가 1,2,3,4,5,6,7,8... 로 와도
+ * 화면에서는 1,2,3,4,1,2,3,4... 로 표시
+ */
+function getLockerDisplayNo(locker: TradeLockerStateResponse) {
+  const obj = locker as unknown as Record<string, unknown>;
+
+  const rawValue = Number(obj.LOCKER_NO ?? obj.LOCKER_ID ?? 0);
+
+  if (!Number.isFinite(rawValue) || rawValue <= 0) {
+    return "-";
+  }
+
+  return ((rawValue - 1) % 4) + 1;
 }
 
 function LockerStatusIcon({
@@ -389,12 +412,18 @@ export default function LockerMapDrawer({
           return;
         }
 
-        const center = initialSelectedLocation?.LATITUDE
-          ? new window.kakao.maps.LatLng(
-              Number(initialSelectedLocation.LATITUDE),
-              Number(initialSelectedLocation.LONGITUDE),
-            )
-          : new window.kakao.maps.LatLng(37.320641, 126.948067);
+        const initialLat = Number(initialSelectedLocation?.LATITUDE);
+        const initialLng = Number(initialSelectedLocation?.LONGITUDE);
+
+        const hasInitialLocation =
+          Number.isFinite(initialLat) && Number.isFinite(initialLng);
+
+        const center = hasInitialLocation
+          ? new window.kakao.maps.LatLng(initialLat, initialLng)
+          : new window.kakao.maps.LatLng(
+              SUNGKYUL_UNIVERSITY_LATITUDE,
+              SUNGKYUL_UNIVERSITY_LONGITUDE,
+            );
 
         const map = new window.kakao.maps.Map(mapContainerRef.current, {
           center,
@@ -428,7 +457,11 @@ export default function LockerMapDrawer({
     return () => {
       mounted = false;
     };
-  }, [open, initialSelectedLocation]);
+  }, [
+    open,
+    initialSelectedLocation?.LATITUDE,
+    initialSelectedLocation?.LONGITUDE,
+  ]);
 
   useEffect(() => {
     if (!open || !window.kakao?.maps || !mapRef.current) return;
@@ -530,24 +563,6 @@ export default function LockerMapDrawer({
         mapRef.current.panTo(pos);
       }
     });
-
-    if (filteredLocations.length > 0 && !initialSelectedLocation?.KIOSK_ID) {
-      const first = filteredLocations[0];
-
-      const lat = Number(first.LATITUDE);
-      const lng = Number(first.LONGITUDE);
-
-      if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
-        const firstPosition = new window.kakao.maps.LatLng(lat, lng);
-
-        window.setTimeout(() => {
-          if (!mapRef.current) return;
-
-          mapRef.current.relayout();
-          mapRef.current.panTo(firstPosition);
-        }, 150);
-      }
-    }
   }, [
     open,
     readonly,
@@ -675,7 +690,7 @@ export default function LockerMapDrawer({
                   />
 
                   <div className={styles.lockerNo}>
-                    {locker.LOCKER_ID}번 보관함
+                    {getLockerDisplayNo(locker)}번 보관함
                   </div>
 
                   <div

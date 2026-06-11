@@ -19,6 +19,8 @@ import { useChatDrawer } from "../../chat/context/ChatDrawerContext";
 type Step = {
   title: string;
   description: string;
+  buyerDescription: string;
+  sellerDescription: string;
   statusCode: string;
 };
 
@@ -39,38 +41,70 @@ const lockerSteps: Step[] = [
   {
     title: "지점 선택",
     description: "판매자가 상품을 보관할 보관함 지점을 선택합니다.",
+    buyerDescription:
+      "판매자가 상품을 보관할 보관함 지점을 선택하는 단계입니다.",
+    sellerDescription: "상품을 보관할 보관함 지점을 선택해주세요.",
     statusCode: "BRANCH_SELECT",
   },
   {
     title: "지점 확정",
-    description:
-      "선택한 지점을 확인한 뒤 판매자가 보관 대기 단계로 진행합니다.",
+    description: "선택한 지점이 확정되었습니다.",
+    buyerDescription:
+      "판매자가 보관함 지점을 확정했습니다. 이후 판매자의 키오스크 보관 절차를 기다려주세요.",
+    sellerDescription:
+      "선택한 지점이 확정되었습니다. 키오스크에서 본인 인증 후 물품 보관을 진행하면 상태가 자동으로 변경됩니다.",
     statusCode: "BRANCH_SELECTED",
   },
   {
     title: "보관 대기",
-    description:
-      "판매자가 키오스크에서 본인 인증 후 상품을 보관함에 보관합니다.",
+    description: "판매자가 키오스크에서 상품을 보관할 차례입니다.",
+    buyerDescription:
+      "판매자가 키오스크에서 물품을 보관해야 합니다. 보관 완료 후 물품 확인을 진행할 수 있습니다.",
+    sellerDescription:
+      "키오스크에서 본인 인증 후 물품을 보관해주세요. 이 단계는 키오스크와 백엔드에서 자동 처리됩니다.",
     statusCode: "DEPOSIT_WAITING",
   },
   {
     title: "보관 완료",
     description: "판매자가 상품을 보관함에 보관했습니다.",
+    buyerDescription:
+      "판매자가 물품 보관을 완료했습니다. 키오스크에서 보관된 물품을 확인할 수 있습니다.",
+    sellerDescription:
+      "물품 보관이 완료되었습니다. 이후 물품 확인, 결제, 수령 단계는 구매자가 키오스크에서 진행합니다.",
     statusCode: "DEPOSITED",
+  },
+  {
+    title: "물품 확인",
+    description: "구매자가 보관함의 물품을 확인했습니다.",
+    buyerDescription:
+      "키오스크에서 물품 확인이 완료되었습니다. 결제를 진행하면 수령 단계로 넘어갑니다.",
+    sellerDescription:
+      "구매자가 보관된 물품을 확인했습니다. 결제가 완료되면 수령 단계로 진행됩니다.",
+    statusCode: "ITEM_CHECK",
   },
   {
     title: "결제 완료",
     description: "구매자가 상품 확인 후 결제를 완료했습니다.",
+    buyerDescription:
+      "결제가 완료되었습니다. 키오스크에서 보관함을 열고 물품을 수령해주세요.",
+    sellerDescription:
+      "구매자의 결제가 완료되었습니다. 구매자가 키오스크에서 물품을 수령하면 상태가 자동 변경됩니다.",
     statusCode: "PAID",
   },
   {
     title: "수령 완료",
     description: "구매자가 보관함에서 상품을 수령했습니다.",
+    buyerDescription:
+      "물품 수령이 완료되었습니다. 문제가 없다면 거래 완료 버튼을 눌러 최종 완료 처리할 수 있습니다.",
+    sellerDescription:
+      "구매자가 물품을 수령했습니다. 최종 거래 완료 처리는 구매자 화면에서만 가능합니다.",
     statusCode: "PICKEDUP",
   },
   {
     title: "거래 완료",
     description: "보관함 거래가 완료되었습니다.",
+    buyerDescription: "거래가 최종 완료되었습니다.",
+    sellerDescription: "거래가 최종 완료되었습니다.",
     statusCode: "COMPLETED",
   },
 ];
@@ -87,6 +121,7 @@ const statusAliasMap: Record<string, string> = {
   TR_09: "DISPUTED",
   TR_15: "BRANCH_SELECTED",
   TR_16: "DEPOSIT_WAITING",
+  TR_17: "ITEM_CHECK",
 
   CANCELD: "CANCELED",
   CANCELED: "CANCELED",
@@ -98,6 +133,14 @@ const statusAliasMap: Record<string, string> = {
 const CHAT_DRAWER_WIDTH = 640;
 const FALLBACK_TRADE_DRAWER_WIDTH = 520;
 const DRAWER_GAP = 6;
+
+const KIOSK_AUTO_STATUS_CODES = new Set([
+  "BRANCH_SELECTED",
+  "DEPOSIT_WAITING",
+  "DEPOSITED",
+  "ITEM_CHECK",
+  "PAID",
+]);
 
 function getCurrentRightDrawerWidth() {
   const wrappers = Array.from(
@@ -144,6 +187,17 @@ function normalizeLockerStatusCode(statusCode?: string | null) {
   }
 
   return normalized;
+}
+
+function isKioskAutoStatus(statusCode: string) {
+  return KIOSK_AUTO_STATUS_CODES.has(statusCode);
+}
+
+function getStepDescriptionByRole(step: Step, role: TradeRole | null) {
+  if (role === "SELLER") return step.sellerDescription;
+  if (role === "BUYER") return step.buyerDescription;
+
+  return step.description;
 }
 
 function getResponseStatusCode(result: unknown) {
@@ -429,6 +483,28 @@ function getLockerImageData(result: unknown): TradeLockerImageResponse | null {
   if (typeof result !== "object" || result === null) return null;
 
   return result as TradeLockerImageResponse;
+}
+
+function extractErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) {
+    const sqlServerExceptionMatch = error.message.match(
+      /SQLServerException:\s*([^;\r\n]+)/,
+    );
+
+    if (sqlServerExceptionMatch?.[1]) {
+      return sqlServerExceptionMatch[1].trim();
+    }
+
+    const causeMatch = error.message.match(/Cause:\s*([^;\r\n]+)/);
+
+    if (causeMatch?.[1]) {
+      return causeMatch[1].trim();
+    }
+
+    return error.message.split("\n")[0]?.trim() || fallback;
+  }
+
+  return fallback;
 }
 
 function loadKakaoMapScript() {
@@ -787,7 +863,14 @@ export default function LockerTradeProgressSection({
   }, [product.productId]);
 
   useEffect(() => {
-    if (currentStatusCode !== "DEPOSITED") {
+    const shouldFetchImages =
+      currentStatusCode === "DEPOSITED" ||
+      currentStatusCode === "ITEM_CHECK" ||
+      currentStatusCode === "PAID" ||
+      currentStatusCode === "PICKEDUP" ||
+      currentStatusCode === "COMPLETED";
+
+    if (!shouldFetchImages) {
       setLockerImages(null);
       return;
     }
@@ -834,6 +917,7 @@ export default function LockerTradeProgressSection({
       currentStatusCode === "BRANCH_SELECTED" ||
       currentStatusCode === "DEPOSIT_WAITING" ||
       currentStatusCode === "DEPOSITED" ||
+      currentStatusCode === "ITEM_CHECK" ||
       currentStatusCode === "PAID" ||
       currentStatusCode === "PICKEDUP" ||
       currentStatusCode === "COMPLETED"
@@ -853,7 +937,6 @@ export default function LockerTradeProgressSection({
   const lastIndex = lockerSteps.length - 1;
   const isCompleteStep = currentStepIndex === lastIndex;
   const currentStep = lockerSteps[currentStepIndex];
-  const nextStatusCode = getNextStatusCode(lockerSteps, currentStatusCode);
 
   const isSeller = myRole === "SELLER";
   const isBuyer = myRole === "BUYER";
@@ -862,11 +945,21 @@ export default function LockerTradeProgressSection({
   const isLockerBranchConfirmStep = currentStatusCode === "BRANCH_SELECTED";
   const isLockerDepositWaitingStep = currentStatusCode === "DEPOSIT_WAITING";
   const isLockerDepositedStep = currentStatusCode === "DEPOSITED";
+  const isLockerItemCheckStep = currentStatusCode === "ITEM_CHECK";
+  const isLockerPaidStep = currentStatusCode === "PAID";
+  const isLockerPickedupStep = currentStatusCode === "PICKEDUP";
+
+  const canCompleteTrade = isBuyer && isLockerPickedupStep;
+  const isKioskAutoStep = isKioskAutoStatus(currentStatusCode);
 
   const shouldHideDescriptionBox =
-    currentStatusCode === "BRANCH_SELECTED" ||
-    currentStatusCode === "DEPOSIT_WAITING" ||
-    currentStatusCode === "DEPOSITED";
+    isLockerBranchSelectStep ||
+    isLockerBranchConfirmStep ||
+    isLockerDepositWaitingStep ||
+    isLockerDepositedStep ||
+    isLockerItemCheckStep ||
+    isLockerPaidStep ||
+    isLockerPickedupStep;
 
   const saveLockerLocation = async (
     accessToken: string,
@@ -910,7 +1003,7 @@ export default function LockerTradeProgressSection({
         TRADE_ID: targetTradeId,
         RESULT_STATUS_CODE: currentStatusCode,
         NEXT_STATUS_CODE: "CANCELED",
-        TRADE_TYPE_CODE: tradeType,
+        TRADE_TYPE_CODE: "LOCKER",
       });
 
       message.success("거래가 취소되었습니다.");
@@ -918,7 +1011,9 @@ export default function LockerTradeProgressSection({
       nav(`/product/${product.productId}`);
     } catch (error) {
       console.error(error);
-      message.error("거래 취소 처리에 실패했습니다.");
+      message.error(
+        extractErrorMessage(error, "거래 취소 처리에 실패했습니다."),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -932,8 +1027,8 @@ export default function LockerTradeProgressSection({
       return;
     }
 
-    if (!nextStatusCode) {
-      message.error("다음 거래 상태를 확인할 수 없습니다.");
+    if (!canCompleteTrade) {
+      message.info("현재 단계는 웹에서 직접 변경할 수 없습니다.");
       return;
     }
 
@@ -947,29 +1042,21 @@ export default function LockerTradeProgressSection({
       const result = await tradeApi.updateTradeStatus(accessToken, {
         TRADE_ID: targetTradeId,
         RESULT_STATUS_CODE: currentStatusCode,
-        NEXT_STATUS_CODE: nextStatusCode,
-        TRADE_TYPE_CODE: tradeType,
+        NEXT_STATUS_CODE: "COMPLETED",
+        TRADE_TYPE_CODE: "LOCKER",
       });
 
-      const responseStatusCode = getResponseStatusCode(result);
-
-      if (!responseStatusCode) {
-        message.error("변경된 거래 상태를 확인할 수 없습니다.");
-        return;
-      }
+      const responseStatusCode = getResponseStatusCode(result) || "COMPLETED";
 
       setCurrentStatusCode(responseStatusCode);
       onStatusChangeRef.current?.(responseStatusCode);
 
-      if (responseStatusCode === "COMPLETED") {
-        message.success("거래가 완료되었습니다.");
-        return;
-      }
-
-      message.success("거래 상태가 변경되었습니다.");
+      message.success("거래가 완료되었습니다.");
     } catch (error) {
       console.error(error);
-      message.error("거래 상태 변경에 실패했습니다.");
+      message.error(
+        extractErrorMessage(error, "거래 완료 처리에 실패했습니다."),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -985,6 +1072,11 @@ export default function LockerTradeProgressSection({
 
     if (!selectedLocation?.KIOSK_ID) {
       message.error("먼저 보관함 지점을 선택해주세요.");
+      return;
+    }
+
+    if (!isSeller) {
+      message.error("판매자만 지점을 확정할 수 있습니다.");
       return;
     }
 
@@ -1024,51 +1116,9 @@ export default function LockerTradeProgressSection({
       message.success("지점이 확정되었습니다.");
     } catch (error) {
       console.error(error);
-      message.error("지점 확정 처리에 실패했습니다.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleConfirmDepositWaiting = async () => {
-    const accessToken = localStorage.getItem("accessToken");
-
-    if (!accessToken) {
-      message.error("로그인이 필요합니다.");
-      return;
-    }
-
-    const targetTradeId = await resolveTradeId();
-
-    if (!targetTradeId) return;
-
-    try {
-      setSubmitting(true);
-
-      const result = await tradeApi.updateTradeStatus(accessToken, {
-        TRADE_ID: targetTradeId,
-        RESULT_STATUS_CODE: "BRANCH_SELECTED",
-        NEXT_STATUS_CODE: "DEPOSIT_WAITING",
-        TRADE_TYPE_CODE: "LOCKER",
-      });
-
-      const responseStatusCode = getResponseStatusCode(result);
-
-      const nextUiStatusCode =
-        responseStatusCode &&
-        responseStatusCode !== "TRADING" &&
-        responseStatusCode !== "BRANCH_SELECT" &&
-        responseStatusCode !== "BRANCH_SELECTED"
-          ? responseStatusCode
-          : "DEPOSIT_WAITING";
-
-      setCurrentStatusCode(nextUiStatusCode);
-      onStatusChangeRef.current?.(nextUiStatusCode);
-
-      message.success("보관 대기 단계로 변경되었습니다.");
-    } catch (error) {
-      console.error(error);
-      message.error("보관 대기 처리에 실패했습니다.");
+      message.error(
+        extractErrorMessage(error, "지점 확정 처리에 실패했습니다."),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -1176,27 +1226,44 @@ export default function LockerTradeProgressSection({
       return;
     }
 
+    if (canCompleteTrade) {
+      handleProgress();
+      return;
+    }
+
     if (isLockerBranchConfirmStep) {
-      handleConfirmDepositWaiting();
+      message.info(
+        "보관 대기 단계는 키오스크 보관 절차가 시작되면 자동으로 변경됩니다.",
+      );
       return;
     }
 
-    if (isLockerDepositWaitingStep) {
-      message.info("키오스크에서 상품 보관이 완료되면 다음 단계로 진행됩니다.");
+    if (isKioskAutoStep || isLockerDepositWaitingStep) {
+      message.info("이 단계는 키오스크와 백엔드에서 자동으로 처리됩니다.");
       return;
     }
 
-    handleProgress();
+    if (isLockerPickedupStep && !isBuyer) {
+      message.info("거래 완료는 구매자 화면에서만 처리할 수 있습니다.");
+      return;
+    }
+
+    message.info("현재 화면에서 직접 변경할 수 없는 단계입니다.");
   };
 
   const getButtonText = () => {
     if (isCompleteStep) return "확인";
 
     if (isLockerBranchSelectStep) return "지점 확정";
+
+    if (canCompleteTrade) return "거래 완료";
+
+    if (isLockerPickedupStep) return "거래 완료";
+
     if (isLockerBranchConfirmStep) return "보관 대기";
     if (isLockerDepositWaitingStep) return "보관 대기중";
 
-    return lockerSteps[currentStepIndex + 1]?.title ?? "다음 단계";
+    return lockerSteps[currentStepIndex]?.title ?? "자동 처리 단계";
   };
 
   const renderSelectedBranchSummary = () => {
@@ -1372,11 +1439,38 @@ export default function LockerTradeProgressSection({
     );
   };
 
+  const renderAutoStepActionBox = (
+    title: string,
+    sellerDescription: string,
+    buyerDescription: string,
+    showImages = false,
+  ) => {
+    return (
+      <div className={styles.lockerActionBox}>
+        <div className={styles.lockerActionHeader}>
+          <div>
+            <h4 className={styles.lockerActionTitle}>{title}</h4>
+            <p className={styles.lockerActionDesc}>
+              {isSeller ? sellerDescription : buyerDescription}
+            </p>
+          </div>
+        </div>
+
+        {renderBranchSelectCard()}
+        {renderBranchActionButtons()}
+        {showImages && renderLockerImageCard()}
+      </div>
+    );
+  };
+
   const isMainButtonDisabled =
     submitting ||
-    (isLockerBranchSelectStep && (!isSeller || !selectedLocation?.KIOSK_ID)) ||
-    (isLockerBranchConfirmStep && (!isSeller || !selectedLocation?.KIOSK_ID)) ||
-    isLockerDepositWaitingStep;
+    (!isCompleteStep &&
+      ((isLockerBranchSelectStep &&
+        (!isSeller || !selectedLocation?.KIOSK_ID)) ||
+        isLockerBranchConfirmStep ||
+        isKioskAutoStep ||
+        (isLockerPickedupStep && !canCompleteTrade)));
 
   return (
     <>
@@ -1486,7 +1580,7 @@ export default function LockerTradeProgressSection({
               <div className={styles.descriptionIcon}>✓</div>
               <div>
                 <h4>{currentStep.title}</h4>
-                <p>{currentStep.description}</p>
+                <p>{getStepDescriptionByRole(currentStep, myRole)}</p>
               </div>
             </div>
           )}
@@ -1515,57 +1609,51 @@ export default function LockerTradeProgressSection({
             </div>
           )}
 
-          {isLockerBranchConfirmStep && (
-            <div className={styles.lockerActionBox}>
-              <div className={styles.lockerActionHeader}>
-                <div>
-                  <h4 className={styles.lockerActionTitle}>지점 확정</h4>
-                  <p className={styles.lockerActionDesc}>
-                    선택한 지점을 확인한 뒤 판매자가 보관 대기 단계로
-                    진행합니다.
-                  </p>
-                </div>
-              </div>
+          {isLockerBranchConfirmStep &&
+            renderAutoStepActionBox(
+              "지점 확정",
+              "선택한 지점이 확정되었습니다. 키오스크에서 본인 인증 후 물품 보관을 진행하면 보관 대기 상태가 자동으로 반영됩니다.",
+              "판매자가 보관함 지점을 확정했습니다. 판매자의 키오스크 보관 절차를 기다려주세요.",
+            )}
 
-              {renderBranchSelectCard()}
-              {renderBranchActionButtons()}
-            </div>
-          )}
+          {isLockerDepositWaitingStep &&
+            renderAutoStepActionBox(
+              "보관 대기",
+              "키오스크에서 본인 인증 후 물품을 보관해주세요. 보관이 완료되면 자동으로 다음 단계로 변경됩니다.",
+              "판매자가 키오스크에서 물품을 보관 중입니다. 보관 완료 후 물품 확인을 진행할 수 있습니다.",
+            )}
 
-          {isLockerDepositWaitingStep && (
-            <div className={styles.lockerActionBox}>
-              <div className={styles.lockerActionHeader}>
-                <div>
-                  <h4 className={styles.lockerActionTitle}>보관 대기</h4>
-                  <p className={styles.lockerActionDesc}>
-                    판매자가 키오스크에서 본인 인증 후 상품을 보관하면 다음
-                    단계로 진행됩니다.
-                  </p>
-                </div>
-              </div>
+          {isLockerDepositedStep &&
+            renderAutoStepActionBox(
+              "보관 완료",
+              "물품 보관이 완료되었습니다. 이후 구매자의 물품 확인, 결제, 수령 단계는 키오스크에서 자동으로 진행됩니다.",
+              "판매자가 물품 보관을 완료했습니다. 키오스크에서 보관된 물품을 확인해주세요.",
+              true,
+            )}
 
-              {renderBranchSelectCard()}
-              {renderBranchActionButtons()}
-            </div>
-          )}
+          {isLockerItemCheckStep &&
+            renderAutoStepActionBox(
+              "물품 확인",
+              "구매자가 보관된 물품을 확인했습니다. 결제가 완료되면 수령 단계로 진행됩니다.",
+              "키오스크에서 물품 확인이 완료되었습니다. 결제를 진행하면 수령 단계로 넘어갑니다.",
+              true,
+            )}
 
-          {isLockerDepositedStep && (
-            <div className={styles.lockerActionBox}>
-              <div className={styles.lockerActionHeader}>
-                <div>
-                  <h4 className={styles.lockerActionTitle}>보관 완료</h4>
-                  <p className={styles.lockerActionDesc}>
-                    판매자가 상품을 보관함에 보관했습니다. 촬영된 사진을 확인할
-                    수 있습니다.
-                  </p>
-                </div>
-              </div>
+          {isLockerPaidStep &&
+            renderAutoStepActionBox(
+              "결제 완료",
+              "구매자의 결제가 완료되었습니다. 구매자가 키오스크에서 물품을 수령하면 상태가 자동 변경됩니다.",
+              "결제가 완료되었습니다. 키오스크에서 보관함을 열고 물품을 수령해주세요.",
+              true,
+            )}
 
-              {renderBranchSelectCard()}
-              {renderBranchActionButtons()}
-              {renderLockerImageCard()}
-            </div>
-          )}
+          {isLockerPickedupStep &&
+            renderAutoStepActionBox(
+              "수령 완료",
+              "구매자가 물품을 수령했습니다. 거래 완료 처리는 구매자 화면에서만 가능합니다.",
+              "물품 수령이 완료되었습니다. 문제가 없다면 아래 거래 완료 버튼을 눌러주세요.",
+              true,
+            )}
         </section>
       </DrawerLayout>
 
@@ -1577,6 +1665,7 @@ export default function LockerTradeProgressSection({
           isBuyer ||
           currentStatusCode === "DEPOSIT_WAITING" ||
           currentStatusCode === "DEPOSITED" ||
+          currentStatusCode === "ITEM_CHECK" ||
           currentStatusCode === "PAID" ||
           currentStatusCode === "PICKEDUP" ||
           currentStatusCode === "COMPLETED"

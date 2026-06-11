@@ -1173,3 +1173,55 @@ button:disabled {
     height: 220px;
   }
 }
+.filledStatusIcon {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.strokeStatusIcon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lockerIconAvailable {
+  color: #3182f6;
+}
+
+.lockerIconInUse {
+  color: #f59e0b;
+}
+
+.lockerIconBroken {
+  color: #ef4444;
+}
+
+.lockerIconUnknown {
+  color: #94a3b8;
+}
+
+.lockerStatusTextAvailable {
+  color: #3182f6;
+  font-weight: 800;
+}
+
+.lockerStatusTextInUse {
+  color: #f59e0b;
+  font-weight: 800;
+}
+
+.lockerStatusTextBroken {
+  color: #ef4444;
+  font-weight: 800;
+}
+
+.lockerStatusTextUnknown {
+  color: #94a3b8;
+  font-weight: 800;
+}
