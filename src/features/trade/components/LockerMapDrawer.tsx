@@ -23,10 +23,6 @@ type LockerMapDrawerProps = {
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
 
-/**
- * 성결대학교 기준 좌표
- * 선택된 지점이 없을 때 지도 첫 중심으로 사용
- */
 const SUNGKYUL_UNIVERSITY_LATITUDE = 37.380028;
 const SUNGKYUL_UNIVERSITY_LONGITUDE = 126.928639;
 
@@ -88,10 +84,6 @@ function getLockerStatusTextClassName(status?: string) {
   }
 }
 
-/**
- * DB LOCKER_ID가 1,2,3,4,5,6,7,8... 로 와도
- * 화면에서는 1,2,3,4,1,2,3,4... 로 표시
- */
 function getLockerDisplayNo(locker: TradeLockerStateResponse) {
   const obj = locker as unknown as Record<string, unknown>;
 
@@ -259,6 +251,7 @@ export default function LockerMapDrawer({
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const overlaysRef = useRef<any[]>([]);
+  const overlayByKioskIdRef = useRef<Map<number, any>>(new Map());
 
   const [locations, setLocations] = useState<TradeLockerLocationResponse[]>([]);
   const [selectedLocation, setSelectedLocation] =
@@ -472,6 +465,8 @@ export default function LockerMapDrawer({
     overlaysRef.current.forEach((overlay) => overlay.setMap(null));
     overlaysRef.current = [];
 
+    overlayByKioskIdRef.current.clear();
+
     filteredLocations.forEach((location) => {
       if (!location.LATITUDE || !location.LONGITUDE) return;
 
@@ -558,6 +553,10 @@ export default function LockerMapDrawer({
       markersRef.current.push(marker);
       overlaysRef.current.push(overlay);
 
+      if (location.KIOSK_ID) {
+        overlayByKioskIdRef.current.set(Number(location.KIOSK_ID), overlay);
+      }
+
       if (initialSelectedLocation?.KIOSK_ID === location.KIOSK_ID) {
         overlay.setMap(mapRef.current);
         mapRef.current.panTo(pos);
@@ -573,6 +572,45 @@ export default function LockerMapDrawer({
     initialSelectedLocation,
     mapReadyTick,
   ]);
+
+  useEffect(() => {
+    if (!open || !window.kakao?.maps || !mapRef.current) return;
+
+    const keyword = searchKeyword.trim();
+
+    if (!keyword) return;
+
+    const targetLocation = filteredLocations.find((location) => {
+      const lat = Number(location.LATITUDE);
+      const lng = Number(location.LONGITUDE);
+
+      return Number.isFinite(lat) && Number.isFinite(lng);
+    });
+
+    if (!targetLocation) return;
+
+    const lat = Number(targetLocation.LATITUDE);
+    const lng = Number(targetLocation.LONGITUDE);
+
+    const targetPosition = new window.kakao.maps.LatLng(lat, lng);
+
+    window.setTimeout(() => {
+      if (!mapRef.current) return;
+
+      mapRef.current.relayout();
+      mapRef.current.panTo(targetPosition);
+
+      overlaysRef.current.forEach((overlay) => overlay.setMap(null));
+
+      const targetOverlay = overlayByKioskIdRef.current.get(
+        Number(targetLocation.KIOSK_ID),
+      );
+
+      if (targetOverlay) {
+        targetOverlay.setMap(mapRef.current);
+      }
+    }, 120);
+  }, [open, searchKeyword, filteredLocations, mapReadyTick]);
 
   const handleSelectLocationOnly = async () => {
     if (!selectedLocation || !onLocationSelected) return;
