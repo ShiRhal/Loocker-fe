@@ -226,6 +226,8 @@
   width: 16px;
   height: 16px;
   fill: #b8c6d8;
+  flex-shrink: 0;
+  display: block;
 }
 
 .createdAt {
