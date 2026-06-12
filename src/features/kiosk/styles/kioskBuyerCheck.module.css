@@ -687,3 +687,13 @@
   display: block;
   margin-bottom: 8px;
 }
+.paymentButtonRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  grid-template-columns: none;
+}
+
+.paymentButton {
+  width: min(100%, 360px);
+}

@@ -914,9 +914,9 @@ export default function KioskBuyerPickupPage() {
 
             {message && <p className={styles.message}>{message}</p>}
 
-            <div className={styles.buttonRow}>
+            <div className={`${styles.buttonRow} ${styles.paymentButtonRow}`}>
               <button
-                className={styles.primaryButton}
+                className={`${styles.primaryButton} ${styles.paymentButton}`}
                 type="button"
                 onClick={handleRequestPayment}
                 disabled={paymentLoading || isProcessing}
