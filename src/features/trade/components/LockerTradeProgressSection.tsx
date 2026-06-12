@@ -273,13 +273,22 @@ function isKioskAutoStatus(statusCode: string) {
   return KIOSK_AUTO_STATUS_CODES.has(statusCode);
 }
 
-type LockerStatusVariant = "available" | "inUse" | "broken" | "unknown";
+type LockerStatusVariant =
+  | "available"
+  | "inUse"
+  | "resetPending"
+  | "broken"
+  | "unknown";
 
 function getLockerStatusVariant(status?: string): LockerStatusVariant {
   switch (status) {
     case "AVAILABLE":
     case "EMPTY":
       return "available";
+
+    case "LO_16":
+    case "PICKUP_LOCKED_EMPTY_READY":
+      return "resetPending";
 
     case "IN_USE":
       return "inUse";
@@ -298,6 +307,8 @@ function getLockerStatusLabel(status?: string) {
       return "비어있음";
     case "inUse":
       return "사용 중";
+    case "resetPending":
+      return "비움 처리 중";
     case "broken":
       return "고장";
     default:
@@ -311,6 +322,8 @@ function getLockerIconVariantClassName(status?: string) {
       return styles.lockerIconAvailable;
     case "inUse":
       return styles.lockerIconInUse;
+    case "resetPending":
+      return styles.lockerIconInUse;
     case "broken":
       return styles.lockerIconBroken;
     default:
@@ -323,6 +336,8 @@ function getLockerStatusTextClassName(status?: string) {
     case "available":
       return styles.lockerStatusTextAvailable;
     case "inUse":
+      return styles.lockerStatusTextInUse;
+    case "resetPending":
       return styles.lockerStatusTextInUse;
     case "broken":
       return styles.lockerStatusTextBroken;
