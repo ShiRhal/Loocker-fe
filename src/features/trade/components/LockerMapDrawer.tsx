@@ -26,18 +26,45 @@ const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_MAP_APP_KEY;
 const SUNGKYUL_UNIVERSITY_LATITUDE = 37.380028;
 const SUNGKYUL_UNIVERSITY_LONGITUDE = 126.928639;
 
-type LockerStatusVariant = "available" | "inUse" | "broken" | "unknown";
+type LockerStatusVariant =
+  | "available"
+  | "inUse"
+  | "resetPending"
+  | "broken"
+  | "unknown";
 
 function getLockerStatusVariant(status?: string): LockerStatusVariant {
-  switch (status) {
+  const normalizedStatus = String(status ?? "").toUpperCase();
+
+  switch (normalizedStatus) {
     case "AVAILABLE":
     case "EMPTY":
+    case "LO_01":
       return "available";
 
+    case "LO_16":
+    case "PICKUP_LOCKED_EMPTY_READY":
+      return "resetPending";
+
     case "IN_USE":
+    case "LO_02":
+    case "LO_03":
+    case "LO_04":
+    case "LO_05":
+    case "LO_06":
+    case "LO_07":
+    case "LO_08":
+    case "LO_09":
+    case "LO_10":
+    case "LO_11":
+    case "LO_12":
+    case "LO_13":
+    case "LO_14":
+    case "LO_15":
       return "inUse";
 
     case "BROKEN":
+    case "LO_BROKEN":
       return "broken";
 
     default:
@@ -49,10 +76,16 @@ function getLockerStatusLabel(status?: string) {
   switch (getLockerStatusVariant(status)) {
     case "available":
       return "비어있음";
+
     case "inUse":
       return "사용 중";
+
+    case "resetPending":
+      return "비움 처리 중";
+
     case "broken":
       return "고장";
+
     default:
       return status || "상태 미확인";
   }
@@ -62,10 +95,14 @@ function getLockerIconVariantClassName(status?: string) {
   switch (getLockerStatusVariant(status)) {
     case "available":
       return styles.lockerIconAvailable;
+
     case "inUse":
+    case "resetPending":
       return styles.lockerIconInUse;
+
     case "broken":
       return styles.lockerIconBroken;
+
     default:
       return styles.lockerIconUnknown;
   }
@@ -75,10 +112,14 @@ function getLockerStatusTextClassName(status?: string) {
   switch (getLockerStatusVariant(status)) {
     case "available":
       return styles.lockerStatusTextAvailable;
+
     case "inUse":
+    case "resetPending":
       return styles.lockerStatusTextInUse;
+
     case "broken":
       return styles.lockerStatusTextBroken;
+
     default:
       return styles.lockerStatusTextUnknown;
   }
@@ -130,7 +171,7 @@ function LockerStatusIcon({
         </svg>
       )}
 
-      {variant === "inUse" && (
+      {(variant === "inUse" || variant === "resetPending") && (
         <svg
           className={styles.strokeStatusIcon}
           viewBox="0 0 24 24"
@@ -493,7 +534,9 @@ export default function LockerMapDrawer({
           <div class="${styles.branchOverlayInner}">
             ${
               imageSrc
-                ? `<img src="${imageSrc}" alt="${location.BRANCH_NAME ?? "보관함 지점"}" class="${styles.branchOverlayImage}" />`
+                ? `<img src="${imageSrc}" alt="${
+                    location.BRANCH_NAME ?? "보관함 지점"
+                  }" class="${styles.branchOverlayImage}" />`
                 : `<div class="${styles.branchOverlayImageEmpty}">이미지 없음</div>`
             }
 
