@@ -80,6 +80,15 @@ const lockerSteps: Step[] = [
     statusCode: "DEPOSITED",
   },
   {
+    title: "물품 확인",
+    description: "구매자가 보관된 물품을 확인한 상태입니다.",
+    buyerDescription:
+      "보관된 물품 확인이 완료되었습니다. 물품에 문제가 없다면 결제를 진행해주세요.",
+    sellerDescription:
+      "구매자가 보관된 물품을 확인했습니다. 구매자가 결제를 완료하면 수령 단계로 진행됩니다.",
+    statusCode: "ITEM_CHECK",
+  },
+  {
     title: "결제 완료",
     description: "구매자가 상품 확인 후 결제를 완료했습니다.",
     buyerDescription:
@@ -121,6 +130,10 @@ const statusAliasMap: Record<string, string> = {
   TR_15: "BRANCH_SELECTED",
   TR_16: "DEPOSIT_WAITING",
 
+  TR_17: "ITEM_CHECK",
+  ITEM_CHECK: "ITEM_CHECK",
+  BUYER_ITEM_CONFIRMED: "ITEM_CHECK",
+
   CANCELD: "CANCELED",
   CANCELED: "CANCELED",
   RETURNED: "RETURED",
@@ -135,6 +148,7 @@ const DRAWER_GAP = 6;
 const KIOSK_AUTO_STATUS_CODES = new Set([
   "DEPOSIT_WAITING",
   "DEPOSITED",
+  "ITEM_CHECK",
   "PAID",
 ]);
 
