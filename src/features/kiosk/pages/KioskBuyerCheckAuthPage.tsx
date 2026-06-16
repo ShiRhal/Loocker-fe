@@ -330,21 +330,6 @@ export default function KioskBuyerCheckAuthPage() {
           <span>인증 상태: {authStatusCode}</span>
           {authResultTime && <span>인증 시간: {authResultTime}</span>}
         </div>
-
-        {qrUrl && !completed && (
-          <button
-            type="button"
-            className={styles.secondaryButton}
-            onClick={() => window.open(qrUrl, "_blank")}
-          >
-            테스트용 모바일 로그인 페이지 열기
-          </button>
-        )}
-
-        <details className={styles.devPreview}>
-          <summary>QR 생성 요청값 미리보기</summary>
-          <pre>{JSON.stringify(requestPreview, null, 2)}</pre>
-        </details>
       </section>
     </main>
   );

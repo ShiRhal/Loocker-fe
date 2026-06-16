@@ -77,6 +77,7 @@ function sleep(ms: number) {
 
 function formatPrice(price?: number) {
   if (typeof price !== "number") return "-";
+
   return `${price.toLocaleString()}원`;
 }
 
@@ -186,12 +187,15 @@ function getLockerFromSession(product: BuyerCheckProduct): BuyerLockerResult {
     TRADE_ID:
       getSessionNumber(["buyerInspectionTradeId", "buyerCheckTradeId"], 0) ||
       product.TRADE_ID,
+
     PRODUCT_ID:
       getSessionNumber(
         ["buyerInspectionProductId", "buyerCheckProductId"],
         0,
       ) || product.PRODUCT_ID,
+
     LOCKER_ID: lockerId,
+
     LOCKER_NO:
       getSessionNumber(["buyerInspectionLockerNo", "buyerCheckLockerNo"], 0) ||
       product.LOCKER_NO ||
@@ -239,7 +243,9 @@ function normalizeCommandCheckResult(
 }
 
 function extractCleanErrorMessage(message?: string) {
-  if (!message) return "요청 처리 중 오류가 발생했습니다.";
+  if (!message) {
+    return "요청 처리 중 오류가 발생했습니다.";
+  }
 
   const knownMessages = [
     "키오스크 인증 정보가 만료되었습니다.",
@@ -259,7 +265,9 @@ function extractCleanErrorMessage(message?: string) {
 
   const matched = knownMessages.find((text) => message.includes(text));
 
-  if (matched) return matched;
+  if (matched) {
+    return matched;
+  }
 
   const sqlServerExceptionMatch = message.match(
     /SQLServerException:\s*([^;\r\n]+)/,
@@ -288,9 +296,19 @@ export default function KioskBuyerInspectionPage() {
   const fallbackProduct = useMemo(() => getProductFromSession(), []);
 
   const product = useMemo<BuyerCheckProduct>(() => {
+    const stateProduct = state.product;
+
+    const stateProductImageUrl = String(stateProduct?.IMAGE_URL ?? "").trim();
+
+    const sessionProductImageUrl = String(
+      fallbackProduct.IMAGE_URL ?? "",
+    ).trim();
+
     return {
       ...fallbackProduct,
-      ...(state.product || {}),
+      ...(stateProduct || {}),
+
+      IMAGE_URL: stateProductImageUrl || sessionProductImageUrl || "",
     };
   }, [fallbackProduct, state.product]);
 
@@ -347,8 +365,10 @@ export default function KioskBuyerInspectionPage() {
   const startedRef = useRef(false);
   const cancelledRef = useRef(false);
 
-  const productImageUrl = product.IMAGE_URL
-    ? toApiAssetUrl(product.IMAGE_URL)
+  const rawProductImageUrl = String(product.IMAGE_URL ?? "").trim();
+
+  const productImageUrl = rawProductImageUrl
+    ? toApiAssetUrl(rawProductImageUrl)
     : "";
 
   function validateRequiredValues() {
@@ -385,7 +405,9 @@ export default function KioskBuyerInspectionPage() {
       TITLE: product.TITLE,
       BASE_PRICE: product.BASE_PRICE,
       PRODUCT_STATUS_CODE: product.PRODUCT_STATUS_CODE || "",
-      IMAGE_URL: productImageUrl,
+
+      // 변환된 전체 URL이 아니라 API에서 받은 원본 경로 저장
+      IMAGE_URL: rawProductImageUrl,
     });
 
     saveBuyerCheckLocker({
@@ -401,19 +423,32 @@ export default function KioskBuyerInspectionPage() {
     });
 
     sessionStorage.setItem("buyerInspectionAuthCode", normalizedAuthCode);
+
     sessionStorage.setItem("buyerInspectionTradeId", String(tradeId));
+
     sessionStorage.setItem("buyerInspectionProductId", String(productId));
+
     sessionStorage.setItem("buyerInspectionProductTitle", product.TITLE);
+
     sessionStorage.setItem(
       "buyerInspectionProductPrice",
       String(product.BASE_PRICE || 0),
     );
+
     sessionStorage.setItem(
       "buyerInspectionProductStatusCode",
       product.PRODUCT_STATUS_CODE || "",
     );
-    sessionStorage.setItem("buyerInspectionProductImageUrl", productImageUrl);
+
+    sessionStorage.setItem(
+      "buyerInspectionProductImageUrl",
+      rawProductImageUrl,
+    );
+
+    sessionStorage.setItem("buyerCheckProductImageUrl", rawProductImageUrl);
+
     sessionStorage.setItem("buyerInspectionLockerId", String(lockerId));
+
     sessionStorage.setItem("buyerInspectionLockerNo", String(lockerNo));
   }
 
@@ -516,6 +551,8 @@ export default function KioskBuyerInspectionPage() {
 
       setIsProcessing(true);
       setPhase("PREPARING");
+      setErrorMessage("");
+
       setMessage(
         "물품 확인을 위해 보관함 조명과 투명 필름을 준비하고 있습니다.",
       );
@@ -534,9 +571,12 @@ export default function KioskBuyerInspectionPage() {
 
       await selectLockerImages();
 
-      if (cancelledRef.current) return;
+      if (cancelledRef.current) {
+        return;
+      }
 
       setPhase("COMPARE");
+
       setMessage("보관 당시 사진과 현재 사진을 비교해 물품을 확인해주세요.");
     } catch (error) {
       const rawMessage =
@@ -557,6 +597,7 @@ export default function KioskBuyerInspectionPage() {
       validateRequiredValues();
 
       setIsProcessing(true);
+      setErrorMessage("");
       setMessage("물품 확인 완료 처리 중입니다.");
 
       await updateLockerState(STATUS_BUYER_ITEM_CONFIRMED, "KIOSK");
@@ -570,22 +611,28 @@ export default function KioskBuyerInspectionPage() {
         state: {
           authCode: normalizedAuthCode,
           kioskCode: normalizedKioskCode,
+
           product: {
             PRODUCT_ID: productId,
             TRADE_ID: tradeId,
             TITLE: product.TITLE,
             BASE_PRICE: product.BASE_PRICE,
             PRODUCT_STATUS_CODE: product.PRODUCT_STATUS_CODE || "",
-            IMAGE_URL: productImageUrl,
+
+            // 다음 화면에도 원본 상품 이미지 경로 전달
+            IMAGE_URL: rawProductImageUrl,
+
             LOCKER_ID: lockerId,
             LOCKER_NO: lockerNo,
           },
+
           locker: {
             TRADE_ID: tradeId,
             PRODUCT_ID: productId,
             LOCKER_ID: lockerId,
             LOCKER_NO: lockerNo,
           },
+
           sellerStoredImageUrl: sellerImageUrl,
           currentCaptureImageUrl: buyerImageUrl,
         },
@@ -606,24 +653,30 @@ export default function KioskBuyerInspectionPage() {
 
   function handleRetry() {
     startedRef.current = false;
-    prepareInspection();
+    void prepareInspection();
   }
 
   function handleGoHome() {
-    navigate("/kiosk", { replace: true });
+    navigate("/kiosk", {
+      replace: true,
+    });
   }
 
   useEffect(() => {
     cancelledRef.current = false;
 
-    if (startedRef.current) return;
+    if (startedRef.current) {
+      return;
+    }
 
     startedRef.current = true;
-    prepareInspection();
+
+    void prepareInspection();
 
     return () => {
       cancelledRef.current = true;
     };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -667,7 +720,9 @@ export default function KioskBuyerInspectionPage() {
 
             <div className={styles.productInfo}>
               <strong>{product.TITLE}</strong>
+
               <span>{formatPrice(product.BASE_PRICE)}</span>
+
               <p>{lockerNo}번 보관함</p>
             </div>
           </div>
@@ -680,7 +735,9 @@ export default function KioskBuyerInspectionPage() {
               alt="카메라 모듈"
               className={styles.cameraModuleImage}
             />
+
             <p>{message}</p>
+
             <span>라즈베리파이 명령 성공 여부를 확인하고 있습니다.</span>
           </div>
         )}
@@ -703,7 +760,9 @@ export default function KioskBuyerInspectionPage() {
 
                 <div className={styles.productInfo}>
                   <strong>보관 당시 사진</strong>
+
                   <span>판매자가 물품을 넣은 뒤 촬영한 사진입니다.</span>
+
                   <p>SELLER_INSERT</p>
                 </div>
               </div>
@@ -723,7 +782,9 @@ export default function KioskBuyerInspectionPage() {
 
                 <div className={styles.productInfo}>
                   <strong>현재 보관함 사진</strong>
+
                   <span>구매자 확인 직전에 촬영한 사진입니다.</span>
+
                   <p>BUYER_BEFORE_PICKUP</p>
                 </div>
               </div>
@@ -736,6 +797,7 @@ export default function KioskBuyerInspectionPage() {
         {phase === "DONE" && (
           <div className={styles.emptyBox}>
             <p>물품 확인이 완료되었습니다.</p>
+
             <span>결제 및 수령 단계로 이동합니다.</span>
           </div>
         )}
@@ -743,6 +805,7 @@ export default function KioskBuyerInspectionPage() {
         {phase === "ERROR" && (
           <div className={styles.emptyBox}>
             <p>{errorMessage || "물품 확인 중 오류가 발생했습니다."}</p>
+
             <span>명령 상태와 인증 정보를 확인한 뒤 다시 시도해주세요.</span>
           </div>
         )}

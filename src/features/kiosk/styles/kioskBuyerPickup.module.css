@@ -431,6 +431,11 @@
   cursor: not-allowed;
 }
 
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .buttonRow {
   width: min(100%, 460px);
   display: grid;
@@ -438,8 +443,14 @@
   gap: 10px;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+/* 토스 결제 버튼 전용 중앙 정렬 */
+.paymentButtonRow {
+  grid-template-columns: minmax(0, 360px);
+  justify-content: center;
+  gap: 0;
+  margin: 0 auto;
+}
+
+.paymentButton {
+  width: 100%;
 }

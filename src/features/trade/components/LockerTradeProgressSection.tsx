@@ -842,10 +842,10 @@ export default function LockerTradeProgressSection({
         }
 
         const latestStatusCode = normalizeLockerStatusCode(
-          detail.STATUS_CODE ??
+          detail.TRADE_STATUS_CODE ??
             detail.RESULT_STATUS_CODE ??
-            detail.TRADE_STATUS_CODE ??
-            detail.NEXT_STATUS_CODE,
+            detail.NEXT_STATUS_CODE ??
+            detail.STATUS_CODE,
         );
 
         if (!latestStatusCode) return;
